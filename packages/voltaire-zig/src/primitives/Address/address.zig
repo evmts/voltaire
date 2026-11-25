@@ -15,12 +15,8 @@ bytes: [20]u8,
 /// Format address for std.fmt output
 pub fn format(
     self: Address,
-    comptime fmt: []const u8,
-    options: std.fmt.FormatOptions,
-    writer: anytype,
-) !void {
-    _ = fmt;
-    _ = options;
+    writer: *std.Io.Writer,
+) std.Io.Writer.Error!void {
     const hex = addressToHex(self);
     try writer.writeAll(&hex);
 }
@@ -28,9 +24,9 @@ pub fn format(
 /// Format address as number for std.fmt hex output
 pub fn formatNumber(
     self: Address,
-    writer: anytype,
+    writer: *std.Io.Writer,
     options: std.fmt.Number,
-) !void {
+) std.Io.Writer.Error!void {
     _ = options;
     const hex = addressToHex(self);
     try writer.writeAll(&hex);
@@ -130,7 +126,7 @@ pub fn toUppercase(address: Address) [42]u8 {
 }
 
 pub fn toAbiEncoded(address: Address) [32]u8 {
-    var result: [32]u8 = [_]u8{0} ** 32;
+    var result: [32]u8 = @as([32]u8, @splat(0));
     @memcpy(result[12..32], &address.bytes);
     return result;
 }
@@ -239,7 +235,7 @@ pub fn deduplicateAddresses(allocator: std.mem.Allocator, addresses: []const Add
         return &[_]Address{};
     }
 
-    var result = std.ArrayList(Address){};
+    var result = std.ArrayList(Address).empty;
     defer result.deinit(allocator);
 
     var seen = std.AutoHashMap([20]u8, void).init(allocator);
@@ -675,7 +671,7 @@ test "contract address generation - CREATE multiple nonces" {
 
 test "contract address generation - CREATE2" {
     const deployer = try fromHex("0x0000000000000000000000000000000000000000");
-    const salt = [_]u8{0} ** 32;
+    const salt = @as([32]u8, @splat(0));
     // EIP-1014 example 0 uses init code 0x00, not a zero code hash.
     var init_code_hash: [32]u8 = undefined;
     Keccak256.hash(&.{0x00}, &init_code_hash, .{});
@@ -687,8 +683,8 @@ test "contract address generation - CREATE2" {
 
 test "contract address generation - CREATE2 deterministic" {
     const deployer = try fromHex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-    const salt: [32]u8 = .{ 0x12, 0x34, 0x56, 0x78 } ++ .{0} ** 28;
-    const init_code_hash: [32]u8 = .{ 0xab, 0xcd, 0xef } ++ .{0} ** 29;
+    const salt: [32]u8 = .{ 0x12, 0x34, 0x56, 0x78 } ++ @as([28]u8, @splat(0));
+    const init_code_hash: [32]u8 = .{ 0xab, 0xcd, 0xef } ++ @as([29]u8, @splat(0));
 
     const addr = getCreate2Address(deployer, salt, init_code_hash);
 
@@ -1015,11 +1011,11 @@ test "calculate_create2_address with large init code" {
 }
 
 test "Address - fromBytes with invalid lengths" {
-    const too_short = [_]u8{0x01} ** 19;
+    const too_short = @as([19]u8, @splat(0x01));
     const result1 = fromBytes(&too_short);
     try std.testing.expectError(error.InvalidAddressLength, result1);
 
-    const too_long = [_]u8{0x01} ** 21;
+    const too_long = @as([21]u8, @splat(0x01));
     const result2 = fromBytes(&too_long);
     try std.testing.expectError(error.InvalidAddressLength, result2);
 
@@ -1027,7 +1023,7 @@ test "Address - fromBytes with invalid lengths" {
     const result3 = fromBytes(&empty);
     try std.testing.expectError(error.InvalidAddressLength, result3);
 
-    const valid = [_]u8{0x01} ** 20;
+    const valid = @as([20]u8, @splat(0x01));
     const result4 = try fromBytes(&valid);
     try std.testing.expectEqual(@as(usize, 20), result4.bytes.len);
 }
@@ -1090,7 +1086,7 @@ test "Address - fromHex error cases" {
     const result1 = fromHex(too_short);
     try std.testing.expectError(error.InvalidHexFormat, result1);
 
-    const too_long = "0x" ++ "a" ** 50;
+    const too_long = "0x" ++ &@as([50]u8, @splat('a'));
     const result2 = fromHex(too_long);
     try std.testing.expectError(error.InvalidHexFormat, result2);
 

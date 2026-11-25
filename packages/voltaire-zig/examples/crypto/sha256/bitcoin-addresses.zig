@@ -4,7 +4,7 @@ const SHA256 = crypto.SHA256;
 const Ripemd160 = crypto.Ripemd160;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -12,7 +12,7 @@ pub fn main() !void {
 
     // Example 1: Bitcoin genesis block public key
     std.debug.print("Example 1: Bitcoin Genesis Block Coinbase\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     // This is the public key from Bitcoin's genesis block
     const genesis_public_key = [_]u8{
@@ -32,7 +32,7 @@ pub fn main() !void {
 
     // Example 2: Compressed public key
     std.debug.print("Example 2: Compressed Public Key\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const compressed_pub_key = [_]u8{
         0x02, 0x50, 0x86, 0x3a, 0xd6, 0x4a, 0x87, 0xae,
@@ -47,7 +47,7 @@ pub fn main() !void {
 
     // Example 3: Verify checksum validation
     std.debug.print("Example 3: Checksum Validation\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
     std.debug.print("Bitcoin uses double SHA-256 for checksums to detect errors\n\n", .{});
 
     const test_data = [_]u8{ 0x00, 0x01, 0x02, 0x03, 0x04 };
@@ -122,7 +122,7 @@ fn publicKeyToAddress(public_key: []const u8, allocator: std.mem.Allocator) !voi
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 fn base58Encode(bytes: []const u8, allocator: std.mem.Allocator) ![]u8 {
-    var digits = std.ArrayList(u8){};
+    var digits = std.ArrayList(u8).empty;
     defer digits.deinit(allocator);
     try digits.append(allocator, 0);
 
@@ -141,7 +141,7 @@ fn base58Encode(bytes: []const u8, allocator: std.mem.Allocator) ![]u8 {
     }
 
     // Convert leading zeros
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     for (bytes) |byte| {

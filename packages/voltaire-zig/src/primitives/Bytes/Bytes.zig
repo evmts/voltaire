@@ -432,15 +432,15 @@ test "toBigInt - basic" {
 }
 
 /// Generate random bytes (allocates)
-pub fn random(allocator: std.mem.Allocator, len: usize) ![]u8 {
+pub fn random(allocator: std.mem.Allocator, io: std.Io, len: usize) ![]u8 {
     const result = try allocator.alloc(u8, len);
-    std.crypto.random.bytes(result);
+    io.random(result);
     return result;
 }
 
 test "random - basic" {
     const allocator = std.testing.allocator;
-    const r = try random(allocator, 32);
+    const r = try random(allocator, std.testing.io, 32);
     defer allocator.free(r);
 
     try std.testing.expectEqual(32, r.len);

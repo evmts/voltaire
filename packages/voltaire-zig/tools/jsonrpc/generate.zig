@@ -7,17 +7,13 @@ const MethodInfo = struct {
     json_value: std.json.Value,
 };
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
+    const io = init.io;
 
     // Read the OpenRPC specification
     const spec_path = "vendor/execution-apis/openrpc.json";
-    const spec_file = try std.fs.cwd().openFile(spec_path, .{});
-    defer spec_file.close();
-
-    const spec_content = try spec_file.readToEndAlloc(allocator, 100 * 1024 * 1024);
+    const spec_content = try std.Io.Dir.cwd().readFileAlloc(io, spec_path, allocator, .limited(100 * 1024 * 1024));
     defer allocator.free(spec_content);
 
     // Parse JSON
@@ -77,19 +73,15 @@ pub fn main() !void {
             const method_dir_path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/{s}", .{ namespace, method_part });
             defer allocator.free(method_dir_path);
 
-            try std.fs.cwd().makePath(method_dir_path);
+            try std.Io.Dir.cwd().createDirPath(io, method_dir_path);
 
             // Write JSON spec file
             const json_path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/{s}/{s}.json", .{ namespace, method_part, method_name });
             defer allocator.free(json_path);
 
-            const json_file = try std.fs.cwd().createFile(json_path, .{});
-            defer json_file.close();
-
-            // Write JSON by formatting the method value using Zig 0.15 API
             const json_str = try std.json.Stringify.valueAlloc(allocator, method, .{});
             defer allocator.free(json_str);
-            try json_file.writeAll(json_str);
+            try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = json_path, .data = json_str });
 
             // Write Zig struct file
             const struct_name = try toPascalCase(allocator, method_name);
@@ -98,36 +90,36 @@ pub fn main() !void {
             const zig_path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/{s}/{s}.zig", .{ namespace, method_part, method_name });
             defer allocator.free(zig_path);
 
-            const zig_file = try std.fs.cwd().createFile(zig_path, .{});
-            defer zig_file.close();
+            const zig_file = try std.Io.Dir.cwd().createFile(io, zig_path, .{});
+            defer zig_file.close(io);
 
-            try generateZigStruct(allocator, method, struct_name, method_name, zig_file);
+            try generateZigStruct(allocator, io, method, struct_name, method_name, zig_file);
 
             // Write JavaScript file with JSDoc
             const js_path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/{s}/{s}.js", .{ namespace, method_part, method_name });
             defer allocator.free(js_path);
 
-            const js_file = try std.fs.cwd().createFile(js_path, .{});
-            defer js_file.close();
+            const js_file = try std.Io.Dir.cwd().createFile(io, js_path, .{});
+            defer js_file.close(io);
 
-            try generateJavaScriptWithJSDoc(allocator, method, method_name, js_file);
+            try generateJavaScriptWithJSDoc(allocator, io, method, method_name, js_file);
 
             // Write Go file
             const go_path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/{s}/{s}.go", .{ namespace, method_part, method_name });
             defer allocator.free(go_path);
 
-            const go_file = try std.fs.cwd().createFile(go_path, .{});
-            defer go_file.close();
+            const go_file = try std.Io.Dir.cwd().createFile(io, go_path, .{});
+            defer go_file.close(io);
 
-            try generateGoStruct(allocator, method, struct_name, method_name, go_file);
+            try generateGoStruct(allocator, io, method, struct_name, method_name, go_file);
 
             std.debug.print("Created: {s}, {s}, {s}, and {s}\n", .{ json_path, zig_path, js_path, go_path });
         }
 
         // Generate methods.js, methods.zig, and methods.go for this namespace
-        try generateNamespaceMethodsJS(allocator, namespace, method_list.items);
-        try generateNamespaceMethodsZig(allocator, namespace, method_list.items);
-        try generateNamespaceMethodsGo(allocator, namespace, method_list.items);
+        try generateNamespaceMethodsJS(allocator, io, namespace, method_list.items);
+        try generateNamespaceMethodsZig(allocator, io, namespace, method_list.items);
+        try generateNamespaceMethodsGo(allocator, io, namespace, method_list.items);
     }
 
     // Generate root JsonRpc.js and JsonRpc.zig
@@ -139,15 +131,15 @@ pub fn main() !void {
         try namespace_list.append(allocator, ns.*);
     }
 
-    try generateRootJsonRpcJS(allocator, namespace_list.items);
-    try generateRootJsonRpcZig(allocator, namespace_list.items);
-    try generateRootJsonRpcGo(allocator, namespace_list.items);
+    try generateRootJsonRpcJS(allocator, io, namespace_list.items);
+    try generateRootJsonRpcZig(allocator, io, namespace_list.items);
+    try generateRootJsonRpcGo(allocator, io, namespace_list.items);
 
     std.debug.print("\nDone! Processed {d} methods across {d} namespaces.\n", .{ methods_array.items.len, namespaces.count() });
 }
 
 fn toPascalCase(allocator: std.mem.Allocator, snake_case: []const u8) ![]u8 {
-    var result: std.ArrayListUnmanaged(u8) = .{};
+    var result: std.ArrayListUnmanaged(u8) = .empty;
     defer result.deinit(allocator);
 
     var capitalize_next = true;
@@ -165,10 +157,10 @@ fn toPascalCase(allocator: std.mem.Allocator, snake_case: []const u8) ![]u8 {
     return result.toOwnedSlice(allocator);
 }
 
-fn generateZigStruct(allocator: std.mem.Allocator, method: std.json.Value, struct_name: []const u8, method_name: []const u8, file: std.fs.File) !void {
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+fn generateZigStruct(allocator: std.mem.Allocator, io: std.Io, method: std.json.Value, struct_name: []const u8, method_name: []const u8, file: std.Io.File) !void {
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     // Write imports
     try writer.writeAll("const std = @import(\"std\");\n");
@@ -196,7 +188,7 @@ fn generateZigStruct(allocator: std.mem.Allocator, method: std.json.Value, struc
                                 try writer.writeAll("/// ");
                                 try writer.writeAll(name.string);
                                 try writer.writeAll(": ");
-                                try writeJsonValue(value, writer.any());
+                                try writeJsonValue(value, writer);
                                 try writer.writeAll("\n");
                             }
                         }
@@ -206,7 +198,7 @@ fn generateZigStruct(allocator: std.mem.Allocator, method: std.json.Value, struc
             if (first_example.object.get("result")) |result| {
                 if (result.object.get("value")) |value| {
                     try writer.writeAll("/// Result: ");
-                    try writeJsonValue(value, writer.any());
+                    try writeJsonValue(value, writer);
                     try writer.writeAll("\n");
                 }
             }
@@ -227,17 +219,17 @@ fn generateZigStruct(allocator: std.mem.Allocator, method: std.json.Value, struc
     // Generate Params struct
     if (method.object.get("params")) |params| {
         if (params == .array) {
-            try generateParamsStruct(allocator, params.array, method_name, writer.any());
+            try generateParamsStruct(allocator, params.array, method_name, writer);
         }
     }
 
     // Generate Result struct
     if (method.object.get("result")) |result| {
-        try generateResultStruct(allocator, result, method_name, writer.any());
+        try generateResultStruct(allocator, result, method_name, writer);
     }
 
     // Write accumulated output to file
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
 }
 
 fn generateParamsStruct(allocator: std.mem.Allocator, params: std.json.Array, method_name: []const u8, writer: anytype) !void {
@@ -404,7 +396,7 @@ fn inferZigType(schema: std.json.Value) ![]const u8 {
 }
 
 fn toSnakeCase(allocator: std.mem.Allocator, str: []const u8) ![]u8 {
-    var result: std.ArrayListUnmanaged(u8) = .{};
+    var result: std.ArrayListUnmanaged(u8) = .empty;
     defer result.deinit(allocator);
 
     for (str) |c| {
@@ -430,10 +422,10 @@ fn writeJsonValue(value: std.json.Value, writer: anytype) !void {
     }
 }
 
-fn generateJavaScriptWithJSDoc(allocator: std.mem.Allocator, method: std.json.Value, method_name: []const u8, file: std.fs.File) !void {
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+fn generateJavaScriptWithJSDoc(allocator: std.mem.Allocator, io: std.Io, method: std.json.Value, method_name: []const u8, file: std.Io.File) !void {
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     // Write file overview
     try writer.writeAll("/**\n");
@@ -474,7 +466,7 @@ fn generateJavaScriptWithJSDoc(allocator: std.mem.Allocator, method: std.json.Va
                                 try writer.writeAll(" * ");
                                 try writer.writeAll(name.string);
                                 try writer.writeAll(": ");
-                                try writeJsonValue(value, writer.any());
+                                try writeJsonValue(value, writer);
                                 try writer.writeAll("\n");
                             }
                         }
@@ -484,7 +476,7 @@ fn generateJavaScriptWithJSDoc(allocator: std.mem.Allocator, method: std.json.Va
             if (first_example.object.get("result")) |result| {
                 if (result.object.get("value")) |value| {
                     try writer.writeAll(" * Result: ");
-                    try writeJsonValue(value, writer.any());
+                    try writeJsonValue(value, writer);
                     try writer.writeAll("\n");
                 }
             }
@@ -506,17 +498,17 @@ fn generateJavaScriptWithJSDoc(allocator: std.mem.Allocator, method: std.json.Va
     // Generate Params JSDoc typedef
     if (method.object.get("params")) |params| {
         if (params == .array) {
-            try generateJavaScriptParams(allocator, params.array, method_name, writer.any());
+            try generateJavaScriptParams(allocator, params.array, method_name, writer);
         }
     }
 
     // Generate Result JSDoc typedef
     if (method.object.get("result")) |result| {
-        try generateJavaScriptResult(allocator, result, method_name, writer.any());
+        try generateJavaScriptResult(allocator, result, method_name, writer);
     }
 
     // Write accumulated output to file
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
 }
 
 fn generateJavaScriptParams(allocator: std.mem.Allocator, params: std.json.Array, method_name: []const u8, writer: anytype) !void {
@@ -618,16 +610,16 @@ fn inferJavaScriptType(schema: std.json.Value) ![]const u8 {
     return "Quantity";
 }
 
-fn generateNamespaceMethodsJS(allocator: std.mem.Allocator, namespace: []const u8, methods: []const MethodInfo) !void {
+fn generateNamespaceMethodsJS(allocator: std.mem.Allocator, io: std.Io, namespace: []const u8, methods: []const MethodInfo) !void {
     const path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/methods.js", .{namespace});
     defer allocator.free(path);
 
-    const file = try std.fs.cwd().createFile(path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
 
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     // Write header
     const ns_pascal = try toPascalCase(allocator, namespace);
@@ -679,20 +671,20 @@ fn generateNamespaceMethodsJS(allocator: std.mem.Allocator, namespace: []const u
 
     try writer.writeAll("}\n");
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
     std.debug.print("Generated {s}\n", .{path});
 }
 
-fn generateNamespaceMethodsZig(allocator: std.mem.Allocator, namespace: []const u8, methods: []const MethodInfo) !void {
+fn generateNamespaceMethodsZig(allocator: std.mem.Allocator, io: std.Io, namespace: []const u8, methods: []const MethodInfo) !void {
     const path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/methods.zig", .{namespace});
     defer allocator.free(path);
 
-    const file = try std.fs.cwd().createFile(path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
 
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     const ns_pascal = try toPascalCase(allocator, namespace);
     defer allocator.free(ns_pascal);
@@ -759,18 +751,18 @@ fn generateNamespaceMethodsZig(allocator: std.mem.Allocator, namespace: []const 
         \\
     );
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
     std.debug.print("Generated {s}\n", .{path});
 }
 
-fn generateRootJsonRpcJS(allocator: std.mem.Allocator, namespaces: []const []const u8) !void {
+fn generateRootJsonRpcJS(allocator: std.mem.Allocator, io: std.Io, namespaces: []const []const u8) !void {
     const path = "src/jsonrpc/JsonRpc.js";
-    const file = try std.fs.cwd().createFile(path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
 
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     try writer.writeAll(
         \\/**
@@ -816,18 +808,18 @@ fn generateRootJsonRpcJS(allocator: std.mem.Allocator, namespaces: []const []con
     // Users can import specific namespace types directly
     try writer.writeAll("export {}\n");
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
     std.debug.print("Generated {s}\n", .{path});
 }
 
-fn generateRootJsonRpcZig(allocator: std.mem.Allocator, namespaces: []const []const u8) !void {
+fn generateRootJsonRpcZig(allocator: std.mem.Allocator, io: std.Io, namespaces: []const []const u8) !void {
     const path = "src/jsonrpc/JsonRpc.zig";
-    const file = try std.fs.cwd().createFile(path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
 
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     try writer.writeAll("const std = @import(\"std\");\n\n");
 
@@ -872,14 +864,14 @@ fn generateRootJsonRpcZig(allocator: std.mem.Allocator, namespaces: []const []co
         \\
     );
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
     std.debug.print("Generated {s}\n", .{path});
 }
 
-fn generateGoStruct(allocator: std.mem.Allocator, method: std.json.Value, _: []const u8, method_name: []const u8, file: std.fs.File) !void {
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+fn generateGoStruct(allocator: std.mem.Allocator, io: std.Io, method: std.json.Value, _: []const u8, method_name: []const u8, file: std.Io.File) !void {
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     // Determine package name from method name (first part before underscore)
     var parts = std.mem.splitScalar(u8, method_name, '_');
@@ -917,7 +909,7 @@ fn generateGoStruct(allocator: std.mem.Allocator, method: std.json.Value, _: []c
                                 try writer.writeAll("// ");
                                 try writer.writeAll(name.string);
                                 try writer.writeAll(": ");
-                                try writeJsonValue(value, writer.any());
+                                try writeJsonValue(value, writer);
                                 try writer.writeAll("\n");
                             }
                         }
@@ -927,7 +919,7 @@ fn generateGoStruct(allocator: std.mem.Allocator, method: std.json.Value, _: []c
             if (first_example.object.get("result")) |result| {
                 if (result.object.get("value")) |value| {
                     try writer.writeAll("// Result: ");
-                    try writeJsonValue(value, writer.any());
+                    try writeJsonValue(value, writer);
                     try writer.writeAll("\n");
                 }
             }
@@ -947,16 +939,16 @@ fn generateGoStruct(allocator: std.mem.Allocator, method: std.json.Value, _: []c
     // Generate Params struct
     if (method.object.get("params")) |params| {
         if (params == .array) {
-            try generateGoParams(allocator, params.array, method_name, writer.any());
+            try generateGoParams(allocator, params.array, method_name, writer);
         }
     }
 
     // Generate Result struct
     if (method.object.get("result")) |result| {
-        try generateGoResult(allocator, result, method_name, writer.any());
+        try generateGoResult(allocator, result, method_name, writer);
     }
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
 }
 
 fn generateGoParams(allocator: std.mem.Allocator, params: std.json.Array, method_name: []const u8, writer: anytype) !void {
@@ -1109,16 +1101,16 @@ fn inferGoType(schema: std.json.Value) ![]const u8 {
     return "types.Quantity";
 }
 
-fn generateNamespaceMethodsGo(allocator: std.mem.Allocator, namespace: []const u8, methods: []const MethodInfo) !void {
+fn generateNamespaceMethodsGo(allocator: std.mem.Allocator, io: std.Io, namespace: []const u8, methods: []const MethodInfo) !void {
     const path = try std.fmt.allocPrint(allocator, "src/jsonrpc/{s}/methods.go", .{namespace});
     defer allocator.free(path);
 
-    const file = try std.fs.cwd().createFile(path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
 
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     const ns_pascal = try toPascalCase(allocator, namespace);
     defer allocator.free(ns_pascal);
@@ -1161,18 +1153,18 @@ fn generateNamespaceMethodsGo(allocator: std.mem.Allocator, namespace: []const u
 
     try writer.writeAll("}\n");
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
     std.debug.print("Generated {s}\n", .{path});
 }
 
-fn generateRootJsonRpcGo(allocator: std.mem.Allocator, namespaces: []const []const u8) !void {
+fn generateRootJsonRpcGo(allocator: std.mem.Allocator, io: std.Io, namespaces: []const []const u8) !void {
     const path = "src/jsonrpc/jsonrpc.go";
-    const file = try std.fs.cwd().createFile(path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
 
-    var output: std.ArrayListUnmanaged(u8) = .{};
-    defer output.deinit(allocator);
-    const writer = output.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     try writer.writeAll(
         \\// Package jsonrpc provides Ethereum JSON-RPC type definitions.
@@ -1194,6 +1186,6 @@ fn generateRootJsonRpcGo(allocator: std.mem.Allocator, namespaces: []const []con
     try writer.writeAll("// Primitive types are available at:\n");
     try writer.writeAll("//   - types: import \"github.com/ethereum/execution-apis/types\"\n");
 
-    try file.writeAll(output.items);
+    try file.writeStreamingAll(io, aw.written());
     std.debug.print("Generated {s}\n", .{path});
 }

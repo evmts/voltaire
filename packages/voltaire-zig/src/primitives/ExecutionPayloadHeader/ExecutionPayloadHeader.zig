@@ -161,13 +161,13 @@ pub const ExecutionPayloadHeader = struct {
 };
 
 fn fixedBytesRoot(bytes: []const u8) [32]u8 {
-    var root: [32]u8 = [_]u8{0} ** 32;
+    var root: [32]u8 = @as([32]u8, @splat(0));
     @memcpy(root[0..bytes.len], bytes);
     return root;
 }
 
 fn mixInLength(root: [32]u8, length: u64) [32]u8 {
-    var length_chunk: [32]u8 = [_]u8{0} ** 32;
+    var length_chunk: [32]u8 = @as([32]u8, @splat(0));
     const length_encoded = primitives.Ssz.encodeUint64(length);
     @memcpy(length_chunk[0..8], length_encoded[0..]);
 
@@ -183,28 +183,28 @@ fn mixInLength(root: [32]u8, length: u64) [32]u8 {
 fn byteListRoot(extra_data: []const u8) [32]u8 {
     std.debug.assert(extra_data.len <= EXTRA_DATA_MAX_BYTES);
 
-    var data_root: [32]u8 = [_]u8{0} ** 32;
+    var data_root: [32]u8 = @as([32]u8, @splat(0));
     @memcpy(data_root[0..extra_data.len], extra_data);
     return mixInLength(data_root, @intCast(extra_data.len));
 }
 
 fn sampleHeader(extra_data: []const u8) !ExecutionPayloadHeader {
     return ExecutionPayloadHeader.from(
-        [_]u8{0x11} ** 32,
-        [_]u8{0x22} ** 20,
-        [_]u8{0x33} ** 32,
-        [_]u8{0x44} ** 32,
-        [_]u8{0x55} ** 256,
-        [_]u8{0x66} ** 32,
+        @as([32]u8, @splat(0x11)),
+        @as([20]u8, @splat(0x22)),
+        @as([32]u8, @splat(0x33)),
+        @as([32]u8, @splat(0x44)),
+        @as([256]u8, @splat(0x55)),
+        @as([32]u8, @splat(0x66)),
         1_234_567,
         30_000_000,
         15_000_000,
         1_700_000_000,
         extra_data,
         1_000_000_000,
-        [_]u8{0x77} ** 32,
-        [_]u8{0x88} ** 32,
-        [_]u8{0x99} ** 32,
+        @as([32]u8, @splat(0x77)),
+        @as([32]u8, @splat(0x88)),
+        @as([32]u8, @splat(0x99)),
         393_216,
         786_432,
     );
@@ -267,26 +267,26 @@ test "ExecutionPayloadHeader: hashTreeRoot differs for different headers" {
 }
 
 test "ExecutionPayloadHeader: from rejects extra_data larger than 32 bytes" {
-    const too_long = [_]u8{0xaa} ** 33;
+    const too_long = @as([33]u8, @splat(0xaa));
 
     try std.testing.expectError(
         error.ExtraDataTooLong,
         ExecutionPayloadHeader.from(
-            [_]u8{0x11} ** 32,
-            [_]u8{0x22} ** 20,
-            [_]u8{0x33} ** 32,
-            [_]u8{0x44} ** 32,
-            [_]u8{0x55} ** 256,
-            [_]u8{0x66} ** 32,
+            @as([32]u8, @splat(0x11)),
+            @as([20]u8, @splat(0x22)),
+            @as([32]u8, @splat(0x33)),
+            @as([32]u8, @splat(0x44)),
+            @as([256]u8, @splat(0x55)),
+            @as([32]u8, @splat(0x66)),
             1_234_567,
             30_000_000,
             15_000_000,
             1_700_000_000,
             too_long[0..],
             1_000_000_000,
-            [_]u8{0x77} ** 32,
-            [_]u8{0x88} ** 32,
-            [_]u8{0x99} ** 32,
+            @as([32]u8, @splat(0x77)),
+            @as([32]u8, @splat(0x88)),
+            @as([32]u8, @splat(0x99)),
             393_216,
             786_432,
         ),

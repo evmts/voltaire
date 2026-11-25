@@ -224,7 +224,7 @@ pub fn parentHash(block: *const Block) Hash.Hash {
 test "parentHash - returns header parent hash" {
     const allocator = std.testing.allocator;
     var header = BlockHeader.init();
-    header.parent_hash = [_]u8{0xab} ** 32;
+    header.parent_hash = @as([32]u8, @splat(0xab));
     const body = BlockBody.init();
     const block = try from(&header, &body, allocator);
 
@@ -481,8 +481,8 @@ test "hasValidTransactionsRoot - commits to transaction order and raw envelopes"
 
     // RLP indices 0 and 1 are 0x80 and 0x01. The root branch inlines
     // the leaf for index 1 in slot 0 and the leaf for index 0 in slot 8.
-    const branch = "\xed\xd0\x31\x8e" ++ typed ++ ("\x80" ** 7) ++
-        "\xcc\x30\x8a" ++ legacy ++ ("\x80" ** 8);
+    const branch = "\xed\xd0\x31\x8e" ++ typed ++ (&@as([7]u8, @splat('\x80'))) ++
+        "\xcc\x30\x8a" ++ legacy ++ (&@as([8]u8, @splat('\x80')));
     var header = BlockHeader.init();
     crypto.Keccak256.hash(branch, &header.transactions_root, .{});
 

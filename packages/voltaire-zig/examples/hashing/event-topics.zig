@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -19,8 +19,8 @@ pub fn main() !void {
     const from = try Address.fromHex("0x742d35cc6632c0532925a3b8d39c0e6cfc8c74e4");
     const to = try Address.fromHex("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 
-    var topic1: [32]u8 = .{0} ** 32;
-    var topic2: [32]u8 = .{0} ** 32;
+    var topic1: [32]u8 = @splat(0);
+    var topic2: [32]u8 = @splat(0);
     // copy last 20 bytes
     @memcpy(topic1[12..], &from.bytes);
     @memcpy(topic2[12..], &to.bytes);

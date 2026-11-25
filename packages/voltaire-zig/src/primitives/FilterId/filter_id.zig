@@ -29,7 +29,7 @@ pub const FilterId = struct {
     data: [MAX_SIZE]u8,
     len: usize,
 
-    pub const ZERO: FilterId = .{ .data = [_]u8{0} ** MAX_SIZE, .len = 1 };
+    pub const ZERO: FilterId = .{ .data = @as([MAX_SIZE]u8, @splat(0)), .len = 1 };
 };
 
 // ============================================================================
@@ -57,7 +57,7 @@ pub fn fromBytes(bytes: []const u8) FilterIdError!FilterId {
         return FilterIdError.FilterIdTooLong;
     }
 
-    var result = FilterId{ .data = [_]u8{0} ** MAX_SIZE, .len = bytes.len };
+    var result = FilterId{ .data = @as([MAX_SIZE]u8, @splat(0)), .len = bytes.len };
     @memcpy(result.data[0..bytes.len], bytes);
     return result;
 }
@@ -81,7 +81,7 @@ test "fromBytes - empty returns error" {
 }
 
 test "fromBytes - too long returns error" {
-    const bytes = [_]u8{0x01} ** (MAX_SIZE + 1);
+    const bytes = @as([MAX_SIZE + 1]u8, @splat(0x01));
     try std.testing.expectError(FilterIdError.FilterIdTooLong, fromBytes(&bytes));
 }
 
@@ -105,7 +105,7 @@ pub fn fromHex(hex: []const u8) FilterIdError!FilterId {
         return FilterIdError.FilterIdTooLong;
     }
 
-    var result = FilterId{ .data = [_]u8{0} ** MAX_SIZE, .len = byte_len };
+    var result = FilterId{ .data = @as([MAX_SIZE]u8, @splat(0)), .len = byte_len };
 
     // Decode hex
     var i: usize = 0;
@@ -173,7 +173,7 @@ test "fromHex - invalid chars returns error" {
 
 /// Create FilterId from u64
 pub fn fromU64(value: u64) FilterId {
-    var result = FilterId{ .data = [_]u8{0} ** MAX_SIZE, .len = 0 };
+    var result = FilterId{ .data = @as([MAX_SIZE]u8, @splat(0)), .len = 0 };
 
     // Skip leading zeros
     const bytes = std.mem.toBytes(std.mem.nativeToBig(u64, value));

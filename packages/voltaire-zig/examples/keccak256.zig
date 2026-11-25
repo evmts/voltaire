@@ -3,7 +3,7 @@ const crypto = @import("crypto");
 const HashUtils = crypto.HashUtils;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -11,7 +11,7 @@ pub fn main() !void {
 
     // Example 1: Computing keccak256 hashes
     std.debug.print("1. Computing Keccak-256 Hashes\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     // Hash a simple string
     const hello = "hello";
@@ -33,10 +33,10 @@ pub fn main() !void {
 
     // Example 2: Creating Hash from bytes and hex
     std.debug.print("2. Creating Hash from Bytes and Hex\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     // Create hash from raw bytes
-    const raw_bytes = [_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28;
+    const raw_bytes = [_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ @as([28]u8, @splat(0));
     const hash_from_bytes = HashUtils.fromBytes(raw_bytes);
     std.debug.print("From bytes: {s}\n", .{HashUtils.toHex(hash_from_bytes)});
 
@@ -47,7 +47,7 @@ pub fn main() !void {
 
     // Example 3: Converting Hash to hex
     std.debug.print("3. Converting Hash to Hex (Lowercase and Uppercase)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const some_hash = HashUtils.keccak256("example");
     std.debug.print("Lowercase: {s}\n", .{HashUtils.toHex(some_hash)});
@@ -55,7 +55,7 @@ pub fn main() !void {
 
     // Example 4: EIP-191 personal message hashing
     std.debug.print("4. EIP-191 Personal Message Hashing\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("EIP-191 adds the prefix: \"\\x19Ethereum Signed Message:\\n<length>\"\n", .{});
 
     const message1 = "Hello, Ethereum!";
@@ -70,7 +70,7 @@ pub fn main() !void {
 
     // Example 5: Bitwise operations on hashes
     std.debug.print("5. Bitwise Operations on Hashes\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     // Create two hashes from u256 values for cleaner demonstration
     const hash_a = HashUtils.fromU256(0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA);
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     // Example 6: Hash comparison
     std.debug.print("6. Hash Comparison\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const hash1 = HashUtils.keccak256("test1");
     const hash2 = HashUtils.keccak256("test2");
@@ -110,7 +110,7 @@ pub fn main() !void {
 
     // Example 7: Function selector generation (Bonus)
     std.debug.print("7. Function Selector Generation (ERC20 Examples)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const transfer_sig = "transfer(address,uint256)";
     const transfer_selector = HashUtils.selectorFromSignature(transfer_sig);
@@ -134,7 +134,7 @@ pub fn main() !void {
 
     // Example 8: Working with zero hash
     std.debug.print("8. Zero Hash Operations\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const zero_hash = HashUtils.zero();
     std.debug.print("Zero hash: {s}\n", .{HashUtils.toHex(zero_hash)});

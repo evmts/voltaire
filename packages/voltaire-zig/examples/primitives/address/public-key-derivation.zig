@@ -4,7 +4,7 @@ const Address = primitives.address.Address;
 const Bytes = primitives.bytes.Bytes;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const a = gpa.allocator();
 

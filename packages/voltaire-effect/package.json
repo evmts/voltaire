@@ -110,12 +110,12 @@
 		"@effect/platform-node": "4.1.1",
 		"@effect/vitest": "4.1.1",
 		"@tevm/voltaire": "workspace:*",
-		"@types/node": "^22.15.0",
+		"@types/node": "^26.6.10",
 		"effect": "4.1.1",
 		"vibelang": "0.0.13",
 		"vibelang-vite": "0.0.13",
-		"vite": "^8.0.0",
-		"vitest": "5.0.5"
+		"vite": "^8.3.8",
+		"vitest": "5.1.2"
 	},
 	"scripts": {
 		"build": "rm -rf dist && vibelang -p tsconfig.build.json",

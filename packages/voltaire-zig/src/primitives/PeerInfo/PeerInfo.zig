@@ -134,7 +134,7 @@ pub fn init(
 const test_caps = [_][]const u8{ "eth/67", "snap/1" };
 
 fn createTestPeer(inbound: bool) PeerInfo {
-    const peer_id = PeerId.fromEnode("enode://" ++ "ab" ** 64 ++ "@127.0.0.1:30303") catch unreachable;
+    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     return init(
         peer_id,
         "Geth/v1.10.26-stable",
@@ -171,7 +171,7 @@ test "PeerInfo: isOutbound returns false for inbound peer" {
 }
 
 test "PeerInfo: isTrusted returns correct value" {
-    const peer_id = PeerId.fromEnode("enode://" ++ "ab" ** 64 ++ "@127.0.0.1:30303") catch unreachable;
+    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     const peer = init(
         peer_id,
         "Geth/v1.10.26",
@@ -189,7 +189,7 @@ test "PeerInfo: isTrusted returns correct value" {
 }
 
 test "PeerInfo: isStatic returns correct value" {
-    const peer_id = PeerId.fromEnode("enode://" ++ "ab" ** 64 ++ "@127.0.0.1:30303") catch unreachable;
+    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     const peer = init(
         peer_id,
         "Geth/v1.10.26",
@@ -224,7 +224,7 @@ test "PeerInfo: getEthProtocol returns null when not supported" {
 }
 
 test "PeerInfo: getEthProtocol returns info when supported" {
-    const peer_id = PeerId.fromEnode("enode://" ++ "ab" ** 64 ++ "@127.0.0.1:30303") catch unreachable;
+    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     var head: [32]u8 = undefined;
     @memset(&head, 0xAB);
 
@@ -255,7 +255,7 @@ test "PeerInfo: supportsEth returns correct value" {
     const peer_without_eth = createTestPeer(false);
     try std.testing.expect(!peer_without_eth.supportsEth());
 
-    const peer_id = PeerId.fromEnode("enode://" ++ "ab" ** 64 ++ "@127.0.0.1:30303") catch unreachable;
+    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     var head: [32]u8 = undefined;
     @memset(&head, 0);
 
@@ -284,7 +284,7 @@ test "PeerInfo: equals compares by ID" {
     const peer2 = createTestPeer(false); // Different inbound status, same ID
     try std.testing.expect(peer1.equals(peer2));
 
-    const peer_id_diff = PeerId.fromEnode("enode://" ++ "de" ** 64 ++ "@127.0.0.1:30303") catch unreachable;
+    const peer_id_diff = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("de".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     const peer3 = init(
         peer_id_diff,
         "Geth/v1.10.26",
@@ -313,7 +313,7 @@ test "PeerInfo: access network addresses" {
 }
 
 test "PeerInfo: complete workflow" {
-    const peer_id = PeerId.fromEnode("enode://" ++ "ab" ** 64 ++ "@10.0.0.1:30303") catch unreachable;
+    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@10.0.0.1:30303") catch unreachable;
     var head: [32]u8 = undefined;
     @memset(&head, 0xCD);
 

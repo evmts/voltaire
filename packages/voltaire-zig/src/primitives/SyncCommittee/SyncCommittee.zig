@@ -36,8 +36,8 @@ pub const SyncCommittee = struct {
 
 test "SyncCommittee: construction" {
     const committee = SyncCommittee{
-        .pubkeys = [_][BLS_PUBLIC_KEY_SIZE]u8{[_]u8{0} ** BLS_PUBLIC_KEY_SIZE} ** SYNC_COMMITTEE_SIZE,
-        .aggregate_pubkey = [_]u8{0} ** BLS_PUBLIC_KEY_SIZE,
+        .pubkeys = @as([SYNC_COMMITTEE_SIZE][BLS_PUBLIC_KEY_SIZE]u8, @splat(@as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)))),
+        .aggregate_pubkey = @as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)),
     };
 
     try std.testing.expectEqual(@as(usize, SYNC_COMMITTEE_SIZE), committee.pubkeys.len);
@@ -46,11 +46,11 @@ test "SyncCommittee: construction" {
 }
 
 test "SyncCommittee: equals returns true for equal committees" {
-    var pubkeys = [_][BLS_PUBLIC_KEY_SIZE]u8{[_]u8{0} ** BLS_PUBLIC_KEY_SIZE} ** SYNC_COMMITTEE_SIZE;
+    var pubkeys = @as([SYNC_COMMITTEE_SIZE][BLS_PUBLIC_KEY_SIZE]u8, @splat(@as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0))));
     pubkeys[0][0] = 1;
     pubkeys[SYNC_COMMITTEE_SIZE - 1][BLS_PUBLIC_KEY_SIZE - 1] = 2;
 
-    var aggregate_pubkey = [_]u8{0} ** BLS_PUBLIC_KEY_SIZE;
+    var aggregate_pubkey = @as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0));
     aggregate_pubkey[0] = 3;
 
     const a = SyncCommittee{
@@ -67,14 +67,14 @@ test "SyncCommittee: equals returns true for equal committees" {
 
 test "SyncCommittee: equals returns false for different committees" {
     const a = SyncCommittee{
-        .pubkeys = [_][BLS_PUBLIC_KEY_SIZE]u8{[_]u8{0} ** BLS_PUBLIC_KEY_SIZE} ** SYNC_COMMITTEE_SIZE,
-        .aggregate_pubkey = [_]u8{0} ** BLS_PUBLIC_KEY_SIZE,
+        .pubkeys = @as([SYNC_COMMITTEE_SIZE][BLS_PUBLIC_KEY_SIZE]u8, @splat(@as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)))),
+        .aggregate_pubkey = @as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)),
     };
 
-    var different_aggregate_pubkey = [_]u8{0} ** BLS_PUBLIC_KEY_SIZE;
+    var different_aggregate_pubkey = @as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0));
     different_aggregate_pubkey[0] = 1;
     const b = SyncCommittee{
-        .pubkeys = [_][BLS_PUBLIC_KEY_SIZE]u8{[_]u8{0} ** BLS_PUBLIC_KEY_SIZE} ** SYNC_COMMITTEE_SIZE,
+        .pubkeys = @as([SYNC_COMMITTEE_SIZE][BLS_PUBLIC_KEY_SIZE]u8, @splat(@as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)))),
         .aggregate_pubkey = different_aggregate_pubkey,
     };
 
@@ -85,8 +85,8 @@ test "SyncCommittee: hashTreeRoot is consistent" {
     const allocator = std.testing.allocator;
 
     var committee = SyncCommittee{
-        .pubkeys = [_][BLS_PUBLIC_KEY_SIZE]u8{[_]u8{0} ** BLS_PUBLIC_KEY_SIZE} ** SYNC_COMMITTEE_SIZE,
-        .aggregate_pubkey = [_]u8{0} ** BLS_PUBLIC_KEY_SIZE,
+        .pubkeys = @as([SYNC_COMMITTEE_SIZE][BLS_PUBLIC_KEY_SIZE]u8, @splat(@as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)))),
+        .aggregate_pubkey = @as([BLS_PUBLIC_KEY_SIZE]u8, @splat(0)),
     };
     committee.pubkeys[0][0] = 11;
     committee.pubkeys[100][17] = 22;

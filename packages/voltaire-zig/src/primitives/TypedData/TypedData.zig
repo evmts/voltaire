@@ -240,7 +240,7 @@ pub fn encodeData(
     };
 
     // Encode all field values
-    var encoded_fields = std.ArrayList(u8){};
+    var encoded_fields = std.ArrayList(u8).empty;
     defer encoded_fields.deinit(allocator);
 
     // Start with type hash
@@ -270,7 +270,7 @@ pub fn encodeTypeWithDeps(
     try findTypeDependencies(allocator, primary_type, types, &deps);
 
     // Sort dependencies alphabetically (excluding primary type)
-    var dep_list = std.ArrayList([]const u8){};
+    var dep_list = std.ArrayList([]const u8).empty;
     defer dep_list.deinit(allocator);
 
     var it = deps.iterator();
@@ -288,7 +288,7 @@ pub fn encodeTypeWithDeps(
     }.lessThan);
 
     // Build type string: primary type first, then sorted dependencies
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     // Encode primary type
@@ -451,7 +451,7 @@ fn encodeArrayValue(
     };
 
     // Concatenate encoded elements
-    var encoded = std.ArrayList(u8){};
+    var encoded = std.ArrayList(u8).empty;
     defer encoded.deinit(allocator);
 
     for (arr) |elem| {
@@ -555,7 +555,7 @@ fn encodeAtomicValue(allocator: std.mem.Allocator, type_str: []const u8, value: 
 
 /// Encode a type string (e.g., "Mail(address from,address to,string contents)")
 pub fn encodeType(primary_type: []const u8, fields: []const TypeField, allocator: std.mem.Allocator) ![]u8 {
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     // Type name
@@ -583,7 +583,7 @@ pub fn hashType(type_string: []const u8) [32]u8 {
 
 /// Encode an address value (left-padded to 32 bytes)
 pub fn encodeAddress(addr: [20]u8) [32]u8 {
-    var result: [32]u8 = [_]u8{0} ** 32;
+    var result: [32]u8 = @as([32]u8, @splat(0));
     @memcpy(result[12..32], &addr);
     return result;
 }
@@ -614,7 +614,7 @@ pub fn encodeBytes(value: []const u8) [32]u8 {
 
 /// Encode a bool value
 pub fn encodeBool(value: bool) [32]u8 {
-    var result: [32]u8 = [_]u8{0} ** 32;
+    var result: [32]u8 = @as([32]u8, @splat(0));
     result[31] = if (value) 1 else 0;
     return result;
 }
@@ -813,7 +813,7 @@ test "hashType: same input produces same hash" {
 }
 
 test "encodeAddress: left pads to 32 bytes" {
-    const addr = [_]u8{0x12} ** 20;
+    const addr = @as([20]u8, @splat(0x12));
     const encoded = encodeAddress(addr);
 
     // First 12 bytes should be zero
@@ -833,7 +833,7 @@ test "encodeUint256: encodes correctly" {
 }
 
 test "encodeBytes32: pass through" {
-    const value = [_]u8{0xab} ** 32;
+    const value = @as([32]u8, @splat(0xab));
     const encoded = encodeBytes32(value);
     try std.testing.expectEqualSlices(u8, &value, &encoded);
 }
@@ -986,7 +986,7 @@ test "encodeValue: address" {
     const allocator = std.testing.allocator;
     var types = TypesMap{};
 
-    const addr = [_]u8{0x12} ** 20;
+    const addr = @as([20]u8, @splat(0x12));
     const value = Value{ .address = addr };
 
     const encoded = try encodeValue(allocator, "address", &types, value);

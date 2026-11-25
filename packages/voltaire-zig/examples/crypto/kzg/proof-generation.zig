@@ -12,7 +12,7 @@ const crypto = @import("crypto");
 const c_kzg = crypto.c_kzg;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -28,7 +28,7 @@ pub fn main() !void {
     const commitment = try c_kzg.blobToKZGCommitment(&blob);
 
     std.debug.print("1. Setup\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("Blob created: {} bytes\n", .{blob.len});
     std.debug.print("Commitment: 0x", .{});
     for (commitment[0..10]) |b| {
@@ -38,7 +38,7 @@ pub fn main() !void {
 
     // Step 2: Generate proof
     std.debug.print("2. Generating KZG Proof\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var z: c_kzg.Bytes32 = undefined;
     @memset(&z, 0x42);
@@ -66,7 +66,7 @@ pub fn main() !void {
 
     // Step 3: Verify proof
     std.debug.print("3. Verifying KZG Proof\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const is_valid = try c_kzg.verifyKZGProof(&commitment, &z, &result.y, &result.proof);
     std.debug.print("Proof verification: {s}\n\n", .{if (is_valid) "✓ Valid" else "✗ Invalid"});
@@ -78,7 +78,7 @@ pub fn main() !void {
 
     // Step 4: Wrong y value
     std.debug.print("4. Testing Proof Soundness (Wrong y)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var wrong_y: c_kzg.Bytes32 = undefined;
     @memset(&wrong_y, 0xFF);
@@ -88,7 +88,7 @@ pub fn main() !void {
 
     // Step 5: Wrong commitment
     std.debug.print("5. Testing Proof Soundness (Wrong Commitment)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var blob2 = getRandomBlob(999);
     const wrong_commitment = try c_kzg.blobToKZGCommitment(&blob2);
@@ -98,7 +98,7 @@ pub fn main() !void {
 
     // Step 6: Corrupted proof
     std.debug.print("6. Testing Proof Soundness (Corrupted Proof)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var corrupted_proof = result.proof;
     corrupted_proof[0] ^= 1;
@@ -108,7 +108,7 @@ pub fn main() !void {
 
     // Step 7: Multiple evaluation points
     std.debug.print("7. Multiple Evaluation Points\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const evaluation_points = [_]u8{ 0x00, 0x11, 0x22 };
 
@@ -126,7 +126,7 @@ pub fn main() !void {
 
     // Step 8: Proof determinism
     std.debug.print("8. Proof Determinism\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var z2: c_kzg.Bytes32 = undefined;
     @memset(&z2, 123);
@@ -142,7 +142,7 @@ pub fn main() !void {
 
     // Step 9: Mathematical background
     std.debug.print("9. Mathematical Background\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("KZG Polynomial Commitment Scheme:\n", .{});
     std.debug.print("  1. Blob data → polynomial p(x) of degree 4095\n", .{});
     std.debug.print("  2. Commitment C = [p(τ)]₁ where τ is secret from trusted setup\n", .{});

@@ -9,12 +9,6 @@ export default defineConfig({
 			},
 		},
 		pool: "threads",
-		poolOptions: {
-			threads: {
-				maxThreads: 1,
-				minThreads: 1,
-			},
-		},
 		testTimeout: 30000,
 		hookTimeout: 30000,
 		include: [
@@ -56,6 +50,7 @@ export default defineConfig({
 			// Benchmarks are not library source; counting them as uncovered
 			// functions drags the global thresholds below their floor.
 			exclude: [
+				"src/**/*.d.ts",
 				"src/**/*.test.ts",
 				"src/**/*.test-d.ts",
 				"src/**/*.spec.ts",

@@ -161,8 +161,8 @@ pub fn decryptInPlace(
 test "chacha20-poly1305 basic encrypt/decrypt" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "Hello, ChaCha20-Poly1305!";
     const additional_data = "metadata";
 
@@ -182,8 +182,8 @@ test "chacha20-poly1305 basic encrypt/decrypt" {
 test "chacha20-poly1305 empty plaintext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "";
     const additional_data = "";
 
@@ -201,9 +201,9 @@ test "chacha20-poly1305 empty plaintext" {
 test "chacha20-poly1305 wrong key fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const wrong_key = [_]u8{2} ** KEY_SIZE;
-    const nonce = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const wrong_key = @as([KEY_SIZE]u8, @splat(2));
+    const nonce = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -217,9 +217,9 @@ test "chacha20-poly1305 wrong key fails" {
 test "chacha20-poly1305 wrong nonce fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
-    const wrong_nonce = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
+    const wrong_nonce = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -233,8 +233,8 @@ test "chacha20-poly1305 wrong nonce fails" {
 test "chacha20-poly1305 modified ciphertext fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test message";
     const additional_data = "";
 
@@ -253,8 +253,8 @@ test "chacha20-poly1305 modified ciphertext fails" {
 test "chacha20-poly1305 modified tag fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test message";
     const additional_data = "";
 
@@ -273,8 +273,8 @@ test "chacha20-poly1305 modified tag fails" {
 test "chacha20-poly1305 wrong aad fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const aad1 = "metadata1";
     const aad2 = "metadata2";
@@ -289,8 +289,8 @@ test "chacha20-poly1305 wrong aad fails" {
 test "chacha20-poly1305 large plaintext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const additional_data = "";
 
     const plaintext = try allocator.alloc(u8, 100000);
@@ -311,8 +311,8 @@ test "chacha20-poly1305 large plaintext" {
 test "chacha20-poly1305 invalid key length" {
     const allocator = std.testing.allocator;
 
-    const wrong_key = [_]u8{1} ** 16;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const wrong_key = @as([16]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -323,8 +323,8 @@ test "chacha20-poly1305 invalid key length" {
 test "chacha20-poly1305 invalid nonce length" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const wrong_nonce = [_]u8{2} ** 8;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const wrong_nonce = @as([8]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -335,9 +335,9 @@ test "chacha20-poly1305 invalid nonce length" {
 test "chacha20-poly1305 ciphertext too short" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
-    const too_short = [_]u8{0} ** 15;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
+    const too_short = @as([15]u8, @splat(0));
     const additional_data = "";
 
     const result = decrypt(allocator, &too_short, &key, &nonce, additional_data);
@@ -347,8 +347,8 @@ test "chacha20-poly1305 ciphertext too short" {
 test "chacha20-poly1305 deterministic encryption" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -364,9 +364,9 @@ test "chacha20-poly1305 deterministic encryption" {
 test "chacha20-poly1305 different nonces produce different ciphertext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce1 = [_]u8{2} ** NONCE_SIZE;
-    const nonce2 = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce1 = @as([NONCE_SIZE]u8, @splat(2));
+    const nonce2 = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -383,8 +383,8 @@ test "chacha20-poly1305 different nonces produce different ciphertext" {
 test "chacha20-poly1305 all-zero key" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{0} ** KEY_SIZE;
-    const nonce = [_]u8{0} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(0));
+    const nonce = @as([NONCE_SIZE]u8, @splat(0));
     const plaintext = "test";
     const additional_data = "";
 
@@ -400,8 +400,8 @@ test "chacha20-poly1305 all-zero key" {
 test "chacha20-poly1305 all-ones key" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{0xFF} ** KEY_SIZE;
-    const nonce = [_]u8{0xFF} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(0xFF));
+    const nonce = @as([NONCE_SIZE]u8, @splat(0xFF));
     const plaintext = "test";
     const additional_data = "";
 
@@ -415,8 +415,8 @@ test "chacha20-poly1305 all-ones key" {
 }
 
 test "chacha20-poly1305 in-place encryption" {
-    var key = [_]u8{1} ** KEY_SIZE;
-    var nonce = [_]u8{2} ** NONCE_SIZE;
+    var key = @as([KEY_SIZE]u8, @splat(1));
+    var nonce = @as([NONCE_SIZE]u8, @splat(2));
     var data = [_]u8{ 'H', 'e', 'l', 'l', 'o' };
     var tag: [TAG_SIZE]u8 = undefined;
 
@@ -429,8 +429,8 @@ test "chacha20-poly1305 in-place encryption" {
 }
 
 test "chacha20-poly1305 in-place wrong tag fails" {
-    var key = [_]u8{1} ** KEY_SIZE;
-    var nonce = [_]u8{2} ** NONCE_SIZE;
+    var key = @as([KEY_SIZE]u8, @splat(1));
+    var nonce = @as([NONCE_SIZE]u8, @splat(2));
     var data = [_]u8{ 'H', 'e', 'l', 'l', 'o' };
     var tag: [TAG_SIZE]u8 = undefined;
 
@@ -528,8 +528,8 @@ test "RFC 8439 encryption without AAD" {
 test "single byte plaintext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = [_]u8{0x42};
     const additional_data = "";
 
@@ -547,8 +547,8 @@ test "single byte plaintext" {
 test "exact block size plaintext (64 bytes)" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     var plaintext: [64]u8 = undefined;
     for (&plaintext, 0..) |*b, i| {
         b.* = @truncate(i);
@@ -569,8 +569,8 @@ test "exact block size plaintext (64 bytes)" {
 test "large AAD (1MB)" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
 
     const aad = try allocator.alloc(u8, 1024 * 1024);

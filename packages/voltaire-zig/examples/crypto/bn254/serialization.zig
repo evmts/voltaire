@@ -41,7 +41,7 @@ pub fn main() !void {
 
     // 1. G1 Point Serialization (64 bytes)
     try stdout.print("1. G1 Point Serialization\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const s42 = Fr.init(42);
     const g1_point = try g1_gen.mul(&s42);
@@ -66,7 +66,7 @@ pub fn main() !void {
 
     // 2. G1 Infinity Point
     try stdout.print("2. G1 Infinity Point\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const g1_infinity = G1{
         .x = FpMont.init(0),
@@ -81,7 +81,7 @@ pub fn main() !void {
 
     // 3. G2 Point Serialization (128 bytes)
     try stdout.print("3. G2 Point Serialization\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const s99 = Fr.init(99);
     const g2_point = g2_gen.mul(&s99);
@@ -113,7 +113,7 @@ pub fn main() !void {
 
     // 4. G2 Infinity Point
     try stdout.print("4. G2 Infinity Point\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const g2_infinity = G2{
         .x = Fp2Mont.initFromInt(0, 0),
@@ -128,7 +128,7 @@ pub fn main() !void {
 
     // 5. Multiple Points Concatenation (Precompile Pattern)
     try stdout.print("5. Multiple Points (Precompile Input)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // ECADD precompile input: two G1 points
     const s5 = Fr.init(5);
@@ -157,7 +157,7 @@ pub fn main() !void {
 
     // 6. Field Element Size Analysis
     try stdout.print("6. Field Element Sizes\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Base field Fp (BN254 prime p):\n", .{});
     try stdout.print("  Modulus: 254 bits\n", .{});
@@ -175,7 +175,7 @@ pub fn main() !void {
 
     // 7. Byte Order
     try stdout.print("7. Byte Order (Big-Endian)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("BN254 uses big-endian byte order:\n", .{});
     try stdout.print("  Most significant byte first (index 0)\n", .{});
@@ -184,7 +184,7 @@ pub fn main() !void {
 
     // 8. Validation
     try stdout.print("8. Deserialization Validation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Deserialization checks:\n", .{});
     try stdout.print("  1. Coordinates are less than field modulus\n", .{});
@@ -194,7 +194,7 @@ pub fn main() !void {
 
     // 9. Size Summary
     try stdout.print("9. Size Summary\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Point sizes:\n", .{});
     try stdout.print("  G1 point: 64 bytes (uncompressed)\n", .{});

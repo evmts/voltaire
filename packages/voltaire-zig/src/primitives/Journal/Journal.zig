@@ -107,7 +107,7 @@ pub fn Journal(comptime K: type, comptime V: type) type {
         const Self = @This();
 
         /// Ordered list of change entries.
-        entries: std.ArrayListUnmanaged(E) = .{},
+        entries: std.ArrayListUnmanaged(E) = .empty,
 
         /// Backing allocator for the entry list.
         allocator: std.mem.Allocator,

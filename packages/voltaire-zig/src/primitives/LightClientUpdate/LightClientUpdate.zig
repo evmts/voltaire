@@ -17,7 +17,7 @@ pub const LightClientBootstrap = struct {
         current_sync_committee_aggregate_pubkey: [48]u8,
         current_sync_committee_branch: [5][32]u8,
     ) LightClientBootstrap {
-        var branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_SYNC_COMMITTEE_BRANCH_DEPTH;
+        var branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = @as([MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(branch[0..current_sync_committee_branch.len], current_sync_committee_branch[0..]);
         return .{
             .header = header,
@@ -36,7 +36,7 @@ pub const LightClientBootstrap = struct {
     ) !LightClientBootstrap {
         if (current_sync_committee_branch.len > MAX_SYNC_COMMITTEE_BRANCH_DEPTH) return error.InvalidArrayLength;
 
-        var branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_SYNC_COMMITTEE_BRANCH_DEPTH;
+        var branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = @as([MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(branch[0..current_sync_committee_branch.len], current_sync_committee_branch);
         return .{
             .header = header,
@@ -98,10 +98,10 @@ pub const LightClientUpdate = struct {
         sync_committee_signature: [96]u8,
         signature_slot: u64,
     ) LightClientUpdate {
-        var next_branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_SYNC_COMMITTEE_BRANCH_DEPTH;
+        var next_branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = @as([MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(next_branch[0..next_sync_committee_branch.len], next_sync_committee_branch[0..]);
 
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(finality_branch_storage[0..finality_branch.len], finality_branch[0..]);
 
         return .{
@@ -135,10 +135,10 @@ pub const LightClientUpdate = struct {
         if (next_sync_committee_branch.len > MAX_SYNC_COMMITTEE_BRANCH_DEPTH) return error.InvalidArrayLength;
         if (finality_branch.len > MAX_LIGHT_CLIENT_BRANCH_DEPTH) return error.InvalidArrayLength;
 
-        var next_branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_SYNC_COMMITTEE_BRANCH_DEPTH;
+        var next_branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = @as([MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(next_branch[0..next_sync_committee_branch.len], next_sync_committee_branch);
 
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(finality_branch_storage[0..finality_branch.len], finality_branch);
 
         return .{
@@ -186,7 +186,7 @@ pub const LightClientUpdate = struct {
             return error.MissingJsonField;
         }
 
-        var next_branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_SYNC_COMMITTEE_BRANCH_DEPTH;
+        var next_branch: [MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8 = @as([MAX_SYNC_COMMITTEE_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         var next_branch_len: u8 = 0;
         if (next_sync_committee_branch) |branch| {
             if (branch.len > MAX_SYNC_COMMITTEE_BRANCH_DEPTH) return error.InvalidArrayLength;
@@ -194,7 +194,7 @@ pub const LightClientUpdate = struct {
             next_branch_len = @intCast(branch.len);
         }
 
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         var finality_branch_len: u8 = 0;
         if (finality_branch) |branch| {
             if (branch.len > MAX_LIGHT_CLIENT_BRANCH_DEPTH) return error.InvalidArrayLength;
@@ -205,7 +205,7 @@ pub const LightClientUpdate = struct {
         return .{
             .attested_header = attested_header,
             .next_sync_committee_pubkeys = next_sync_committee_pubkeys orelse std.mem.zeroes([512][48]u8),
-            .next_sync_committee_aggregate_pubkey = next_sync_committee_aggregate_pubkey orelse [_]u8{0} ** 48,
+            .next_sync_committee_aggregate_pubkey = next_sync_committee_aggregate_pubkey orelse @as([48]u8, @splat(0)),
             .next_sync_committee_branch = next_branch,
             .next_sync_committee_branch_len = next_branch_len,
             .has_next_sync_committee = has_next_sync_committee,
@@ -289,7 +289,7 @@ pub const LightClientFinalityUpdate = struct {
         sync_committee_signature: [96]u8,
         signature_slot: u64,
     ) LightClientFinalityUpdate {
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(finality_branch_storage[0..finality_branch.len], finality_branch[0..]);
         return .{
             .attested_header = attested_header,
@@ -313,7 +313,7 @@ pub const LightClientFinalityUpdate = struct {
     ) !LightClientFinalityUpdate {
         if (finality_branch.len > MAX_LIGHT_CLIENT_BRANCH_DEPTH) return error.InvalidArrayLength;
 
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         @memcpy(finality_branch_storage[0..finality_branch.len], finality_branch);
         return .{
             .attested_header = attested_header,
@@ -340,7 +340,7 @@ pub const LightClientFinalityUpdate = struct {
             return error.MissingJsonField;
         }
 
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         var finality_branch_len: u8 = 0;
         if (finality_branch) |branch| {
             if (branch.len > MAX_LIGHT_CLIENT_BRANCH_DEPTH) return error.InvalidArrayLength;
@@ -476,14 +476,14 @@ pub const StoredGenericUpdate = struct {
     finality_branch_len: u8,
 
     pub fn fromGeneric(update: GenericUpdate) !StoredGenericUpdate {
-        var next_branch: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var next_branch: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         const next_branch_len = if (update.next_sync_committee_branch) |branch| blk: {
             if (branch.len > MAX_LIGHT_CLIENT_BRANCH_DEPTH) return error.InvalidArrayLength;
             @memcpy(next_branch[0..branch.len], branch);
             break :blk branch.len;
         } else 0;
 
-        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = [_][32]u8{[_]u8{0} ** 32} ** MAX_LIGHT_CLIENT_BRANCH_DEPTH;
+        var finality_branch_storage: [MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8 = @as([MAX_LIGHT_CLIENT_BRANCH_DEPTH][32]u8, @splat(@as([32]u8, @splat(0))));
         const finality_branch_len = if (update.finality_branch) |branch| blk: {
             if (branch.len > MAX_LIGHT_CLIENT_BRANCH_DEPTH) return error.InvalidArrayLength;
             @memcpy(finality_branch_storage[0..branch.len], branch);
@@ -646,46 +646,46 @@ fn fixtureLightClientHeader(slot: u64, marker: u8) primitives.LightClientHeader.
         primitives.LightClientHeader.LightClientHeader.BeaconBlockHeader.from(
             slot,
             slot + 1,
-            [_]u8{marker} ** 32,
-            [_]u8{marker +% 1} ** 32,
-            [_]u8{marker +% 2} ** 32,
+            @as([32]u8, @splat(marker)),
+            @as([32]u8, @splat(marker +% 1)),
+            @as([32]u8, @splat(marker +% 2)),
         ),
         primitives.LightClientHeader.LightClientHeader.ExecutionPayloadHeaderFields.from(
-            [_]u8{marker +% 3} ** 32,
-            [_]u8{marker +% 4} ** 20,
-            [_]u8{marker +% 5} ** 32,
-            [_]u8{marker +% 6} ** 32,
-            [_]u8{marker +% 7} ** 256,
-            [_]u8{marker +% 8} ** 32,
+            @as([32]u8, @splat(marker +% 3)),
+            @as([20]u8, @splat(marker +% 4)),
+            @as([32]u8, @splat(marker +% 5)),
+            @as([32]u8, @splat(marker +% 6)),
+            @as([256]u8, @splat(marker +% 7)),
+            @as([32]u8, @splat(marker +% 8)),
             slot + 10,
             30_000_000,
             15_000_000,
             1_700_000_000 + slot,
             @as(u256, marker) + 1,
-            [_]u8{marker +% 9} ** 32,
-            [_]u8{marker +% 10} ** 32,
-            [_]u8{marker +% 11} ** 32,
+            @as([32]u8, @splat(marker +% 9)),
+            @as([32]u8, @splat(marker +% 10)),
+            @as([32]u8, @splat(marker +% 11)),
             slot + 12,
             slot + 13,
         ),
-        [_][32]u8{[_]u8{marker +% 12} ** 32} ** 4,
+        @as([4][32]u8, @splat(@as([32]u8, @splat(marker +% 12)))),
     );
 }
 
 fn fixtureSyncCommitteePubkeys(marker: u8) [512][48]u8 {
-    return [_][48]u8{[_]u8{marker} ** 48} ** 512;
+    return @as([512][48]u8, @splat(@as([48]u8, @splat(marker))));
 }
 
 fn fixtureAggregatePubkey(marker: u8) [48]u8 {
-    return [_]u8{marker} ** 48;
+    return @as([48]u8, @splat(marker));
 }
 
 fn fixtureSyncCommitteeBits(marker: u8) [64]u8 {
-    return [_]u8{marker} ** 64;
+    return @as([64]u8, @splat(marker));
 }
 
 fn fixtureSyncCommitteeSignature(marker: u8) [96]u8 {
-    return [_]u8{marker} ** 96;
+    return @as([96]u8, @splat(marker));
 }
 
 test "LightClientBootstrap: from creates bootstrap and exposes fields" {
@@ -693,7 +693,7 @@ test "LightClientBootstrap: from creates bootstrap and exposes fields" {
         fixtureLightClientHeader(1, 1),
         fixtureSyncCommitteePubkeys(2),
         fixtureAggregatePubkey(3),
-        [_][32]u8{[_]u8{4} ** 32} ** 5,
+        @as([5][32]u8, @splat(@as([32]u8, @splat(4)))),
     );
 
     try std.testing.expectEqual(@as(u64, 1), bootstrap.header.beacon.slot);
@@ -707,13 +707,13 @@ test "LightClientBootstrap: equals matches identical values" {
         fixtureLightClientHeader(1, 1),
         fixtureSyncCommitteePubkeys(2),
         fixtureAggregatePubkey(3),
-        [_][32]u8{[_]u8{4} ** 32} ** 5,
+        @as([5][32]u8, @splat(@as([32]u8, @splat(4)))),
     );
     const bootstrap_two = LightClientBootstrap.from(
         fixtureLightClientHeader(1, 1),
         fixtureSyncCommitteePubkeys(2),
         fixtureAggregatePubkey(3),
-        [_][32]u8{[_]u8{4} ** 32} ** 5,
+        @as([5][32]u8, @splat(@as([32]u8, @splat(4)))),
     );
 
     try std.testing.expect(bootstrap_one.equals(bootstrap_two));
@@ -724,9 +724,9 @@ test "LightClientUpdate: from creates update and equals matches identical values
         fixtureLightClientHeader(2, 5),
         fixtureSyncCommitteePubkeys(6),
         fixtureAggregatePubkey(7),
-        [_][32]u8{[_]u8{8} ** 32} ** 5,
+        @as([5][32]u8, @splat(@as([32]u8, @splat(8)))),
         fixtureLightClientHeader(3, 9),
-        [_][32]u8{[_]u8{10} ** 32} ** 6,
+        @as([6][32]u8, @splat(@as([32]u8, @splat(10)))),
         fixtureSyncCommitteeBits(11),
         fixtureSyncCommitteeSignature(12),
         99,
@@ -735,9 +735,9 @@ test "LightClientUpdate: from creates update and equals matches identical values
         fixtureLightClientHeader(2, 5),
         fixtureSyncCommitteePubkeys(6),
         fixtureAggregatePubkey(7),
-        [_][32]u8{[_]u8{8} ** 32} ** 5,
+        @as([5][32]u8, @splat(@as([32]u8, @splat(8)))),
         fixtureLightClientHeader(3, 9),
-        [_][32]u8{[_]u8{10} ** 32} ** 6,
+        @as([6][32]u8, @splat(@as([32]u8, @splat(10)))),
         fixtureSyncCommitteeBits(11),
         fixtureSyncCommitteeSignature(12),
         99,
@@ -751,7 +751,7 @@ test "LightClientFinalityUpdate: equals detects differences" {
     const update_one = LightClientFinalityUpdate.from(
         fixtureLightClientHeader(4, 13),
         fixtureLightClientHeader(5, 14),
-        [_][32]u8{[_]u8{15} ** 32} ** 6,
+        @as([6][32]u8, @splat(@as([32]u8, @splat(15)))),
         fixtureSyncCommitteeBits(16),
         fixtureSyncCommitteeSignature(17),
         111,
@@ -759,7 +759,7 @@ test "LightClientFinalityUpdate: equals detects differences" {
     const update_two = LightClientFinalityUpdate.from(
         fixtureLightClientHeader(4, 13),
         fixtureLightClientHeader(5, 14),
-        [_][32]u8{[_]u8{15} ** 32} ** 6,
+        @as([6][32]u8, @splat(@as([32]u8, @splat(15)))),
         fixtureSyncCommitteeBits(16),
         fixtureSyncCommitteeSignature(17),
         112,
@@ -798,10 +798,10 @@ test "LightClientOptimisticUpdate: equals detects differences" {
 }
 
 test "GenericUpdate: equals compares optional branches by content" {
-    var next_branch_one = [_][32]u8{[_]u8{21} ** 32} ** 5;
-    var next_branch_two = [_][32]u8{[_]u8{21} ** 32} ** 5;
-    var finality_branch_one = [_][32]u8{[_]u8{22} ** 32} ** 6;
-    var finality_branch_two = [_][32]u8{[_]u8{22} ** 32} ** 6;
+    var next_branch_one = @as([5][32]u8, @splat(@as([32]u8, @splat(21))));
+    var next_branch_two = @as([5][32]u8, @splat(@as([32]u8, @splat(21))));
+    var finality_branch_one = @as([6][32]u8, @splat(@as([32]u8, @splat(22))));
+    var finality_branch_two = @as([6][32]u8, @splat(@as([32]u8, @splat(22))));
 
     const update_one = GenericUpdate.from(
         fixtureLightClientHeader(7, 23),

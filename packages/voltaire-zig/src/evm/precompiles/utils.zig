@@ -58,7 +58,7 @@ pub fn expectVectors(
     var count: usize = 0;
     var lines = std.mem.splitScalar(u8, vectors, '\n');
     while (lines.next()) |raw_line| {
-        const line = std.mem.trimRight(u8, raw_line, "\r");
+        const line = std.mem.trimEnd(u8, raw_line, "\r");
         if (line.len == 0 or line[0] == '#') continue;
 
         var fields = std.mem.splitScalar(u8, line, '|');

@@ -74,7 +74,7 @@ pub fn isStorageKeyInAccessList(
 
 // Wrap an already-RLP-encoded payload in a list header
 fn wrapRlpList(allocator: Allocator, payload: []const u8) ![]u8 {
-    var out = std.ArrayList(u8){};
+    var out = std.ArrayList(u8).empty;
     errdefer out.deinit(allocator);
     if (payload.len < 56) {
         try out.append(allocator, 0xc0 + @as(u8, @intCast(payload.len)));
@@ -90,14 +90,14 @@ fn wrapRlpList(allocator: Allocator, payload: []const u8) ![]u8 {
 
 // RLP encode access list: [[address, [storageKey, ...]], ...]
 pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
-    var body = std.ArrayList(u8){};
+    var body = std.ArrayList(u8).empty;
     defer body.deinit(allocator);
 
     for (accessList) |entry| {
         const encodedAddress = try rlp.encodeBytes(allocator, &entry.address.bytes);
         defer allocator.free(encodedAddress);
 
-        var keysBody = std.ArrayList(u8){};
+        var keysBody = std.ArrayList(u8).empty;
         defer keysBody.deinit(allocator);
         for (entry.storage_keys) |key| {
             const encodedKey = try rlp.encodeBytes(allocator, &key);
@@ -107,7 +107,7 @@ pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
         const keysListEncoded = try wrapRlpList(allocator, keysBody.items);
         defer allocator.free(keysListEncoded);
 
-        var entryBody = std.ArrayList(u8){};
+        var entryBody = std.ArrayList(u8).empty;
         defer entryBody.deinit(allocator);
         try entryBody.appendSlice(allocator, encodedAddress);
         try entryBody.appendSlice(allocator, keysListEncoded);

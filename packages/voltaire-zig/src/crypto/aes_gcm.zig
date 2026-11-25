@@ -190,8 +190,8 @@ pub fn decrypt256(
 test "aes128-gcm basic" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "Hello, AES-GCM!";
     const additional_data = "metadata";
 
@@ -211,8 +211,8 @@ test "aes128-gcm basic" {
 test "aes256-gcm basic" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "Hello, AES-256-GCM!";
     const additional_data = "";
 
@@ -232,9 +232,9 @@ test "aes256-gcm basic" {
 test "aes-gcm wrong key fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const wrong_key = [_]u8{2} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const wrong_key = @as([AES128_KEY_SIZE]u8, @splat(2));
+    const nonce = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -248,8 +248,8 @@ test "aes-gcm wrong key fails" {
 test "aes128-gcm empty plaintext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "";
     const additional_data = "";
 
@@ -267,8 +267,8 @@ test "aes128-gcm empty plaintext" {
 test "aes256-gcm empty plaintext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "";
     const additional_data = "";
 
@@ -286,9 +286,9 @@ test "aes256-gcm empty plaintext" {
 test "aes128-gcm wrong nonce fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
-    const wrong_nonce = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
+    const wrong_nonce = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -302,9 +302,9 @@ test "aes128-gcm wrong nonce fails" {
 test "aes256-gcm wrong nonce fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
-    const wrong_nonce = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
+    const wrong_nonce = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -318,8 +318,8 @@ test "aes256-gcm wrong nonce fails" {
 test "aes128-gcm modified ciphertext fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test message";
     const additional_data = "";
 
@@ -338,8 +338,8 @@ test "aes128-gcm modified ciphertext fails" {
 test "aes256-gcm modified tag fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test message";
     const additional_data = "";
 
@@ -358,8 +358,8 @@ test "aes256-gcm modified tag fails" {
 test "aes128-gcm wrong aad fails" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const aad1 = "metadata1";
     const aad2 = "metadata2";
@@ -374,8 +374,8 @@ test "aes128-gcm wrong aad fails" {
 test "aes256-gcm large plaintext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const additional_data = "";
 
     const plaintext = try allocator.alloc(u8, 10000);
@@ -396,8 +396,8 @@ test "aes256-gcm large plaintext" {
 test "aes128-gcm invalid key length" {
     const allocator = std.testing.allocator;
 
-    const wrong_key = [_]u8{1} ** 15;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const wrong_key = @as([15]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -408,8 +408,8 @@ test "aes128-gcm invalid key length" {
 test "aes256-gcm invalid key length" {
     const allocator = std.testing.allocator;
 
-    const wrong_key = [_]u8{1} ** 31;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const wrong_key = @as([31]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -420,8 +420,8 @@ test "aes256-gcm invalid key length" {
 test "aes128-gcm invalid nonce length" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const wrong_nonce = [_]u8{2} ** 11;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const wrong_nonce = @as([11]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -432,8 +432,8 @@ test "aes128-gcm invalid nonce length" {
 test "aes256-gcm invalid nonce length" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const wrong_nonce = [_]u8{2} ** 13;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const wrong_nonce = @as([13]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -444,9 +444,9 @@ test "aes256-gcm invalid nonce length" {
 test "aes128-gcm ciphertext too short" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
-    const too_short = [_]u8{0} ** 15;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
+    const too_short = @as([15]u8, @splat(0));
     const additional_data = "";
 
     const result = decrypt128(allocator, &too_short, &key, &nonce, additional_data);
@@ -456,9 +456,9 @@ test "aes128-gcm ciphertext too short" {
 test "aes256-gcm ciphertext too short" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
-    const too_short = [_]u8{0} ** 10;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
+    const too_short = @as([10]u8, @splat(0));
     const additional_data = "";
 
     const result = decrypt256(allocator, &too_short, &key, &nonce, additional_data);
@@ -468,8 +468,8 @@ test "aes256-gcm ciphertext too short" {
 test "aes128-gcm all-zero key" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{0} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{0} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(0));
+    const nonce = @as([NONCE_SIZE]u8, @splat(0));
     const plaintext = "test";
     const additional_data = "";
 
@@ -485,8 +485,8 @@ test "aes128-gcm all-zero key" {
 test "aes256-gcm all-ones key" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{0xFF} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{0xFF} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(0xFF));
+    const nonce = @as([NONCE_SIZE]u8, @splat(0xFF));
     const plaintext = "test";
     const additional_data = "";
 
@@ -502,8 +502,8 @@ test "aes256-gcm all-ones key" {
 test "aes128-gcm deterministic encryption" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{2} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const nonce = @as([NONCE_SIZE]u8, @splat(2));
     const plaintext = "test";
     const additional_data = "";
 
@@ -519,9 +519,9 @@ test "aes128-gcm deterministic encryption" {
 test "aes256-gcm different nonces produce different ciphertext" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES256_KEY_SIZE;
-    const nonce1 = [_]u8{2} ** NONCE_SIZE;
-    const nonce2 = [_]u8{3} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(1));
+    const nonce1 = @as([NONCE_SIZE]u8, @splat(2));
+    const nonce2 = @as([NONCE_SIZE]u8, @splat(3));
     const plaintext = "test";
     const additional_data = "";
 
@@ -549,8 +549,8 @@ test "aes256-gcm different nonces produce different ciphertext" {
 test "SECURITY: nonce reuse allows XOR of plaintexts to be recovered" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{1} ** AES128_KEY_SIZE;
-    const reused_nonce = [_]u8{42} ** NONCE_SIZE; // BAD: reused nonce
+    const key = @as([AES128_KEY_SIZE]u8, @splat(1));
+    const reused_nonce = @as([NONCE_SIZE]u8, @splat(42)); // BAD: reused nonce
 
     const plaintext1 = "Secret message A";
     const plaintext2 = "Secret message B";
@@ -585,8 +585,8 @@ test "SECURITY: nonce reuse allows XOR of plaintexts to be recovered" {
 test "aes128-gcm NIST vector: all zeros" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{0} ** AES128_KEY_SIZE;
-    const nonce = [_]u8{0} ** NONCE_SIZE;
+    const key = @as([AES128_KEY_SIZE]u8, @splat(0));
+    const nonce = @as([NONCE_SIZE]u8, @splat(0));
     const plaintext = "";
     const additional_data = "";
 
@@ -600,8 +600,8 @@ test "aes128-gcm NIST vector: all zeros" {
 test "aes256-gcm NIST vector: all zeros" {
     const allocator = std.testing.allocator;
 
-    const key = [_]u8{0} ** AES256_KEY_SIZE;
-    const nonce = [_]u8{0} ** NONCE_SIZE;
+    const key = @as([AES256_KEY_SIZE]u8, @splat(0));
+    const nonce = @as([NONCE_SIZE]u8, @splat(0));
     const plaintext = "";
     const additional_data = "";
 

@@ -234,22 +234,22 @@ BlockStream/
 ### Style
 
 - Return memory to user, minimize allocation
-- Use subagent to search docs for Zig 0.15.1 API issues
+- Use subagent to search docs for Zig 0.17.1 API issues
 - Simple imperative code
 - Single word vars (`n` not `number`), descriptive when needed (`top` not `a`)
 - Never abstract into function unless reused
 - Long imperative function bodies are good
 - defer/errdefer for cleanup
 
-### ArrayList (0.15.1 UNMANAGED)
+### ArrayList (0.17.1 UNMANAGED)
 
 ```zig
-var list = std.ArrayList(T){};
+var list = std.ArrayList(T).empty;
 defer list.deinit(allocator);
 try list.append(allocator, item);
 ```
 
-❌ `.init(allocator)`, `list.deinit()`, `list.append(item)` don't exist in 0.15.1
+❌ `.init(allocator)`, `std.ArrayList(T){}`, `list.deinit()`, `list.append(item)` don't exist in 0.17.1
 
 ### Module Structure
 
@@ -397,7 +397,7 @@ Run with the runtime in each script's shebang, e.g. `bun scripts/run-benchmarks.
 
 ## Refs
 
-Zig: https://ziglang.org/documentation/0.15.2/ | Yellow Paper | EIPs
+Zig: https://ziglang.org/documentation/0.17.1/ | Yellow Paper | EIPs
 
 ## Collab
 

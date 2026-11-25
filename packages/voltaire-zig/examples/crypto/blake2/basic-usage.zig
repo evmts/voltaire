@@ -2,7 +2,7 @@ const std = @import("std");
 const crypto = @import("crypto");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -10,7 +10,7 @@ pub fn main() !void {
 
     // 1. Hash with default 64-byte output
     std.debug.print("1. Default 64-Byte Output\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const data = [_]u8{ 1, 2, 3, 4, 5 };
     const hash64 = try crypto.Blake2.hash(&data, 64, allocator);
@@ -25,7 +25,7 @@ pub fn main() !void {
 
     // 2. Hash with custom 32-byte output (BLAKE2b-256)
     std.debug.print("2. Custom 32-Byte Output (SHA-256 equivalent)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const hash32 = try crypto.Blake2.hash(&data, 32, allocator);
     defer allocator.free(hash32);
@@ -39,7 +39,7 @@ pub fn main() !void {
 
     // 3. Hash UTF-8 string
     std.debug.print("3. Hash UTF-8 String\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const message = "hello";
     const message_hash = try crypto.Blake2.hash(message, 64, allocator);
@@ -54,7 +54,7 @@ pub fn main() !void {
 
     // 4. Variable output lengths
     std.debug.print("4. Variable Output Lengths (1-64 bytes)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const input = "test";
     const hash1 = try crypto.Blake2.hash(input, 1, allocator);
@@ -100,7 +100,7 @@ pub fn main() !void {
 
     // 5. Empty input
     std.debug.print("5. Empty Input Hash\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const empty_hash = try crypto.Blake2.hash("", 64, allocator);
     defer allocator.free(empty_hash);
@@ -129,7 +129,7 @@ pub fn main() !void {
 
     // 6. Determinism
     std.debug.print("6. Deterministic Hashing\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const test_input = "Blake2 is fast";
     const test_hash1 = try crypto.Blake2.hash(test_input, 32, allocator);
@@ -152,9 +152,9 @@ pub fn main() !void {
 
     // 7. Flexible output sizes
     std.debug.print("7. Flexible Output Sizes for Different Use Cases\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
-    const sample_data = [_]u8{0xAB} ** 100;
+    const sample_data = @as([100]u8, @splat(0xAB));
 
     const checksum = try crypto.Blake2.hash(&sample_data, 16, allocator);
     defer allocator.free(checksum);

@@ -341,7 +341,29 @@ async function instantiateWasm(
 		fd_prestat_dir_name: () => 0,
 		fd_datasync: () => 0,
 		fd_sync: () => 0,
-		clock_time_get: () => 0,
+		fd_advise: () => 0,
+		fd_allocate: () => 0,
+		fd_fdstat_set_flags: () => 0,
+		fd_fdstat_set_rights: () => 0,
+		fd_filestat_set_size: () => 0,
+		fd_filestat_set_times: () => 0,
+		fd_readdir: () => 0,
+		fd_renumber: () => 0,
+		fd_tell: () => 0,
+		clock_res_get: (_id: number, resPtr: number) => {
+			if (!wasmMemory) return -1;
+			const mem = new DataView(wasmMemory.buffer);
+			mem.setBigUint64(resPtr, 1_000_000n, true);
+			return 0;
+		},
+		clock_time_get: (_id: number, _precision: bigint, timePtr: number) => {
+			if (!wasmMemory) return -1;
+			if (typeof timePtr === "number") {
+				const mem = new DataView(wasmMemory.buffer);
+				mem.setBigUint64(timePtr, BigInt(Date.now()) * 1_000_000n, true);
+			}
+			return 0;
+		},
 		random_get: (buf: number, len: number) => {
 			if (!wasmMemory) return -1;
 			const view = new Uint8Array(wasmMemory.buffer, buf, len);
@@ -358,6 +380,17 @@ async function instantiateWasm(
 		path_open: () => 0,
 		path_filestat_get: () => 0,
 		path_readlink: () => 0,
+		path_create_directory: () => 0,
+		path_filestat_set_times: () => 0,
+		path_link: () => 0,
+		path_remove_directory: () => 0,
+		path_rename: () => 0,
+		path_symlink: () => 0,
+		path_unlink_file: () => 0,
+		sock_accept: () => 52,
+		sock_recv: () => 52,
+		sock_send: () => 52,
+		sock_shutdown: () => 52,
 	};
 
 	const importObject = {

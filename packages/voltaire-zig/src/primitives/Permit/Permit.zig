@@ -317,8 +317,8 @@ pub const KnownTokens = struct {
 // Tests
 
 test "Permit.init creates permit struct" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
 
@@ -330,8 +330,8 @@ test "Permit.init creates permit struct" {
 }
 
 test "Permit.equals returns true for identical permits" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit1 = Permit.init(owner, spender, 1000, 0, 9999999999);
     const permit2 = Permit.init(owner, spender, 1000, 0, 9999999999);
@@ -340,8 +340,8 @@ test "Permit.equals returns true for identical permits" {
 }
 
 test "Permit.equals returns false for different permits" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit1 = Permit.init(owner, spender, 1000, 0, 9999999999);
     const permit2 = Permit.init(owner, spender, 2000, 0, 9999999999);
@@ -350,8 +350,8 @@ test "Permit.equals returns false for different permits" {
 }
 
 test "Permit.isExpired returns false for future deadline" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
 
@@ -359,8 +359,8 @@ test "Permit.isExpired returns false for future deadline" {
 }
 
 test "Permit.isExpired returns true for past deadline" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit = Permit.init(owner, spender, 1000, 0, 1000000000);
 
@@ -368,8 +368,8 @@ test "Permit.isExpired returns true for past deadline" {
 }
 
 test "Permit.toStructHash returns consistent hash" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
 
@@ -380,8 +380,8 @@ test "Permit.toStructHash returns consistent hash" {
 }
 
 test "Permit.toStructHash differs for different permits" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit1 = Permit.init(owner, spender, 1000, 0, 9999999999);
     const permit2 = Permit.init(owner, spender, 2000, 0, 9999999999);
@@ -393,7 +393,7 @@ test "Permit.toStructHash differs for different permits" {
 }
 
 test "PermitDomain.init creates domain struct" {
-    const contract = [_]u8{0x03} ** 20;
+    const contract = @as([20]u8, @splat(0x03));
 
     const domain = PermitDomain.init("Test Token", "1", 1, contract);
 
@@ -404,7 +404,7 @@ test "PermitDomain.init creates domain struct" {
 }
 
 test "PermitDomain.toSeparator returns consistent hash" {
-    const contract = [_]u8{0x03} ** 20;
+    const contract = @as([20]u8, @splat(0x03));
 
     const domain = PermitDomain.init("Test Token", "1", 1, contract);
 
@@ -415,7 +415,7 @@ test "PermitDomain.toSeparator returns consistent hash" {
 }
 
 test "PermitDomain.toSeparator differs for different domains" {
-    const contract = [_]u8{0x03} ** 20;
+    const contract = @as([20]u8, @splat(0x03));
 
     const domain1 = PermitDomain.init("Test Token", "1", 1, contract);
     const domain2 = PermitDomain.init("Other Token", "1", 1, contract);
@@ -427,8 +427,8 @@ test "PermitDomain.toSeparator differs for different domains" {
 }
 
 test "computeTypedDataHash combines domain and struct hash" {
-    const domain_sep = [_]u8{0xaa} ** 32;
-    const struct_hash = [_]u8{0xbb} ** 32;
+    const domain_sep = @as([32]u8, @splat(0xaa));
+    const struct_hash = @as([32]u8, @splat(0xbb));
 
     const hash = computeTypedDataHash(domain_sep, struct_hash);
 
@@ -467,9 +467,9 @@ test "KnownTokens have valid configurations" {
 }
 
 test "Permit complete workflow" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
-    const contract = [_]u8{0x03} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
+    const contract = @as([20]u8, @splat(0x03));
 
     // Create permit
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
@@ -490,9 +490,9 @@ test "Permit complete workflow" {
 }
 
 test "Permit.hash computes correct EIP-712 hash" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
-    const contract = [_]u8{0x03} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
+    const contract = @as([20]u8, @splat(0x03));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
     const domain = PermitDomain.init("Test Token", "1", 1, contract);
@@ -505,9 +505,9 @@ test "Permit.hash computes correct EIP-712 hash" {
 }
 
 test "Permit.hash differs for different domains" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
-    const contract = [_]u8{0x03} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
+    const contract = @as([20]u8, @splat(0x03));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
     const domain1 = PermitDomain.init("Token A", "1", 1, contract);
@@ -520,9 +520,9 @@ test "Permit.hash differs for different domains" {
 }
 
 test "Permit.hash differs for different chain IDs" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
-    const contract = [_]u8{0x03} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
+    const contract = @as([20]u8, @splat(0x03));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
     const domain1 = PermitDomain.init("Token", "1", 1, contract); // Mainnet
@@ -535,9 +535,9 @@ test "Permit.hash differs for different chain IDs" {
 }
 
 test "Permit.toTypedData returns correct structure" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
-    const contract = [_]u8{0x03} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
+    const contract = @as([20]u8, @splat(0x03));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
     const domain = PermitDomain.init("Test Token", "1", 1, contract);
@@ -551,9 +551,9 @@ test "Permit.toTypedData returns correct structure" {
 }
 
 test "PermitTypedData.hash equals Permit.hash" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
-    const contract = [_]u8{0x03} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
+    const contract = @as([20]u8, @splat(0x03));
 
     const permit = Permit.init(owner, spender, 1000, 0, 9999999999);
     const domain = PermitDomain.init("Test Token", "1", 1, contract);
@@ -621,8 +621,8 @@ test "different contracts produce different domain separators" {
 }
 
 test "Permit.from alias works same as init" {
-    const owner = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const owner = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const permit1 = Permit.init(owner, spender, 1000, 0, 9999999999);
     const permit2 = Permit.from(owner, spender, 1000, 0, 9999999999);
@@ -1024,7 +1024,7 @@ pub const Permit2Contracts = struct {
 // =============================================================================
 
 test "PermitDetails.init creates struct" {
-    const token = [_]u8{0x01} ** 20;
+    const token = @as([20]u8, @splat(0x01));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
 
@@ -1035,7 +1035,7 @@ test "PermitDetails.init creates struct" {
 }
 
 test "PermitDetails.equals returns true for identical" {
-    const token = [_]u8{0x01} ** 20;
+    const token = @as([20]u8, @splat(0x01));
 
     const d1 = PermitDetails.init(token, 1000, 9999999999, 0);
     const d2 = PermitDetails.init(token, 1000, 9999999999, 0);
@@ -1044,7 +1044,7 @@ test "PermitDetails.equals returns true for identical" {
 }
 
 test "PermitDetails.equals returns false for different" {
-    const token = [_]u8{0x01} ** 20;
+    const token = @as([20]u8, @splat(0x01));
 
     const d1 = PermitDetails.init(token, 1000, 9999999999, 0);
     const d2 = PermitDetails.init(token, 2000, 9999999999, 0);
@@ -1053,7 +1053,7 @@ test "PermitDetails.equals returns false for different" {
 }
 
 test "PermitDetails.isExpired" {
-    const token = [_]u8{0x01} ** 20;
+    const token = @as([20]u8, @splat(0x01));
     const details = PermitDetails.init(token, 1000, 1000000000, 0);
 
     try std.testing.expect(!details.isExpired(500000000));
@@ -1061,7 +1061,7 @@ test "PermitDetails.isExpired" {
 }
 
 test "PermitDetails.toStructHash is deterministic" {
-    const token = [_]u8{0x01} ** 20;
+    const token = @as([20]u8, @splat(0x01));
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
 
     const hash1 = details.toStructHash();
@@ -1071,8 +1071,8 @@ test "PermitDetails.toStructHash is deterministic" {
 }
 
 test "PermitSingle.init creates struct" {
-    const token = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const token = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
     const permit = PermitSingle.init(details, spender, 9999999999);
@@ -1083,8 +1083,8 @@ test "PermitSingle.init creates struct" {
 }
 
 test "PermitSingle.equals" {
-    const token = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const token = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
     const p1 = PermitSingle.init(details, spender, 9999999999);
@@ -1094,8 +1094,8 @@ test "PermitSingle.equals" {
 }
 
 test "PermitSingle.toStructHash is deterministic" {
-    const token = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const token = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
     const permit = PermitSingle.init(details, spender, 9999999999);
@@ -1107,8 +1107,8 @@ test "PermitSingle.toStructHash is deterministic" {
 }
 
 test "PermitSingle.hash with domain" {
-    const token = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const token = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
     const permit = PermitSingle.init(details, spender, 9999999999);
@@ -1121,9 +1121,9 @@ test "PermitSingle.hash with domain" {
 }
 
 test "PermitBatch.init creates struct" {
-    const token1 = [_]u8{0x01} ** 20;
-    const token2 = [_]u8{0x02} ** 20;
-    const spender = [_]u8{0x03} ** 20;
+    const token1 = @as([20]u8, @splat(0x01));
+    const token2 = @as([20]u8, @splat(0x02));
+    const spender = @as([20]u8, @splat(0x03));
 
     const details_arr = [_]PermitDetails{
         PermitDetails.init(token1, 1000, 9999999999, 0),
@@ -1137,8 +1137,8 @@ test "PermitBatch.init creates struct" {
 }
 
 test "PermitBatch.equals" {
-    const token1 = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x03} ** 20;
+    const token1 = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x03));
 
     const details_arr = [_]PermitDetails{
         PermitDetails.init(token1, 1000, 9999999999, 0),
@@ -1152,8 +1152,8 @@ test "PermitBatch.equals" {
 
 test "PermitBatch.toStructHash is deterministic" {
     const allocator = std.testing.allocator;
-    const token1 = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x03} ** 20;
+    const token1 = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x03));
 
     const details_arr = [_]PermitDetails{
         PermitDetails.init(token1, 1000, 9999999999, 0),
@@ -1169,9 +1169,9 @@ test "PermitBatch.toStructHash is deterministic" {
 
 test "PermitBatch.hash with domain" {
     const allocator = std.testing.allocator;
-    const token1 = [_]u8{0x01} ** 20;
-    const token2 = [_]u8{0x02} ** 20;
-    const spender = [_]u8{0x03} ** 20;
+    const token1 = @as([20]u8, @splat(0x01));
+    const token2 = @as([20]u8, @splat(0x02));
+    const spender = @as([20]u8, @splat(0x03));
 
     const details_arr = [_]PermitDetails{
         PermitDetails.init(token1, 1000, 9999999999, 0),
@@ -1245,8 +1245,8 @@ test "Permit2Contracts has correct mainnet address" {
 }
 
 test "PermitSingle complete workflow" {
-    const token = [_]u8{0xA0} ** 20;
-    const spender = [_]u8{0xB0} ** 20;
+    const token = @as([20]u8, @splat(0xA0));
+    const spender = @as([20]u8, @splat(0xB0));
 
     // Create permit
     const details = PermitDetails.init(token, 1000000, 9999999999, 0);
@@ -1260,16 +1260,16 @@ test "PermitSingle complete workflow" {
 
     // Verify hash is 32 bytes and not all zeros
     try std.testing.expectEqual(@as(usize, 32), typed_data_hash.len);
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try std.testing.expect(!std.mem.eql(u8, &typed_data_hash, &zero_hash));
 }
 
 test "PermitBatch complete workflow" {
     const allocator = std.testing.allocator;
-    const token1 = [_]u8{0xA0} ** 20;
-    const token2 = [_]u8{0xA1} ** 20;
-    const token3 = [_]u8{0xA2} ** 20;
-    const spender = [_]u8{0xB0} ** 20;
+    const token1 = @as([20]u8, @splat(0xA0));
+    const token2 = @as([20]u8, @splat(0xA1));
+    const token3 = @as([20]u8, @splat(0xA2));
+    const spender = @as([20]u8, @splat(0xB0));
 
     // Create permit with multiple tokens
     const details_arr = [_]PermitDetails{
@@ -1288,14 +1288,14 @@ test "PermitBatch complete workflow" {
 
     // Verify hash is 32 bytes and not all zeros
     try std.testing.expectEqual(@as(usize, 32), typed_data_hash.len);
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try std.testing.expect(!std.mem.eql(u8, &typed_data_hash, &zero_hash));
 }
 
 test "PermitSingle hash differs for different spenders" {
-    const token = [_]u8{0x01} ** 20;
-    const spender1 = [_]u8{0x02} ** 20;
-    const spender2 = [_]u8{0x03} ** 20;
+    const token = @as([20]u8, @splat(0x01));
+    const spender1 = @as([20]u8, @splat(0x02));
+    const spender2 = @as([20]u8, @splat(0x03));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
     const permit1 = PermitSingle.init(details, spender1, 9999999999);
@@ -1310,8 +1310,8 @@ test "PermitSingle hash differs for different spenders" {
 }
 
 test "PermitSingle.toTypedData returns correct structure" {
-    const token = [_]u8{0x01} ** 20;
-    const spender = [_]u8{0x02} ** 20;
+    const token = @as([20]u8, @splat(0x01));
+    const spender = @as([20]u8, @splat(0x02));
 
     const details = PermitDetails.init(token, 1000, 9999999999, 0);
     const permit = PermitSingle.init(details, spender, 9999999999);

@@ -50,7 +50,7 @@ test "bls12_g1_mul - gas cost validation" {
     const allocator = testing.allocator;
 
     // Point at infinity * scalar 0
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
 
     // Test with exact gas
     {
@@ -69,7 +69,7 @@ test "bls12_g1_mul - gas cost validation" {
 
 test "bls12_g1_mul - out of gas error" {
     const allocator = testing.allocator;
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
 
     // Test with insufficient gas
     const result = execute(allocator, &input, GAS - 1);
@@ -81,14 +81,14 @@ test "bls12_g1_mul - invalid input length" {
 
     // Test with input too short
     {
-        var input: [159]u8 = [_]u8{0} ** 159;
+        var input: [159]u8 = @as([159]u8, @splat(0));
         const result = execute(allocator, &input, GAS);
         try testing.expectError(error.InvalidInput, result);
     }
 
     // Test with input too long
     {
-        var input: [161]u8 = [_]u8{0} ** 161;
+        var input: [161]u8 = @as([161]u8, @splat(0));
         const result = execute(allocator, &input, GAS);
         try testing.expectError(error.InvalidInput, result);
     }
@@ -118,7 +118,7 @@ test "bls12_g1_mul - multiply by zero scalar" {
         0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4, 0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
     };
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     @memcpy(input[0..64], &g1_x);
     @memcpy(input[64..128], &g1_y);
     // Scalar remains 0
@@ -150,7 +150,7 @@ test "bls12_g1_mul - multiply by one scalar" {
         0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4, 0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
     };
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     @memcpy(input[0..64], &g1_x);
     @memcpy(input[64..128], &g1_y);
     // Scalar = 1
@@ -182,7 +182,7 @@ test "bls12_g1_mul - multiply by two scalar" {
         0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4, 0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
     };
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     @memcpy(input[0..64], &g1_x);
     @memcpy(input[64..128], &g1_y);
     // Scalar = 2
@@ -207,7 +207,7 @@ test "bls12_g1_mul - multiply by two scalar" {
 test "bls12_g1_mul - point at infinity times scalar" {
     const allocator = testing.allocator;
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     // Point at infinity (all zeros)
     // Arbitrary non-zero scalar
     input[159] = 42;
@@ -239,7 +239,7 @@ test "bls12_g1_mul - large scalar" {
         0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4, 0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
     };
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     @memcpy(input[0..64], &g1_x);
     @memcpy(input[64..128], &g1_y);
     // Large scalar (all 0xFF)
@@ -265,7 +265,7 @@ test "bls12_g1_mul - large scalar" {
 test "bls12_g1_mul - invalid point not on curve" {
     const allocator = testing.allocator;
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     // Set to arbitrary values that don't satisfy the curve equation
     input[63] = 1; // x = 1
     input[127] = 2; // y = 2
@@ -278,7 +278,7 @@ test "bls12_g1_mul - invalid point not on curve" {
 test "bls12_g1_mul - output size validation" {
     const allocator = testing.allocator;
 
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -305,7 +305,7 @@ test "bls12_g1_mul - scalar field boundary" {
 
     // Test with r-1 scalar (where r is the curve order)
     // This is a valid operation that should give -G
-    var input: [160]u8 = [_]u8{0} ** 160;
+    var input: [160]u8 = @as([160]u8, @splat(0));
     @memcpy(input[0..64], &g1_x);
     @memcpy(input[64..128], &g1_y);
     // BLS12-381 curve order r - 1 (truncated for test, actual value is larger)

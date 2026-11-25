@@ -29,7 +29,7 @@ pub const SIZE = 4;
 pub const Selector = [SIZE]u8;
 
 /// Zero selector constant
-pub const ZERO: Selector = [_]u8{0} ** SIZE;
+pub const ZERO: Selector = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors

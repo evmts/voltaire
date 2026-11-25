@@ -274,14 +274,14 @@ test "p256 basic" {
     const allocator = std.testing.allocator;
 
     // Test key generation
-    const private_key = [_]u8{1} ** 32;
+    const private_key = @as([32]u8, @splat(1));
     const public_key = try publicKeyFromPrivate(allocator, &private_key);
     defer allocator.free(public_key);
 
     try std.testing.expect(public_key.len == 64);
 
     // Test signing and verification
-    const hash = [_]u8{0xaa} ** 32;
+    const hash = @as([32]u8, @splat(0xaa));
     const signature = try sign(allocator, &hash, &private_key);
     defer allocator.free(signature);
 
@@ -291,7 +291,7 @@ test "p256 basic" {
     try std.testing.expect(valid);
 
     // Test with wrong hash
-    const wrong_hash = [_]u8{0xbb} ** 32;
+    const wrong_hash = @as([32]u8, @splat(0xbb));
     const invalid = try verify(&wrong_hash, signature[0..32], signature[32..64], public_key);
     try std.testing.expect(!invalid);
 }
@@ -299,8 +299,8 @@ test "p256 basic" {
 test "p256 ecdh" {
     const allocator = std.testing.allocator;
 
-    const priv1 = [_]u8{1} ** 32;
-    const priv2 = [_]u8{2} ** 32;
+    const priv1 = @as([32]u8, @splat(1));
+    const priv2 = @as([32]u8, @splat(2));
 
     const pub1 = try publicKeyFromPrivate(allocator, &priv1);
     defer allocator.free(pub1);
@@ -359,7 +359,7 @@ test "p256 validatePublicKey accepts derived keys" {
     const allocator = std.testing.allocator;
     var i: u8 = 1;
     while (i <= 16) : (i += 1) {
-        const private_key = [_]u8{i} ** 32;
+        const private_key = @as([32]u8, @splat(i));
         const public_key = try publicKeyFromPrivate(allocator, &private_key);
         defer allocator.free(public_key);
         try validatePublicKey(public_key);
@@ -367,7 +367,7 @@ test "p256 validatePublicKey accepts derived keys" {
 }
 
 test "p256 validatePublicKey rejects the point at infinity" {
-    const zero = [_]u8{0} ** 64;
+    const zero = @as([64]u8, @splat(0));
     try std.testing.expectError(error.IdentityElement, validatePublicKey(&zero));
     try std.testing.expect(!isValidPublicKey(&zero));
     try std.testing.expectError(error.IdentityElement, validatePublicKey(&([_]u8{0x04} ++ zero)));
@@ -382,7 +382,7 @@ test "p256 validatePublicKey rejects the point at infinity" {
 test "p256 validatePublicKey rejects coordinates >= p" {
     try std.testing.expectError(error.NonCanonical, validatePublicKey(&rawKey(P256_P, P256_GY)));
     try std.testing.expectError(error.NonCanonical, validatePublicKey(&rawKey(P256_GX, P256_P)));
-    try std.testing.expectError(error.NonCanonical, validatePublicKey(&([_]u8{0xff} ** 64)));
+    try std.testing.expectError(error.NonCanonical, validatePublicKey(&(@as([64]u8, @splat(0xff)))));
 
     // (x + p, y) reduces to a real curve point; lax parsers accept it
     const point = smallPoint(false);
@@ -400,9 +400,9 @@ test "p256 validatePublicKey rejects points not on the curve" {
     // (1, 1) lies on y^2 = x^3 - 3x + 3: an invalid-curve attack point
     try std.testing.expectError(error.NotOnCurve, validatePublicKey(&rawKey(1, 1)));
     try std.testing.expectError(error.NotOnCurve, validatePublicKey(&rawKey(1, 0)));
-    // std.crypto's P256.fromSec1 accepts (0, 1) as the identity element
+    // Zig 0.17's P256.fromSec1 rejects (0, 1) with InvalidEncoding; validatePublicKey rejects with NotOnCurve
     const zero_one = rawKey(0, 1);
-    _ = try P256.fromSec1(&([_]u8{0x04} ++ zero_one));
+    try std.testing.expectError(error.InvalidEncoding, P256.fromSec1(&([_]u8{0x04} ++ zero_one)));
     try std.testing.expectError(error.NotOnCurve, validatePublicKey(&zero_one));
     try std.testing.expectError(error.NotOnCurve, validatePublicKey(&([_]u8{0x04} ++ zero_one)));
     // secp256k1 generator
@@ -440,7 +440,7 @@ test "p256 validatePublicKey rejects bad SEC1 prefixes and lengths" {
     for ([_]u8{ 0x00, 0x01, 0x04, 0x05, 0x06, 0x07, 0xff }) |prefix| {
         try std.testing.expectError(error.InvalidPublicKeyPrefix, validatePublicKey(&([_]u8{prefix} ++ toBytes32(P256_GX))));
     }
-    const buffer = [_]u8{1} ** 128;
+    const buffer = @as([128]u8, @splat(1));
     for ([_]usize{ 0, 1, 31, 32, 34, 63, 66, 96, 128 }) |len| {
         try std.testing.expectError(error.InvalidPublicKeyLength, validatePublicKey(buffer[0..len]));
         try std.testing.expect(!isValidPublicKey(buffer[0..len]));
@@ -449,10 +449,10 @@ test "p256 validatePublicKey rejects bad SEC1 prefixes and lengths" {
 
 test "p256 ecdh rejects invalid public keys" {
     const allocator = std.testing.allocator;
-    const private_key = [_]u8{7} ** 32;
+    const private_key = @as([32]u8, @splat(7));
     const point = smallPoint(false);
 
-    try std.testing.expectError(error.IdentityElement, ecdh(allocator, &private_key, &([_]u8{0} ** 64)));
+    try std.testing.expectError(error.IdentityElement, ecdh(allocator, &private_key, &(@as([64]u8, @splat(0)))));
     try std.testing.expectError(error.NotOnCurve, ecdh(allocator, &private_key, &rawKey(P256_GX, P256_GY + 1)));
     try std.testing.expectError(error.NotOnCurve, ecdh(allocator, &private_key, &rawKey(1, 1)));
     try std.testing.expectError(error.NotOnCurve, ecdh(allocator, &private_key, &rawKey(0, 1)));
@@ -460,7 +460,7 @@ test "p256 ecdh rejects invalid public keys" {
     try std.testing.expectError(error.NonCanonical, ecdh(allocator, &private_key, &rawKey(P256_GX, P256_P)));
     try std.testing.expectError(error.NonCanonical, ecdh(allocator, &private_key, &rawKey(point.x + P256_P, point.y)));
     // Rejects wrong lengths and bad SEC1 prefixes
-    try std.testing.expectError(error.InvalidPublicKeyLength, ecdh(allocator, &private_key, &([_]u8{1} ** 63)));
+    try std.testing.expectError(error.InvalidPublicKeyLength, ecdh(allocator, &private_key, &(@as([63]u8, @splat(1)))));
     try std.testing.expectError(error.InvalidPublicKeyPrefix, ecdh(allocator, &private_key, &([_]u8{0x05} ++ rawKey(P256_GX, P256_GY))));
 
     // Valid 64-byte raw, 65-byte SEC1 uncompressed, and 33-byte SEC1 compressed keys produce identical shared secrets
@@ -479,18 +479,18 @@ test "p256 ecdh rejects invalid public keys" {
 
 test "p256 verify rejects invalid public keys and accepts SEC1 encodings" {
     const allocator = std.testing.allocator;
-    const private_key = [_]u8{9} ** 32;
-    const hash = [_]u8{0xcd} ** 32;
+    const private_key = @as([32]u8, @splat(9));
+    const hash = @as([32]u8, @splat(0xcd));
     const signature = try sign(allocator, &hash, &private_key);
     defer allocator.free(signature);
     const r = signature[0..32];
     const s = signature[32..64];
 
-    try std.testing.expectError(error.IdentityElement, verify(&hash, r, s, &([_]u8{0} ** 64)));
+    try std.testing.expectError(error.IdentityElement, verify(&hash, r, s, &(@as([64]u8, @splat(0)))));
     try std.testing.expectError(error.NotOnCurve, verify(&hash, r, s, &rawKey(P256_GX, P256_GY + 1)));
     try std.testing.expectError(error.NotOnCurve, verify(&hash, r, s, &rawKey(0, 1)));
     try std.testing.expectError(error.NonCanonical, verify(&hash, r, s, &rawKey(P256_P, P256_GY)));
-    try std.testing.expectError(error.InvalidPublicKeyLength, verify(&hash, r, s, &([_]u8{1} ** 63)));
+    try std.testing.expectError(error.InvalidPublicKeyLength, verify(&hash, r, s, &(@as([63]u8, @splat(1)))));
     try std.testing.expectError(error.InvalidPublicKeyPrefix, verify(&hash, r, s, &([_]u8{0x05} ++ rawKey(P256_GX, P256_GY))));
 
     // A valid but unrelated key verifies as false, the real key as true (raw, uncompressed SEC1, compressed SEC1)
@@ -509,7 +509,7 @@ test "p256 verify rejects invalid public keys and accepts SEC1 encodings" {
     try std.testing.expect(try verify(&hash, r, s, &sec1_compressed));
 
     // Zero digest signature verifies cleanly
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     const zero_sig = try sign(allocator, &zero_hash, &private_key);
     defer allocator.free(zero_sig);
     try std.testing.expect(try verify(&zero_hash, zero_sig[0..32], zero_sig[32..64], public_key));

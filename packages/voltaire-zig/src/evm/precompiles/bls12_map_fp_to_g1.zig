@@ -41,13 +41,13 @@ pub fn execute(
 // ============================================================================
 
 test "map fp to g1 - out of gas" {
-    const input = [_]u8{0} ** 64;
+    const input = @as([64]u8, @splat(0));
     const result = execute(std.testing.allocator, &input, GAS - 1);
     try std.testing.expectError(error.OutOfGas, result);
 }
 
 test "map fp to g1 - exact gas" {
-    const input = [_]u8{0} ** 64;
+    const input = @as([64]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, GAS);
     defer std.testing.allocator.free(result.output);
 
@@ -56,7 +56,7 @@ test "map fp to g1 - exact gas" {
 }
 
 test "map fp to g1 - excess gas" {
-    const input = [_]u8{0} ** 64;
+    const input = @as([64]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, GAS + 1000);
     defer std.testing.allocator.free(result.output);
 
@@ -65,13 +65,13 @@ test "map fp to g1 - excess gas" {
 }
 
 test "map fp to g1 - invalid input length too short" {
-    const input = [_]u8{0} ** 63;
+    const input = @as([63]u8, @splat(0));
     const result = execute(std.testing.allocator, &input, GAS);
     try std.testing.expectError(error.InvalidInput, result);
 }
 
 test "map fp to g1 - invalid input length too long" {
-    const input = [_]u8{0} ** 65;
+    const input = @as([65]u8, @splat(0));
     const result = execute(std.testing.allocator, &input, GAS);
     try std.testing.expectError(error.InvalidInput, result);
 }
@@ -84,7 +84,7 @@ test "map fp to g1 - invalid input length zero" {
 
 test "map fp to g1 - zero field element" {
     // Zero is a valid field element and should map to a valid G1 point
-    const input = [_]u8{0} ** 64;
+    const input = @as([64]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, GAS);
     defer std.testing.allocator.free(result.output);
 
@@ -154,7 +154,7 @@ test "map fp to g1 - gas cost validation" {
 
 test "map fp to g1 - output size validation" {
     // Output should be 128 bytes (uncompressed G1 point: 64 bytes x + 64 bytes y)
-    const input = [_]u8{0} ** 64;
+    const input = @as([64]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, 100000);
     defer std.testing.allocator.free(result.output);
 

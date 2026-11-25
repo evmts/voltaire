@@ -40,7 +40,7 @@ pub const UncleHeader = struct {
     state_root: Hash.Hash = Hash.ZERO,
     transactions_root: Hash.Hash = Hash.ZERO,
     receipts_root: Hash.Hash = Hash.ZERO,
-    logs_bloom: [256]u8 = [_]u8{0} ** 256,
+    logs_bloom: [256]u8 = @as([256]u8, @splat(0)),
     difficulty: u256 = 0,
     number: u64 = 0,
     gas_limit: u64 = 0,
@@ -48,7 +48,7 @@ pub const UncleHeader = struct {
     timestamp: u64 = 0,
     extra_data: []const u8 = &[_]u8{},
     mix_hash: Hash.Hash = Hash.ZERO,
-    nonce: [8]u8 = [_]u8{0} ** 8,
+    nonce: [8]u8 = @as([8]u8, @splat(0)),
     /// EIP-1559 base fee. Present on London-era PoW ommers, where it is the
     /// 16th RLP field of the header. `null` for pre-London ommers (15 fields).
     base_fee_per_gas: ?u256 = null,
@@ -253,7 +253,7 @@ fn encodeU64(allocator: std.mem.Allocator, value: u64) ![]u8 {
 
 /// RLP encode an uncle header
 fn rlpEncodeUncle(uncle: *const UncleHeader, allocator: std.mem.Allocator) ![]u8 {
-    var fields = std.ArrayList([]u8){};
+    var fields = std.ArrayList([]u8).empty;
     defer {
         for (fields.items) |item| {
             allocator.free(item);
@@ -305,7 +305,7 @@ fn rlpEncodeUncle(uncle: *const UncleHeader, allocator: std.mem.Allocator) ![]u8
         total_len += field.len;
     }
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     if (total_len < 56) {
@@ -326,7 +326,7 @@ fn rlpEncodeUncle(uncle: *const UncleHeader, allocator: std.mem.Allocator) ![]u8
 
 /// RLP encode a withdrawal
 fn rlpEncodeWithdrawal(withdrawal: *const Withdrawal, allocator: std.mem.Allocator) ![]u8 {
-    var fields = std.ArrayList([]u8){};
+    var fields = std.ArrayList([]u8).empty;
     defer {
         for (fields.items) |item| {
             allocator.free(item);
@@ -353,7 +353,7 @@ fn rlpEncodeWithdrawal(withdrawal: *const Withdrawal, allocator: std.mem.Allocat
         total_len += field.len;
     }
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     if (total_len < 56) {
@@ -384,11 +384,11 @@ pub fn rlpEncodeWithHeader(
     allocator: std.mem.Allocator,
     header: ?[]const u8,
 ) ![]u8 {
-    var fields = std.ArrayList(u8){};
+    var fields = std.ArrayList(u8).empty;
     defer fields.deinit(allocator);
     if (header) |encoded| try fields.appendSlice(allocator, encoded);
 
-    var payload = std.ArrayList(u8){};
+    var payload = std.ArrayList(u8).empty;
     defer payload.deinit(allocator);
 
     for (body.transactions) |tx| {
@@ -421,7 +421,7 @@ pub fn rlpEncodeWithHeader(
         try appendRlpList(allocator, &fields, payload.items);
     }
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
     try appendRlpList(allocator, &result, fields.items);
     return result.toOwnedSlice(allocator);
@@ -482,11 +482,11 @@ test "rlpEncode - post-Shanghai empty body" {
 
 /// Compute ommers hash (keccak256 of RLP-encoded ommers list)
 pub fn ommersHash(body: *const BlockBody, allocator: std.mem.Allocator) !Hash.Hash {
-    var ommer_list = std.ArrayList(u8){};
+    var ommer_list = std.ArrayList(u8).empty;
     defer ommer_list.deinit(allocator);
 
     var ommer_total_len: usize = 0;
-    var encoded_ommers = std.ArrayList([]u8){};
+    var encoded_ommers = std.ArrayList([]u8).empty;
     defer {
         for (encoded_ommers.items) |item| {
             allocator.free(item);
@@ -535,20 +535,20 @@ test "ommersHash - empty ommers" {
 
 fn londonTestOmmer() UncleHeader {
     return .{
-        .parent_hash = [_]u8{0x11} ** 32,
-        .ommers_hash = [_]u8{0x22} ** 32,
-        .beneficiary = .{ .bytes = [_]u8{0x33} ** 20 },
-        .state_root = [_]u8{0x44} ** 32,
-        .transactions_root = [_]u8{0x55} ** 32,
-        .receipts_root = [_]u8{0x66} ** 32,
-        .logs_bloom = [_]u8{0x77} ** 256,
+        .parent_hash = @as([32]u8, @splat(0x11)),
+        .ommers_hash = @as([32]u8, @splat(0x22)),
+        .beneficiary = .{ .bytes = @as([20]u8, @splat(0x33)) },
+        .state_root = @as([32]u8, @splat(0x44)),
+        .transactions_root = @as([32]u8, @splat(0x55)),
+        .receipts_root = @as([32]u8, @splat(0x66)),
+        .logs_bloom = @as([256]u8, @splat(0x77)),
         .difficulty = 7742494561645080,
         .number = 12965001,
         .gas_limit = 30029122,
         .gas_used = 30025257,
         .timestamp = 1628166822,
         .extra_data = "voltaire",
-        .mix_hash = [_]u8{0x88} ** 32,
+        .mix_hash = @as([32]u8, @splat(0x88)),
         .nonce = .{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 },
         .base_fee_per_gas = 1_000_000_000,
     };

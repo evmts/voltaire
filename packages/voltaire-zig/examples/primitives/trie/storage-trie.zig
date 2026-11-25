@@ -23,7 +23,7 @@ fn computeStorageKey(allocator: std.mem.Allocator, slot: u256, key: []const u8) 
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -35,13 +35,13 @@ pub fn main() !void {
     defer storage_trie.deinit();
 
     // Storage slot 0: owner address
-    const slot0 = [_]u8{0} ** 32;
-    const owner_addr = [_]u8{ 0x12, 0x34 } ++ [_]u8{0} ** 18;
+    const slot0 = @as([32]u8, @splat(0));
+    const owner_addr = [_]u8{ 0x12, 0x34 } ++ @as([18]u8, @splat(0));
     try storage_trie.put(&slot0, &owner_addr);
     std.debug.print("Slot 0 (owner): 0x{x:0>40}\n", .{std.fmt.fmtSliceHexLower(&owner_addr)});
 
     // Storage slot 1: total supply
-    const slot1 = [_]u8{0} ** 31 ++ [_]u8{1};
+    const slot1 = @as([31]u8, @splat(0)) ++ [_]u8{1};
     const total_supply: u256 = 1_000_000_000_000_000_000_000_000; // 1M tokens (18 decimals)
     const supply_bytes = std.mem.toBytes(total_supply);
     try storage_trie.put(&slot1, &supply_bytes);
@@ -60,7 +60,7 @@ pub fn main() !void {
     });
 
     // Another balance: different address
-    const addr2 = [_]u8{ 0xAB, 0xCD } ++ [_]u8{0} ** 18;
+    const addr2 = [_]u8{ 0xAB, 0xCD } ++ @as([18]u8, @splat(0));
     const balance_slot2 = try computeStorageKey(allocator, 2, &addr2);
     const balance2: u256 = 300_000_000_000_000_000_000_000;
     const balance2_bytes = std.mem.toBytes(balance2);
@@ -72,7 +72,7 @@ pub fn main() !void {
 
     // Storage slot 3: allowances mapping (nested mapping)
     // allowances[owner_addr][spender_addr] = 100k tokens
-    const spender_addr = [_]u8{ 0x56, 0x78 } ++ [_]u8{0} ** 18;
+    const spender_addr = [_]u8{ 0x56, 0x78 } ++ @as([18]u8, @splat(0));
 
     // First compute inner mapping key
     const inner_key = try computeStorageKey(allocator, 3, &owner_addr);

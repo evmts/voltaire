@@ -19,28 +19,28 @@ fn benchSha256Small(allocator: std.mem.Allocator) void {
 
 // Benchmark: SHA256 - single word (32 bytes)
 fn benchSha256SingleWord(allocator: std.mem.Allocator) void {
-    const input = [_]u8{0xab} ** 32;
+    const input = @as([32]u8, @splat(0xab));
     const result = sha256.execute(allocator, &input, 1_000_000) catch unreachable;
     defer result.deinit(allocator);
 }
 
 // Benchmark: SHA256 - two words (64 bytes)
 fn benchSha256TwoWords(allocator: std.mem.Allocator) void {
-    const input = [_]u8{0xab} ** 64;
+    const input = @as([64]u8, @splat(0xab));
     const result = sha256.execute(allocator, &input, 1_000_000) catch unreachable;
     defer result.deinit(allocator);
 }
 
 // Benchmark: SHA256 - large input (1KB)
 fn benchSha256Large(allocator: std.mem.Allocator) void {
-    const input = [_]u8{0xab} ** 1024;
+    const input = @as([1024]u8, @splat(0xab));
     const result = sha256.execute(allocator, &input, 100_000_000) catch unreachable;
     defer result.deinit(allocator);
 }
 
 // Benchmark: SHA256 - very large input (64KB)
 fn benchSha256VeryLarge(allocator: std.mem.Allocator) void {
-    const input = [_]u8{0xab} ** 65536;
+    const input = @as([65536]u8, @splat(0xab));
     const result = sha256.execute(allocator, &input, 10_000_000_000) catch unreachable;
     defer result.deinit(allocator);
 }
@@ -52,11 +52,8 @@ fn benchSha256TestVector(allocator: std.mem.Allocator) void {
     defer result.deinit(allocator);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -68,7 +65,6 @@ pub fn main() !void {
     try bench.add("SHA256 (64 KB)", benchSha256VeryLarge, .{});
     try bench.add("SHA256 (test vector 'abc')", benchSha256TestVector, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

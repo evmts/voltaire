@@ -69,8 +69,8 @@ fn expectedCurrentSlotAtTime(current_unix_time: u64, genesis_time: u64) u64 {
     return (current_unix_time - genesis_time) / 12;
 }
 
-pub fn expectedCurrentSlot(genesis_time: u64) u64 {
-    const now = std.time.timestamp();
+pub fn expectedCurrentSlot(io: std.Io, genesis_time: u64) u64 {
+    const now = std.Io.Timestamp.now(io, .real).toSeconds();
     if (now <= 0) {
         return 0;
     }
@@ -93,7 +93,7 @@ pub fn verifySyncCommitteeSignatureStub(
 }
 
 fn filled32(value: u8) [32]u8 {
-    return [_]u8{value} ** 32;
+    return @as([32]u8, @splat(value));
 }
 
 test "isValidMerkleBranch with known good proof" {
@@ -132,7 +132,7 @@ test "calcSyncPeriod for known slots" {
 }
 
 test "expectedCurrentSlot basic test" {
-    const now = std.time.timestamp();
+    const now = std.Io.Timestamp.now(std.testing.io, .real).toSeconds();
     if (now <= 0) {
         return;
     }
@@ -140,7 +140,7 @@ test "expectedCurrentSlot basic test" {
     const now_u64 = @as(u64, @intCast(now));
     const genesis_time = if (now_u64 > 120) now_u64 - 120 else 0;
     const expected = expectedCurrentSlotAtTime(now_u64, genesis_time);
-    const actual = expectedCurrentSlot(genesis_time);
+    const actual = expectedCurrentSlot(std.testing.io, genesis_time);
 
     try std.testing.expect(actual == expected or actual == expected + 1);
 }

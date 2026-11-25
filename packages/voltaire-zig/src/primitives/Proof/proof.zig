@@ -562,8 +562,8 @@ pub fn verifyStorageSlotProof(
 
 test "Proof.init - creates non-owning proof" {
     const value = [_]u8{ 1, 2, 3, 4 };
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
     const proof_nodes = [_][]const u8{ &node1, &node2 };
 
     const proof = Proof.init(&value, &proof_nodes);
@@ -577,8 +577,8 @@ test "Proof.from - creates owning copy" {
     const allocator = std.testing.allocator;
 
     const value = [_]u8{ 1, 2, 3, 4 };
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
     const proof_nodes = [_][]const u8{ &node1, &node2 };
 
     const proof = try Proof.from(allocator, &value, &proof_nodes);
@@ -593,7 +593,7 @@ test "Proof.from - creates independent copy" {
     const allocator = std.testing.allocator;
 
     var value = [_]u8{ 1, 2, 3, 4 };
-    var node1 = [_]u8{0xaa} ** 32;
+    var node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof = try Proof.from(allocator, &value, &proof_nodes);
@@ -610,7 +610,7 @@ test "Proof.from - creates independent copy" {
 
 test "Proof.equals - identical proofs" {
     const value = [_]u8{ 1, 2, 3, 4 };
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof1 = Proof.init(&value, &proof_nodes);
@@ -622,7 +622,7 @@ test "Proof.equals - identical proofs" {
 test "Proof.equals - different values" {
     const value1 = [_]u8{ 1, 2, 3, 4 };
     const value2 = [_]u8{ 1, 2, 3, 5 };
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof1 = Proof.init(&value1, &proof_nodes);
@@ -633,8 +633,8 @@ test "Proof.equals - different values" {
 
 test "Proof.equals - different proof lengths" {
     const value = [_]u8{ 1, 2, 3, 4 };
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
     const proof_nodes1 = [_][]const u8{&node1};
     const proof_nodes2 = [_][]const u8{ &node1, &node2 };
 
@@ -646,8 +646,8 @@ test "Proof.equals - different proof lengths" {
 
 test "Proof.equals - different proof elements" {
     const value = [_]u8{ 1, 2, 3, 4 };
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
     const proof_nodes1 = [_][]const u8{&node1};
     const proof_nodes2 = [_][]const u8{&node2};
 
@@ -677,7 +677,7 @@ test "Proof.isEmpty - empty proof" {
 
 test "Proof.isEmpty - non-empty proof" {
     const value = [_]u8{ 1, 2, 3 };
-    const node = [_]u8{0xaa} ** 32;
+    const node = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node};
 
     const proof = Proof.init(&value, &proof_nodes);
@@ -686,9 +686,9 @@ test "Proof.isEmpty - non-empty proof" {
 
 test "Proof.depth - returns correct depth" {
     const value = [_]u8{ 1, 2, 3 };
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
-    const node3 = [_]u8{0xcc} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
+    const node3 = @as([32]u8, @splat(0xcc));
     const proof_nodes = [_][]const u8{ &node1, &node2, &node3 };
 
     const proof = Proof.init(&value, &proof_nodes);
@@ -699,7 +699,7 @@ test "Proof.clone - creates independent copy" {
     const allocator = std.testing.allocator;
 
     const value = [_]u8{ 5, 6, 7, 8 };
-    const node = [_]u8{0xdd} ** 32;
+    const node = @as([32]u8, @splat(0xdd));
     const proof_nodes = [_][]const u8{&node};
 
     const original = Proof.init(&value, &proof_nodes);
@@ -711,7 +711,7 @@ test "Proof.clone - creates independent copy" {
 }
 
 test "Proof.verify - empty proof with hash value equals root" {
-    const root = [_]u8{0x11} ** 32;
+    const root = @as([32]u8, @splat(0x11));
     const empty_nodes: []const []const u8 = &.{};
 
     const proof = Proof.init(&root, empty_nodes);
@@ -721,8 +721,8 @@ test "Proof.verify - empty proof with hash value equals root" {
 
 test "Proof.verify - simple two-leaf tree" {
     // Build a simple two-leaf Merkle tree
-    const leaf0 = [_]u8{0xaa} ** 32;
-    const leaf1 = [_]u8{0xbb} ** 32;
+    const leaf0 = @as([32]u8, @splat(0xaa));
+    const leaf1 = @as([32]u8, @splat(0xbb));
 
     // Root = keccak256(leaf0 || leaf1)
     var combined: [64]u8 = undefined;
@@ -743,9 +743,9 @@ test "Proof.verify - simple two-leaf tree" {
 }
 
 test "Proof.verify - invalid proof returns false" {
-    const leaf = [_]u8{0xaa} ** 32;
-    const wrong_sibling = [_]u8{0xff} ** 32;
-    const expected_root = [_]u8{0x00} ** 32;
+    const leaf = @as([32]u8, @splat(0xaa));
+    const wrong_sibling = @as([32]u8, @splat(0xff));
+    const expected_root = @as([32]u8, @splat(0x00));
 
     const sibling = [_][]const u8{&wrong_sibling};
     const proof = Proof.init(&leaf, &sibling);
@@ -754,8 +754,8 @@ test "Proof.verify - invalid proof returns false" {
 }
 
 test "Proof.computeRoot - matches verify" {
-    const leaf0 = [_]u8{0xaa} ** 32;
-    const leaf1 = [_]u8{0xbb} ** 32;
+    const leaf0 = @as([32]u8, @splat(0xaa));
+    const leaf1 = @as([32]u8, @splat(0xbb));
 
     var combined: [64]u8 = undefined;
     @memcpy(combined[0..32], &leaf0);
@@ -788,8 +788,8 @@ test "Proof.from - rejects too deep proof" {
 
 test "Proof.verifyWithDepth - validates proof length matches expected depth" {
     // Build a simple two-leaf Merkle tree
-    const leaf0 = [_]u8{0xaa} ** 32;
-    const leaf1 = [_]u8{0xbb} ** 32;
+    const leaf0 = @as([32]u8, @splat(0xaa));
+    const leaf1 = @as([32]u8, @splat(0xbb));
 
     // Root = keccak256(leaf0 || leaf1)
     var combined: [64]u8 = undefined;
@@ -816,7 +816,7 @@ test "Proof.verifyWithDepth - validates proof length matches expected depth" {
 }
 
 test "Proof.verifyWithDepth - accepts empty proof with depth 0" {
-    const root = [_]u8{0x11} ** 32;
+    const root = @as([32]u8, @splat(0x11));
     const empty_nodes: []const []const u8 = &.{};
 
     const proof = Proof.init(&root, empty_nodes);
@@ -832,10 +832,10 @@ test "Proof.verifyWithDepth - accepts empty proof with depth 0" {
 
 test "Proof.verifyWithDepth - four-leaf tree requires depth 2" {
     // For 4 leaves: depth = log2(4) = 2
-    const leaf0 = [_]u8{0x00} ** 32;
-    const leaf1 = [_]u8{0x01} ** 32;
-    const leaf2 = [_]u8{0x02} ** 32;
-    const leaf3 = [_]u8{0x03} ** 32;
+    const leaf0 = @as([32]u8, @splat(0x00));
+    const leaf1 = @as([32]u8, @splat(0x01));
+    const leaf2 = @as([32]u8, @splat(0x02));
+    const leaf3 = @as([32]u8, @splat(0x03));
 
     // Build tree: hash(hash(l0,l1), hash(l2,l3))
     var combined01: [64]u8 = undefined;
@@ -959,7 +959,7 @@ test "verifyMPTProof - invalid root hash fails" {
     const leaf_node = [_]u8{ 0xc6, 0x82, 0x20, 0x01, 0x82, 0x12, 0x34 };
 
     // Wrong root hash
-    const wrong_root = [_]u8{0xff} ** 32;
+    const wrong_root = @as([32]u8, @splat(0xff));
 
     const key = [_]u8{0x01};
     const value = [_]u8{ 0x12, 0x34 };
@@ -1000,7 +1000,7 @@ test "verifyAccountProof - hashes address before verification" {
 
     // Create a leaf for address hash
     // Address: 0x0000000000000000000000000000000000000001
-    const address = [_]u8{0x00} ** 19 ++ [_]u8{0x01};
+    const address = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01};
 
     // Hash the address to get the key path
     var address_hash: Hash.Hash = undefined;
@@ -1026,7 +1026,7 @@ test "verifyStorageSlotProof - hashes slot before verification" {
     const allocator = std.testing.allocator;
 
     // Storage slot 0
-    const slot = [_]u8{0x00} ** 32;
+    const slot = @as([32]u8, @splat(0x00));
 
     // Hash the slot to get the key path
     var slot_hash: Hash.Hash = undefined;
@@ -1091,7 +1091,7 @@ test "verifyMPTProof - single-leaf storage trie exclusion proof" {
 
     // Storage trie holding exactly one slot: root = keccak(leaf).
     // Leaf path = all 64 nibbles of keccak256(slot 0), value = RLP(0x2a).
-    const stored_slot = [_]u8{0x00} ** 32;
+    const stored_slot = @as([32]u8, @splat(0x00));
     var stored_path: Hash.Hash = undefined;
     crypto.Keccak256.hash(&stored_slot, &stored_path, .{});
 
@@ -1112,7 +1112,7 @@ test "verifyMPTProof - single-leaf storage trie exclusion proof" {
     try std.testing.expect(try verifyStorageSlotProof(allocator, &root, &stored_slot, &[_]u8{0x2a}, &proof_nodes));
 
     // Exclusion of a different slot verifies with the same single leaf
-    const other_slot = [_]u8{0x00} ** 31 ++ [_]u8{0x01};
+    const other_slot = @as([31]u8, @splat(0x00)) ++ [_]u8{0x01};
     try std.testing.expect(try verifyStorageSlotProof(allocator, &root, &other_slot, "", &proof_nodes));
 
     // The other slot cannot be proven to hold the leaf's value
@@ -1156,7 +1156,7 @@ test "verifyMPTProof - divergent extension exclusion proof" {
 
     // Extension with even path [1, 2] -> child hash:
     // RLP([0x00 0x12, child(32)]) = 0xe4 | 0x82 0x00 0x12 | 0xa0 child
-    const child = [_]u8{0x77} ** 32;
+    const child = @as([32]u8, @splat(0x77));
     var ext_node: [37]u8 = undefined;
     ext_node[0] = 0xe4;
     ext_node[1] = 0x82;
@@ -1182,7 +1182,7 @@ test "verifyMPTProof - divergent extension exclusion proof" {
     try std.testing.expect(!try verifyMPTProof(allocator, &root, &matching_key, "", &proof_nodes));
 
     // Wrong root fails closed
-    const wrong_root = [_]u8{0xff} ** 32;
+    const wrong_root = @as([32]u8, @splat(0xff));
     try std.testing.expect(!try verifyMPTProof(allocator, &wrong_root, &divergent_key, "", &proof_nodes));
 
     // Tampered extension (hash mismatch) fails closed
@@ -1230,7 +1230,7 @@ test "verifyMPTProof - tampered hash and wrong value inclusion proofs fail" {
 // Branch with an embedded leaf at slot 5 and empty slots elsewhere.
 // Leaf = RLP([0x31, 0xAB]): odd leaf path [1], value 0xAB (4 bytes, < 32).
 // Branch payload = 5 * 0x80 | leaf(4) | 10 * 0x80 | value 0x80 = 20 bytes.
-const embedded_leaf_branch = [_]u8{0xd4} ++ [_]u8{0x80} ** 5 ++ [_]u8{ 0xc3, 0x31, 0x81, 0xAB } ++ [_]u8{0x80} ** 11;
+const embedded_leaf_branch = [_]u8{0xd4} ++ @as([5]u8, @splat(0x80)) ++ [_]u8{ 0xc3, 0x31, 0x81, 0xAB } ++ @as([11]u8, @splat(0x80));
 
 test "verifyMPTProof - embedded leaf inside branch node" {
     const allocator = std.testing.allocator;
@@ -1337,7 +1337,7 @@ test "verifyMPTProof - trailing proof node rejected on inclusion and empty-branc
     try std.testing.expect(!try verifyMPTProof(allocator, &leaf_root, &[_]u8{0x01}, &[_]u8{ 0x12, 0x34 }, &leaf_trailing));
 
     // Branch value inclusion: 16 empty children, value 0xABCD
-    const value_branch = [_]u8{0xd3} ++ [_]u8{0x80} ** 16 ++ [_]u8{ 0x82, 0xAB, 0xCD };
+    const value_branch = [_]u8{0xd3} ++ @as([16]u8, @splat(0x80)) ++ [_]u8{ 0x82, 0xAB, 0xCD };
     var value_root: Hash.Hash = undefined;
     crypto.Keccak256.hash(&value_branch, &value_root, .{});
     const value_trailing = [_][]const u8{ &value_branch, &value_branch };
@@ -1348,7 +1348,7 @@ test "verifyMPTProof - branch child string of invalid length rejected" {
     const allocator = std.testing.allocator;
 
     // Slot 5 holds the 1-byte string 0x05: neither empty, a hash, nor a node
-    const branch = [_]u8{0xd1} ++ [_]u8{0x80} ** 5 ++ [_]u8{0x05} ++ [_]u8{0x80} ** 11;
+    const branch = [_]u8{0xd1} ++ @as([5]u8, @splat(0x80)) ++ [_]u8{0x05} ++ @as([11]u8, @splat(0x80));
     var root: Hash.Hash = undefined;
     crypto.Keccak256.hash(&branch, &root, .{});
     const proof_nodes = [_][]const u8{&branch};
@@ -1362,11 +1362,11 @@ test "verifyMPTProof - hash-referenced child consumes the next proof node" {
     const allocator = std.testing.allocator;
 
     // Leaf of 35 bytes (>= 32, so hash-referenced): odd path [1], 32-byte value
-    const value = [_]u8{0xEE} ** 32;
+    const value = @as([32]u8, @splat(0xEE));
     const leaf = [_]u8{ 0xe2, 0x31, 0xa0 } ++ value;
 
     // Branch: slot 5 = keccak256(leaf). Payload = 5 + 33 + 11 = 49 bytes.
-    var branch = [_]u8{0xf1} ++ [_]u8{0x80} ** 5 ++ [_]u8{0xa0} ++ [_]u8{0x00} ** 32 ++ [_]u8{0x80} ** 11;
+    var branch = [_]u8{0xf1} ++ @as([5]u8, @splat(0x80)) ++ [_]u8{0xa0} ++ @as([32]u8, @splat(0x00)) ++ @as([11]u8, @splat(0x80));
     crypto.Keccak256.hash(&leaf, branch[7..39], .{});
     var root: Hash.Hash = undefined;
     crypto.Keccak256.hash(&branch, &root, .{});
@@ -1382,7 +1382,7 @@ test "verifyMPTProof - hash-referenced child consumes the next proof node" {
 
     // A node of 32+ bytes inlined instead of hash-referenced is non-canonical
     // Payload = 5 + 35 + 11 = 51 bytes.
-    const inlined = [_]u8{0xf3} ++ [_]u8{0x80} ** 5 ++ leaf ++ [_]u8{0x80} ** 11;
+    const inlined = [_]u8{0xf3} ++ @as([5]u8, @splat(0x80)) ++ leaf ++ @as([11]u8, @splat(0x80));
     var inlined_root: Hash.Hash = undefined;
     crypto.Keccak256.hash(&inlined, &inlined_root, .{});
     const inlined_nodes = [_][]const u8{&inlined};

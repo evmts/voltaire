@@ -73,7 +73,7 @@ test "isValidReturnData - magic value raw" {
 
 test "isValidReturnData - magic value ABI encoded" {
     // bytes4 is right-aligned in ABI encoding
-    var data: [32]u8 = [_]u8{0} ** 32;
+    var data: [32]u8 = @as([32]u8, @splat(0));
     data[28] = 0x16;
     data[29] = 0x26;
     data[30] = 0xba;
@@ -82,7 +82,7 @@ test "isValidReturnData - magic value ABI encoded" {
 }
 
 test "isValidReturnData - magic value left-aligned" {
-    var data: [32]u8 = [_]u8{0} ** 32;
+    var data: [32]u8 = @as([32]u8, @splat(0));
     data[0] = 0x16;
     data[1] = 0x26;
     data[2] = 0xba;
@@ -177,8 +177,8 @@ pub fn encodeIsValidSignatureCall(
 test "encodeIsValidSignatureCall - basic" {
     const allocator = std.testing.allocator;
 
-    const hash = [_]u8{0xab} ** 32;
-    const signature = [_]u8{0xcd} ** 65;
+    const hash = @as([32]u8, @splat(0xab));
+    const signature = @as([65]u8, @splat(0xcd));
 
     const calldata = try encodeIsValidSignatureCall(allocator, hash, &signature);
     defer allocator.free(calldata);
@@ -199,7 +199,7 @@ test "encodeIsValidSignatureCall - basic" {
 test "encodeIsValidSignatureCall - empty signature" {
     const allocator = std.testing.allocator;
 
-    const hash = [_]u8{0x00} ** 32;
+    const hash = @as([32]u8, @splat(0x00));
     const signature = [_]u8{};
 
     const calldata = try encodeIsValidSignatureCall(allocator, hash, &signature);

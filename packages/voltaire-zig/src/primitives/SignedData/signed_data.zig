@@ -143,7 +143,7 @@ test "from - personal message version" {
 
 test "from - data with validator version" {
     const allocator = std.testing.allocator;
-    const validator = [_]u8{0xaa} ** 20;
+    const validator = @as([20]u8, @splat(0xaa));
     const data = "test data";
     var signed = try from(allocator, VERSION_DATA_WITH_VALIDATOR, &validator, data);
     defer signed.deinit();
@@ -154,8 +154,8 @@ test "from - data with validator version" {
 
 test "from - structured data version" {
     const allocator = std.testing.allocator;
-    const domain_separator = [_]u8{0xbb} ** 32;
-    const data = [_]u8{0xcc} ** 32;
+    const domain_separator = @as([32]u8, @splat(0xbb));
+    const data = @as([32]u8, @splat(0xcc));
     var signed = try from(allocator, VERSION_STRUCTURED_DATA, &domain_separator, &data);
     defer signed.deinit();
 
@@ -218,7 +218,7 @@ test "fromPersonalMessage - empty message" {
 
 test "fromPersonalMessage - long message" {
     const allocator = std.testing.allocator;
-    const message = "a" ** 100;
+    const message = &@as([100]u8, @splat('a'));
     var signed = try fromPersonalMessage(allocator, message);
     defer signed.deinit();
 
@@ -347,7 +347,7 @@ test "isValid - valid personal message" {
 
 test "isValid - valid data with validator" {
     const allocator = std.testing.allocator;
-    const validator = [_]u8{0xaa} ** 20;
+    const validator = @as([20]u8, @splat(0xaa));
     var signed = try from(allocator, VERSION_DATA_WITH_VALIDATOR, &validator, "test");
     defer signed.deinit();
 
@@ -369,7 +369,7 @@ test "isPersonalMessage - true" {
 
 test "isPersonalMessage - false" {
     const allocator = std.testing.allocator;
-    const validator = [_]u8{0xaa} ** 20;
+    const validator = @as([20]u8, @splat(0xaa));
     var signed = try from(allocator, VERSION_DATA_WITH_VALIDATOR, &validator, "test");
     defer signed.deinit();
 
@@ -383,8 +383,8 @@ pub fn isStructuredData(signed: *const SignedData) bool {
 
 test "isStructuredData - true" {
     const allocator = std.testing.allocator;
-    const domain_separator = [_]u8{0xbb} ** 32;
-    var signed = try from(allocator, VERSION_STRUCTURED_DATA, &domain_separator, &[_]u8{0xcc} ** 32);
+    const domain_separator = @as([32]u8, @splat(0xbb));
+    var signed = try from(allocator, VERSION_STRUCTURED_DATA, &domain_separator, &@as([32]u8, @splat(0xcc)));
     defer signed.deinit();
 
     try std.testing.expect(isStructuredData(&signed));
@@ -397,7 +397,7 @@ pub fn isDataWithValidator(signed: *const SignedData) bool {
 
 test "isDataWithValidator - true" {
     const allocator = std.testing.allocator;
-    const validator = [_]u8{0xaa} ** 20;
+    const validator = @as([20]u8, @splat(0xaa));
     var signed = try from(allocator, VERSION_DATA_WITH_VALIDATOR, &validator, "test");
     defer signed.deinit();
 
@@ -696,8 +696,8 @@ test "SignedMessage - fromSignature creates valid structure" {
 
     // Create test signature components (these are mock values)
     // In real usage, these would come from actual signing
-    const r = [_]u8{0x01} ** 32;
-    const s = [_]u8{0x02} ** 32;
+    const r = @as([32]u8, @splat(0x01));
+    const s = @as([32]u8, @splat(0x02));
     const v: u8 = 27;
 
     // Note: This will fail signature recovery with mock values
@@ -719,7 +719,7 @@ test "SignedMessage.verify - compares signer addresses" {
     const data = allocator.alloc(u8, 5) catch unreachable;
     @memcpy(data, "Hello");
 
-    const sig = Signature.fromSecp256k1([_]u8{1} ** 32, [_]u8{2} ** 32, 27);
+    const sig = Signature.fromSecp256k1(@as([32]u8, @splat(1)), @as([32]u8, @splat(2)), 27);
     var signer: Address = undefined;
     @memset(&signer.bytes, 0xaa);
 
@@ -751,7 +751,7 @@ test "SignedMessage.equals - compares all fields" {
     const data2 = allocator.alloc(u8, 5) catch unreachable;
     @memcpy(data2, "Hello");
 
-    const sig = Signature.fromSecp256k1([_]u8{1} ** 32, [_]u8{2} ** 32, 27);
+    const sig = Signature.fromSecp256k1(@as([32]u8, @splat(1)), @as([32]u8, @splat(2)), 27);
     var signer: Address = undefined;
     @memset(&signer.bytes, 0xaa);
 
@@ -782,7 +782,7 @@ test "SignedMessage.equals - different data returns false" {
     const data2 = allocator.alloc(u8, 5) catch unreachable;
     @memcpy(data2, "World");
 
-    const sig = Signature.fromSecp256k1([_]u8{1} ** 32, [_]u8{2} ** 32, 27);
+    const sig = Signature.fromSecp256k1(@as([32]u8, @splat(1)), @as([32]u8, @splat(2)), 27);
     var signer: Address = undefined;
     @memset(&signer.bytes, 0xaa);
 
@@ -806,9 +806,9 @@ test "SignedMessage.equals - different data returns false" {
 }
 
 test "recoverSigner - returns error for invalid signature" {
-    const msg_hash = [_]u8{0xab} ** 32;
-    const r = [_]u8{0x00} ** 32; // Invalid: r cannot be 0
-    const s = [_]u8{0x01} ** 32;
+    const msg_hash = @as([32]u8, @splat(0xab));
+    const r = @as([32]u8, @splat(0x00)); // Invalid: r cannot be 0
+    const s = @as([32]u8, @splat(0x01));
     const v: u8 = 27;
 
     const result = recoverSigner(msg_hash, r, s, v);
@@ -816,9 +816,9 @@ test "recoverSigner - returns error for invalid signature" {
 }
 
 test "verifySigner - returns false for invalid signature" {
-    const msg_hash = [_]u8{0xab} ** 32;
-    const r = [_]u8{0x00} ** 32; // Invalid
-    const s = [_]u8{0x01} ** 32;
+    const msg_hash = @as([32]u8, @splat(0xab));
+    const r = @as([32]u8, @splat(0x00)); // Invalid
+    const s = @as([32]u8, @splat(0x01));
     const v: u8 = 27;
 
     var expected: Address = undefined;
@@ -830,8 +830,8 @@ test "verifySigner - returns false for invalid signature" {
 test "verifyPersonalMessage - returns false for invalid signature" {
     const allocator = std.testing.allocator;
     const message = "Test message";
-    const r = [_]u8{0x00} ** 32; // Invalid
-    const s = [_]u8{0x01} ** 32;
+    const r = @as([32]u8, @splat(0x00)); // Invalid
+    const s = @as([32]u8, @splat(0x01));
     const v: u8 = 27;
 
     var expected: Address = undefined;

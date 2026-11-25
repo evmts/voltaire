@@ -2,7 +2,7 @@ const std = @import("std");
 const crypto = @import("crypto");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -10,7 +10,7 @@ pub fn main() !void {
 
     // 1. Hash raw bytes
     std.debug.print("1. Hash Raw Bytes\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const data = [_]u8{ 1, 2, 3, 4, 5 };
     const hash = try crypto.Ripemd160.hash(&data, allocator);
@@ -25,7 +25,7 @@ pub fn main() !void {
 
     // 2. Hash UTF-8 string
     std.debug.print("2. Hash UTF-8 String\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const message = "hello";
     const message_hash = try crypto.Ripemd160.hash(message, allocator);
@@ -40,7 +40,7 @@ pub fn main() !void {
 
     // 3. Empty string hash
     std.debug.print("3. Empty String Hash\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const empty_hash = try crypto.Ripemd160.hash("", allocator);
     defer allocator.free(empty_hash);
@@ -63,7 +63,7 @@ pub fn main() !void {
 
     // 4. Official test vectors
     std.debug.print("4. Official Test Vectors\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const test_a = try crypto.Ripemd160.hash("a", allocator);
     defer allocator.free(test_a);
@@ -103,7 +103,7 @@ pub fn main() !void {
 
     // 5. Determinism
     std.debug.print("5. Deterministic Hashing\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const input = "Bitcoin uses RIPEMD160";
     const hash1 = try crypto.Ripemd160.hash(input, allocator);
@@ -126,7 +126,7 @@ pub fn main() !void {
 
     // 6. Fixed 20-byte output
     std.debug.print("6. Fixed 20-Byte Output\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const short_input = "a";
     const long_input = "The quick brown fox jumps over the lazy dog";
@@ -150,7 +150,7 @@ pub fn main() !void {
 
     // 7. Security level
     std.debug.print("7. Security Level\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("RIPEMD160 provides:\n", .{});
     std.debug.print("- 160-bit output size\n", .{});
     std.debug.print("- ~80-bit collision resistance (birthday bound)\n", .{});
@@ -162,7 +162,7 @@ pub fn main() !void {
 
     // 8. Legacy status
     std.debug.print("8. Legacy Function (Bitcoin Context)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("RIPEMD160 is considered legacy:\n", .{});
     std.debug.print("- Designed in 1996 (pre-SHA-256)\n", .{});
     std.debug.print("- Used in Bitcoin since 2009\n", .{});

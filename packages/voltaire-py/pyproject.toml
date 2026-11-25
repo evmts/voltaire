@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=84.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,6 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Security :: Cryptography",
 ]
@@ -29,10 +31,10 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "mypy>=1.0",
-    "ruff>=0.1",
+    "pytest>=9.0",
+    "pytest-cov>=7.0",
+    "mypy>=2.0",
+    "ruff>=0.17",
 ]
 
 [project.urls]

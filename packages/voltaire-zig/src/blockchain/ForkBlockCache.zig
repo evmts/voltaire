@@ -77,8 +77,8 @@ pub const ForkBlockCache = struct {
             .fork_block_number = fork_block_number,
             .cache = std.AutoHashMap(Hash.Hash, Block.Block).init(allocator),
             .cache_by_number = std.AutoHashMap(u64, Hash.Hash).init(allocator),
-            .cache_queue = .{},
-            .pending_queue = .{},
+            .cache_queue = .empty,
+            .pending_queue = .empty,
             .pending_by_id = std.AutoHashMap(u64, PendingRequest).init(allocator),
             .pending_keys = std.AutoHashMap(PendingKey, u64).init(allocator),
             .missing_numbers = std.AutoHashMap(u64, void).init(allocator),
@@ -478,7 +478,7 @@ test "ForkBlockCache - continue caches block" {
         return;
     };
 
-    const hash_hex = "0x" ++ ("11" ** 32);
+    const hash_hex = "0x" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("11".*)))));
     const response = try std.fmt.allocPrint(allocator, "{{\"hash\":\"{s}\",\"number\":\"0x7\"}}", .{hash_hex});
     defer allocator.free(response);
 
@@ -496,9 +496,9 @@ test "ForkBlockCache - preserves Prague and Amsterdam header commitments" {
     try std.testing.expectError(error.RpcPending, cache.getBlockByNumber(7));
     const request = cache.nextRequest() orelse return error.TestUnexpectedResult;
 
-    const response = "{\"hash\":\"0x" ++ ("11" ** 32) ++
-        "\",\"requestsHash\":\"0x" ++ ("22" ** 32) ++
-        "\",\"blockAccessListHash\":\"0x" ++ ("33" ** 32) ++ "\"}";
+    const response = "{\"hash\":\"0x" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("11".*))))) ++
+        "\",\"requestsHash\":\"0x" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("22".*))))) ++
+        "\",\"blockAccessListHash\":\"0x" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("33".*))))) ++ "\"}";
     try cache.continueRequest(request.id, response);
 
     const block = (try cache.getBlockByNumber(7)) orelse return error.TestUnexpectedResult;

@@ -28,7 +28,7 @@
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.17.1",
 
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
@@ -42,17 +42,17 @@
         // },
         .zbench = .{
             // Pin to commit hash to prevent hash mismatches when branch updates
-            .url = "https://github.com/hendriknielaender/zBench/archive/3268a23da82231f1bd2c064de7fdf6fb7056126f.tar.gz",
-            .hash = "zbench-0.11.2-YTdc7zolAQDlBF9i0ywXIvDjafL3Kg27S-aFUq6dU5zy",
+            .url = "https://github.com/hendriknielaender/zBench/archive/refs/tags/v0.14.1.tar.gz",
+            .hash = "zbench-0.14.1-YTdc781OAQCR6wxqkgAwm9bG4TnFGzm8c9aE-ZPiTAU1",
         },
         .clap = .{
             // Pin to commit hash to prevent hash mismatches when branch updates
-            .url = "https://github.com/Hejsil/zig-clap/archive/3ae92228409d82a2c906fafc228b7920d9ff046b.tar.gz",
-            .hash = "clap-0.11.0-oBajB03nAQAvaRnlqid3PwE7E_JqPypon6NQoMlm9ekb",
+            .url = "https://github.com/Hejsil/zig-clap/archive/05faf3905e8548f5cc269a8836e154065e70128d.tar.gz",
+            .hash = "clap-0.12.0-oBajB4XpAQCF1WRKnD5KOKPsnwwT_NNdAJ7Ww3irYJac",
         },
         .z_ens_normalize = .{
-            .url = "https://github.com/evmts/z-ens-normalize/archive/9fb3ed8f11114d45ed11992221966ad5915701e1.tar.gz",
-            .hash = "z_ens_normalize-0.0.0-Iv6nMI2_AgCrLtEnZZnoeP87kZtP-36iIWzj3cD3v-vd",
+            .url = "https://github.com/evmts/z-ens-normalize/archive/13d4a04f2be12f8988735d989c653f4f6cad68f3.tar.gz",
+            .hash = "z_ens_normalize-0.0.0-Iv6nMBWXQQC1hb8STL2L9zbz0aRF_8WagNwQmnsGbDHd",
         },
         .libwally_core = .{
             .path = "packages/voltaire-zig/lib/libwally-core",

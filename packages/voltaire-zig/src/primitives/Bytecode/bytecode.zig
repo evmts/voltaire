@@ -26,20 +26,24 @@ pub const FusionPattern = struct {
 
 /// Represents analyzed bytecode with pre-validated jump destinations
 pub const Bytecode = struct {
+    /// Allocator owning valid_jumpdests
+    allocator: std.mem.Allocator,
+
     /// Raw bytecode bytes
     code: []const u8,
 
     /// Pre-analyzed valid JUMPDEST positions
-    valid_jumpdests: std.AutoArrayHashMap(u32, void),
+    valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void),
 
     /// Initialize bytecode with jump destination analysis
     pub fn init(allocator: std.mem.Allocator, code: []const u8) !Bytecode {
-        var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(allocator);
-        errdefer valid_jumpdests.deinit();
+        var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+        errdefer valid_jumpdests.deinit(allocator);
 
-        try analyzeJumpDests(code, &valid_jumpdests);
+        try analyzeJumpDests(allocator, code, &valid_jumpdests);
 
         return Bytecode{
+            .allocator = allocator,
             .code = code,
             .valid_jumpdests = valid_jumpdests,
         };
@@ -52,7 +56,7 @@ pub const Bytecode = struct {
 
     /// Clean up resources
     pub fn deinit(self: *Bytecode) void {
-        self.valid_jumpdests.deinit();
+        self.valid_jumpdests.deinit(self.allocator);
     }
 
     /// Check if a position is a valid JUMPDEST
@@ -76,7 +80,7 @@ pub const Bytecode = struct {
     /// Get typed Opcode enum at position
     pub fn getOpcodeEnum(self: *const Bytecode, pc: u32) ?Opcode {
         const byte = self.getOpcode(pc) orelse return null;
-        return @enumFromInt(byte);
+        return @fromBackingInt(@intCast(byte));
     }
 
     /// Read immediate data for PUSH operations
@@ -127,7 +131,7 @@ pub const Bytecode = struct {
     /// Detect fusion patterns in bytecode
     /// Caller owns returned slice, must free with allocator
     pub fn detectFusions(self: *const Bytecode, allocator: std.mem.Allocator) ![]FusionPattern {
-        var fusions = std.ArrayList(FusionPattern){};
+        var fusions = std.ArrayList(FusionPattern).empty;
         errdefer fusions.deinit(allocator);
 
         var pc: u32 = 0;
@@ -365,7 +369,7 @@ pub const Scanner = struct {
 /// Analyze bytecode to identify valid JUMPDEST locations
 /// This must skip over PUSH instruction immediate data to avoid
 /// treating data bytes as instructions
-fn analyzeJumpDests(code: []const u8, valid_jumpdests: *std.AutoArrayHashMap(u32, void)) !void {
+fn analyzeJumpDests(allocator: std.mem.Allocator, code: []const u8, valid_jumpdests: *std.AutoArrayHashMapUnmanaged(u32, void)) !void {
     var pc: u32 = 0;
 
     while (pc < code.len) {
@@ -373,7 +377,7 @@ fn analyzeJumpDests(code: []const u8, valid_jumpdests: *std.AutoArrayHashMap(u32
 
         // Check if this is a JUMPDEST (0x5b)
         if (opcode == 0x5b) {
-            try valid_jumpdests.put(pc, {});
+            try valid_jumpdests.put(allocator, pc, {});
             pc += 1;
         } else if (opcode >= 0x60 and opcode <= 0x7f) {
             // PUSH1 (0x60) through PUSH32 (0x7f)
@@ -394,10 +398,10 @@ fn analyzeJumpDests(code: []const u8, valid_jumpdests: *std.AutoArrayHashMap(u32
 
 test "analyzeJumpDests: simple JUMPDEST" {
     const code = [_]u8{ 0x5b, 0x00, 0x5b }; // JUMPDEST, STOP, JUMPDEST
-    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
-    defer valid_jumpdests.deinit();
+    var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+    defer valid_jumpdests.deinit(std.testing.allocator);
 
-    try analyzeJumpDests(&code, &valid_jumpdests);
+    try analyzeJumpDests(std.testing.allocator, &code, &valid_jumpdests);
 
     try std.testing.expect(valid_jumpdests.contains(0));
     try std.testing.expect(valid_jumpdests.contains(2));
@@ -409,10 +413,10 @@ test "analyzeJumpDests: PUSH data containing JUMPDEST opcode" {
         0x60, 0x5b, // PUSH1 0x5b (pushes JUMPDEST opcode as data)
         0x5b, // JUMPDEST (actual valid jump destination)
     };
-    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
-    defer valid_jumpdests.deinit();
+    var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+    defer valid_jumpdests.deinit(std.testing.allocator);
 
-    try analyzeJumpDests(&code, &valid_jumpdests);
+    try analyzeJumpDests(std.testing.allocator, &code, &valid_jumpdests);
 
     // Only position 2 should be valid (the actual JUMPDEST)
     // Position 1 (the 0x5b in PUSH data) should NOT be valid
@@ -430,10 +434,10 @@ test "analyzeJumpDests: PUSH32 with embedded JUMPDEST bytes" {
     }
     code[33] = 0x5b; // Actual JUMPDEST after PUSH32
 
-    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
-    defer valid_jumpdests.deinit();
+    var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+    defer valid_jumpdests.deinit(std.testing.allocator);
 
-    try analyzeJumpDests(&code, &valid_jumpdests);
+    try analyzeJumpDests(std.testing.allocator, &code, &valid_jumpdests);
 
     // Only position 33 should be valid
     try std.testing.expect(!valid_jumpdests.contains(0));
@@ -680,10 +684,10 @@ test "analyzeJumpDests: PUSH inside PUSH data should not be treated as instructi
         0x61, 0x60, 0x5b, // PUSH2 0x605b (contains PUSH1 opcode and JUMPDEST opcode as data)
         0x5b, // JUMPDEST (actual valid jump destination)
     };
-    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
-    defer valid_jumpdests.deinit();
+    var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+    defer valid_jumpdests.deinit(std.testing.allocator);
 
-    try analyzeJumpDests(&code, &valid_jumpdests);
+    try analyzeJumpDests(std.testing.allocator, &code, &valid_jumpdests);
 
     // Only position 3 should be valid
     try std.testing.expect(!valid_jumpdests.contains(0));
@@ -697,10 +701,10 @@ test "analyzeJumpDests: incomplete PUSH at end of bytecode" {
         0x5b, // JUMPDEST
         0x62, 0x01, // PUSH3 with only 2 bytes (incomplete)
     };
-    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
-    defer valid_jumpdests.deinit();
+    var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+    defer valid_jumpdests.deinit(std.testing.allocator);
 
-    try analyzeJumpDests(&code, &valid_jumpdests);
+    try analyzeJumpDests(std.testing.allocator, &code, &valid_jumpdests);
 
     // Only position 0 should be valid
     try std.testing.expect(valid_jumpdests.contains(0));
@@ -732,10 +736,10 @@ test "analyzeJumpDests: all PUSH opcodes PUSH1-PUSH32" {
     code[offset] = 0x5b;
     const final_jumpdest_pos: u32 = @intCast(offset);
 
-    var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(std.testing.allocator);
-    defer valid_jumpdests.deinit();
+    var valid_jumpdests: std.AutoArrayHashMapUnmanaged(u32, void) = .empty;
+    defer valid_jumpdests.deinit(std.testing.allocator);
 
-    try analyzeJumpDests(&code, &valid_jumpdests);
+    try analyzeJumpDests(std.testing.allocator, &code, &valid_jumpdests);
 
     // Only the final position should be a valid JUMPDEST
     try std.testing.expect(valid_jumpdests.contains(final_jumpdest_pos));
@@ -767,7 +771,7 @@ test "Bytecode.getOpcodeEnum: valid opcodes" {
     defer bytecode.deinit();
 
     try std.testing.expectEqual(Opcode.PUSH1, bytecode.getOpcodeEnum(0).?);
-    try std.testing.expectEqual(@as(u8, 0x01), @intFromEnum(bytecode.getOpcodeEnum(1).?));
+    try std.testing.expectEqual(@as(u8, 0x01), @backingInt(bytecode.getOpcodeEnum(1).?));
     try std.testing.expectEqual(Opcode.JUMPDEST, bytecode.getOpcodeEnum(2).?);
     try std.testing.expectEqual(Opcode.STOP, bytecode.getOpcodeEnum(3).?);
     try std.testing.expect(bytecode.getOpcodeEnum(4) == null);

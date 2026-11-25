@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const Address = primitives.address.Address;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const a = gpa.allocator();
 
@@ -23,7 +23,7 @@ pub fn main() !void {
     std.debug.print("From number: {s}\n", .{&hex2});
 
     // From bytes
-    var bytes: [20]u8 = [_]u8{0} ** 20;
+    var bytes: [20]u8 = @as([20]u8, @splat(0));
     bytes[19] = 42; // Last byte = 42
     const addr3 = Address.fromBytes(&bytes);
     const hex3 = Address.toHex(addr3);

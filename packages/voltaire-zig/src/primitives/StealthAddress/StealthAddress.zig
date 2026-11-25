@@ -218,8 +218,8 @@ pub fn hashSharedSecret(shared_secret: []const u8) [32]u8 {
 // Tests
 
 test "StealthMetaAddress.init creates meta-address" {
-    const spending = [_]u8{0x02} ++ [_]u8{0xaa} ** 32;
-    const viewing = [_]u8{0x03} ++ [_]u8{0xbb} ** 32;
+    const spending = [_]u8{0x02} ++ @as([32]u8, @splat(0xaa));
+    const viewing = [_]u8{0x03} ++ @as([32]u8, @splat(0xbb));
 
     const meta = StealthMetaAddress.init(spending, viewing);
 
@@ -241,14 +241,14 @@ test "StealthMetaAddress.fromBytes parses 66 bytes" {
 }
 
 test "StealthMetaAddress.fromBytes rejects wrong length" {
-    const short_data = [_]u8{0x02} ** 32;
+    const short_data = @as([32]u8, @splat(0x02));
     const result = StealthMetaAddress.fromBytes(&short_data);
     try std.testing.expectError(error.InvalidMetaAddressLength, result);
 }
 
 test "StealthMetaAddress.toBytes returns concatenated keys" {
-    const spending = [_]u8{0x02} ++ [_]u8{0xaa} ** 32;
-    const viewing = [_]u8{0x03} ++ [_]u8{0xbb} ** 32;
+    const spending = [_]u8{0x02} ++ @as([32]u8, @splat(0xaa));
+    const viewing = [_]u8{0x03} ++ @as([32]u8, @splat(0xbb));
 
     const meta = StealthMetaAddress.init(spending, viewing);
     const bytes = meta.toBytes();
@@ -258,8 +258,8 @@ test "StealthMetaAddress.toBytes returns concatenated keys" {
 }
 
 test "StealthMetaAddress.equals returns true for identical" {
-    const spending = [_]u8{0x02} ++ [_]u8{0xaa} ** 32;
-    const viewing = [_]u8{0x03} ++ [_]u8{0xbb} ** 32;
+    const spending = [_]u8{0x02} ++ @as([32]u8, @splat(0xaa));
+    const viewing = [_]u8{0x03} ++ @as([32]u8, @splat(0xbb));
 
     const meta1 = StealthMetaAddress.init(spending, viewing);
     const meta2 = StealthMetaAddress.init(spending, viewing);
@@ -268,9 +268,9 @@ test "StealthMetaAddress.equals returns true for identical" {
 }
 
 test "StealthMetaAddress.equals returns false for different" {
-    const spending = [_]u8{0x02} ++ [_]u8{0xaa} ** 32;
-    const viewing1 = [_]u8{0x03} ++ [_]u8{0xbb} ** 32;
-    const viewing2 = [_]u8{0x03} ++ [_]u8{0xcc} ** 32;
+    const spending = [_]u8{0x02} ++ @as([32]u8, @splat(0xaa));
+    const viewing1 = [_]u8{0x03} ++ @as([32]u8, @splat(0xbb));
+    const viewing2 = [_]u8{0x03} ++ @as([32]u8, @splat(0xcc));
 
     const meta1 = StealthMetaAddress.init(spending, viewing1);
     const meta2 = StealthMetaAddress.init(spending, viewing2);
@@ -279,8 +279,8 @@ test "StealthMetaAddress.equals returns false for different" {
 }
 
 test "StealthMetaAddress.toHex returns hex string" {
-    const spending = [_]u8{0x02} ++ [_]u8{0x00} ** 32;
-    const viewing = [_]u8{0x03} ++ [_]u8{0x00} ** 32;
+    const spending = [_]u8{0x02} ++ @as([32]u8, @splat(0x00));
+    const viewing = [_]u8{0x03} ++ @as([32]u8, @splat(0x00));
 
     const meta = StealthMetaAddress.init(spending, viewing);
     const hex = meta.toHex();
@@ -290,9 +290,9 @@ test "StealthMetaAddress.toHex returns hex string" {
 }
 
 test "StealthAnnouncement.init creates announcement" {
-    const ephemeral = [_]u8{0x02} ++ [_]u8{0xdd} ** 32;
+    const ephemeral = [_]u8{0x02} ++ @as([32]u8, @splat(0xdd));
     const view_tag: u8 = 0x42;
-    const stealth = [_]u8{0xee} ** 20;
+    const stealth = @as([20]u8, @splat(0xee));
 
     const announcement = StealthAnnouncement.init(ephemeral, view_tag, stealth);
 
@@ -302,8 +302,8 @@ test "StealthAnnouncement.init creates announcement" {
 }
 
 test "StealthAnnouncement.matchesViewTag returns true for match" {
-    const ephemeral = [_]u8{0x02} ++ [_]u8{0xdd} ** 32;
-    const stealth = [_]u8{0xee} ** 20;
+    const ephemeral = [_]u8{0x02} ++ @as([32]u8, @splat(0xdd));
+    const stealth = @as([20]u8, @splat(0xee));
 
     const announcement = StealthAnnouncement.init(ephemeral, 0x42, stealth);
 
@@ -311,8 +311,8 @@ test "StealthAnnouncement.matchesViewTag returns true for match" {
 }
 
 test "StealthAnnouncement.matchesViewTag returns false for mismatch" {
-    const ephemeral = [_]u8{0x02} ++ [_]u8{0xdd} ** 32;
-    const stealth = [_]u8{0xee} ** 20;
+    const ephemeral = [_]u8{0x02} ++ @as([32]u8, @splat(0xdd));
+    const stealth = @as([20]u8, @splat(0xee));
 
     const announcement = StealthAnnouncement.init(ephemeral, 0x42, stealth);
 
@@ -320,7 +320,7 @@ test "StealthAnnouncement.matchesViewTag returns false for mismatch" {
 }
 
 test "computeViewTag extracts first byte" {
-    const hash = [_]u8{0xde} ++ [_]u8{0xad} ** 31;
+    const hash = [_]u8{0xde} ++ @as([31]u8, @splat(0xad));
     const view_tag = computeViewTag(hash);
 
     try std.testing.expectEqual(@as(u8, 0xde), view_tag);
@@ -365,14 +365,14 @@ test "parseAnnouncement parses valid data" {
 }
 
 test "parseAnnouncement rejects short data" {
-    const short_data = [_]u8{0x02} ** 32;
+    const short_data = @as([32]u8, @splat(0x02));
     const result = parseAnnouncement(&short_data);
     try std.testing.expectError(error.InvalidAnnouncementLength, result);
 }
 
 test "encodeAnnouncement produces parseable output" {
-    const ephemeral = [_]u8{0x02} ++ [_]u8{0xdd} ** 32;
-    const stealth = [_]u8{0xee} ** 20;
+    const ephemeral = [_]u8{0x02} ++ @as([32]u8, @splat(0xdd));
+    const stealth = @as([20]u8, @splat(0xee));
 
     const announcement = StealthAnnouncement.init(ephemeral, 0x42, stealth);
     const encoded = encodeAnnouncement(announcement);
@@ -384,23 +384,23 @@ test "encodeAnnouncement produces parseable output" {
 }
 
 test "isValidCompressedPublicKey accepts valid keys" {
-    const valid_02 = [_]u8{0x02} ++ [_]u8{0xaa} ** 32;
-    const valid_03 = [_]u8{0x03} ++ [_]u8{0xbb} ** 32;
+    const valid_02 = [_]u8{0x02} ++ @as([32]u8, @splat(0xaa));
+    const valid_03 = [_]u8{0x03} ++ @as([32]u8, @splat(0xbb));
 
     try std.testing.expect(isValidCompressedPublicKey(&valid_02));
     try std.testing.expect(isValidCompressedPublicKey(&valid_03));
 }
 
 test "isValidCompressedPublicKey rejects invalid keys" {
-    const invalid_prefix = [_]u8{0x04} ++ [_]u8{0xaa} ** 32;
-    const wrong_length = [_]u8{0x02} ++ [_]u8{0xaa} ** 16;
+    const invalid_prefix = [_]u8{0x04} ++ @as([32]u8, @splat(0xaa));
+    const wrong_length = [_]u8{0x02} ++ @as([16]u8, @splat(0xaa));
 
     try std.testing.expect(!isValidCompressedPublicKey(&invalid_prefix));
     try std.testing.expect(!isValidCompressedPublicKey(&wrong_length));
 }
 
 test "hashSharedSecret produces keccak256 hash" {
-    const secret = [_]u8{0xaa} ** 32;
+    const secret = @as([32]u8, @splat(0xaa));
     const hash = hashSharedSecret(&secret);
 
     // Verify it's a valid 32-byte hash
@@ -425,8 +425,8 @@ test "StealthAddress complete workflow simulation" {
     // (without actual elliptic curve operations)
 
     // 1. Recipient creates meta-address
-    const spending_key = [_]u8{0x02} ++ [_]u8{0x11} ** 32;
-    const viewing_key = [_]u8{0x03} ++ [_]u8{0x22} ** 32;
+    const spending_key = [_]u8{0x02} ++ @as([32]u8, @splat(0x11));
+    const viewing_key = [_]u8{0x03} ++ @as([32]u8, @splat(0x22));
     const meta = StealthMetaAddress.init(spending_key, viewing_key);
 
     // 2. Meta-address can be serialized and shared
@@ -435,8 +435,8 @@ test "StealthAddress complete workflow simulation" {
     try std.testing.expect(meta.equals(restored));
 
     // 3. Sender creates announcement
-    const ephemeral = [_]u8{0x02} ++ [_]u8{0x33} ** 32;
-    const stealth_addr = [_]u8{0x44} ** 20;
+    const ephemeral = [_]u8{0x02} ++ @as([32]u8, @splat(0x33));
+    const stealth_addr = @as([20]u8, @splat(0x44));
     const view_tag: u8 = 0x55;
 
     const announcement = StealthAnnouncement.init(ephemeral, view_tag, stealth_addr);

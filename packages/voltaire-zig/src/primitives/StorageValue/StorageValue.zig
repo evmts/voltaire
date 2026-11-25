@@ -31,7 +31,7 @@ pub const SIZE = 32;
 pub const StorageValue = [SIZE]u8;
 
 /// Zero storage value constant
-pub const ZERO: StorageValue = [_]u8{0} ** SIZE;
+pub const ZERO: StorageValue = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -46,7 +46,7 @@ pub fn fromBytes(bytes: []const u8) StorageValue {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{1} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(1));
     const val = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, val.len);
     try std.testing.expectEqual(@as(u8, 1), val[0]);
@@ -54,7 +54,7 @@ test "fromBytes - valid 32 bytes" {
 }
 
 test "fromBytes - creates independent copy" {
-    var bytes = [_]u8{42} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(42));
     const val = fromBytes(&bytes);
     bytes[0] = 99;
     try std.testing.expectEqual(@as(u8, 42), val[0]);
@@ -74,13 +74,13 @@ pub fn fromHex(hex: []const u8) !StorageValue {
 }
 
 test "fromHex - with 0x prefix" {
-    const hex = "0x" ++ ("00" ** (SIZE - 1)) ++ "7b";
+    const hex = "0x" ++ (@as(*const [(SIZE - 1) * 2]u8, @ptrCast(&@as([SIZE - 1][2]u8, @splat("00".*))))) ++ "7b";
     const val = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0x7b), val[31]);
 }
 
 test "fromHex - without 0x prefix" {
-    const hex = ("00" ** (SIZE - 1)) ++ "7b";
+    const hex = (@as(*const [(SIZE - 1) * 2]u8, @ptrCast(&@as([SIZE - 1][2]u8, @splat("00".*))))) ++ "7b";
     const val = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0x7b), val[31]);
 }
@@ -91,7 +91,7 @@ test "fromHex - invalid length" {
 }
 
 test "fromHex - invalid hex chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expectError(error.InvalidHexCharacter, fromHex(hex));
 }
 
@@ -182,19 +182,19 @@ test "from - StorageValue passthrough" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(42));
     const val = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 42), val[0]);
 }
 
 test "from - hex with 0x" {
-    const hex = "0x" ++ ("00" ** (SIZE - 1)) ++ "ef";
+    const hex = "0x" ++ (@as(*const [(SIZE - 1) * 2]u8, @ptrCast(&@as([SIZE - 1][2]u8, @splat("00".*))))) ++ "ef";
     const val = try from(hex);
     try std.testing.expectEqual(@as(u8, 0xef), val[31]);
 }
 
 test "from - hex without 0x" {
-    const hex = ("00" ** (SIZE - 1)) ++ "12";
+    const hex = (@as(*const [(SIZE - 1) * 2]u8, @ptrCast(&@as([SIZE - 1][2]u8, @splat("00".*))))) ++ "12";
     const val = try from(hex);
     try std.testing.expectEqual(@as(u8, 0x12), val[31]);
 }
@@ -235,7 +235,7 @@ test "toHex - with 0x prefix" {
 
     try std.testing.expectEqual(2 + SIZE * 2, hex.len);
     try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
-    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ ("ff" ** SIZE)));
+    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ff".*)))))));
 }
 
 test "toHex - zero value" {
@@ -243,7 +243,7 @@ test "toHex - zero value" {
     const hex = try toHex(&val, std.testing.allocator);
     defer std.testing.allocator.free(hex);
 
-    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ ("00" ** SIZE)));
+    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("00".*)))))));
 }
 
 /// Convert StorageValue to u256 (big-endian interpretation)
@@ -309,19 +309,19 @@ pub fn equals(a: *const StorageValue, b: *const StorageValue) bool {
 }
 
 test "equals - same value" {
-    const val: StorageValue = [_]u8{42} ** SIZE;
+    const val: StorageValue = @as([SIZE]u8, @splat(42));
     try std.testing.expect(equals(&val, &val));
 }
 
 test "equals - identical values" {
-    const val1: StorageValue = [_]u8{99} ** SIZE;
-    const val2: StorageValue = [_]u8{99} ** SIZE;
+    const val1: StorageValue = @as([SIZE]u8, @splat(99));
+    const val2: StorageValue = @as([SIZE]u8, @splat(99));
     try std.testing.expect(equals(&val1, &val2));
 }
 
 test "equals - different values" {
-    const val1: StorageValue = [_]u8{1} ** SIZE;
-    const val2: StorageValue = [_]u8{2} ** SIZE;
+    const val1: StorageValue = @as([SIZE]u8, @splat(1));
+    const val2: StorageValue = @as([SIZE]u8, @splat(2));
     try std.testing.expect(!equals(&val1, &val2));
 }
 
@@ -381,12 +381,12 @@ pub fn isValidHex(hex: []const u8) bool {
 }
 
 test "isValidHex - valid with 0x" {
-    const hex = "0x" ++ ("00" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("00".*)))));
     try std.testing.expect(isValidHex(hex));
 }
 
 test "isValidHex - valid without 0x" {
-    const hex = "00" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("00".*))));
     try std.testing.expect(isValidHex(hex));
 }
 
@@ -395,7 +395,7 @@ test "isValidHex - invalid length" {
 }
 
 test "isValidHex - invalid chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expect(!isValidHex(hex));
 }
 
@@ -420,7 +420,7 @@ test "isStorageValue - pointer types" {
 }
 
 test "isStorageValue - non-StorageValue type" {
-    const bytes = [_]u8{0} ** 16;
+    const bytes = @as([16]u8, @splat(0));
     try std.testing.expect(!isStorageValue(bytes));
 }
 
@@ -436,7 +436,7 @@ pub fn clone(value: *const StorageValue) StorageValue {
 }
 
 test "clone - creates independent copy" {
-    var original: StorageValue = [_]u8{42} ** SIZE;
+    var original: StorageValue = @as([SIZE]u8, @splat(42));
     var copy = clone(&original);
     try std.testing.expect(equals(&original, &copy));
 
@@ -463,7 +463,7 @@ test "slice - partial slice" {
 }
 
 test "slice - full slice" {
-    const val: StorageValue = [_]u8{77} ** SIZE;
+    const val: StorageValue = @as([SIZE]u8, @splat(77));
     const s = slice(&val, 0, SIZE);
     try std.testing.expectEqual(SIZE, s.len);
     try std.testing.expectEqualSlices(u8, &val, s);
@@ -483,21 +483,21 @@ test "format - returns hex string" {
 }
 
 /// Generate random storage value (for testing)
-pub fn random() StorageValue {
+pub fn random(io: std.Io) StorageValue {
     var val: StorageValue = undefined;
-    std.crypto.random.bytes(&val);
+    io.random(&val);
     return val;
 }
 
 test "random - generates different values" {
-    const val1 = random();
-    const val2 = random();
+    const val1 = random(std.testing.io);
+    const val2 = random(std.testing.io);
     // Astronomically unlikely to be equal
     try std.testing.expect(!equals(&val1, &val2));
 }
 
 test "random - correct size" {
-    const val = random();
+    const val = random(std.testing.io);
     try std.testing.expectEqual(SIZE, val.len);
 }
 
@@ -513,7 +513,7 @@ test "round trip - bigint" {
 }
 
 test "round trip - hex" {
-    const original = "0x" ++ ("00" ** (SIZE - 1)) ++ "23";
+    const original = "0x" ++ (@as(*const [(SIZE - 1) * 2]u8, @ptrCast(&@as([SIZE - 1][2]u8, @splat("00".*))))) ++ "23";
     const val = try fromHex(original);
     const hex = try toHex(&val, std.testing.allocator);
     defer std.testing.allocator.free(hex);
@@ -526,7 +526,7 @@ test "integration - from various inputs" {
     try std.testing.expectEqual(@as(u256, 123), toUint256(&val1));
 
     // From hex
-    const val2 = try from("0x" ++ ("00" ** (SIZE - 1)) ++ "7b");
+    const val2 = try from("0x" ++ (@as(*const [(SIZE - 1) * 2]u8, @ptrCast(&@as([SIZE - 1][2]u8, @splat("00".*))))) ++ "7b");
     try std.testing.expect(equals(&val1, &val2));
 
     // From bytes

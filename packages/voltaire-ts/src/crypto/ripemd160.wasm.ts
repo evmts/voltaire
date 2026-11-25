@@ -71,7 +71,20 @@ async function loadWasm(): Promise<void> {
 		fd_read: () => 0,
 		fd_pread: () => 0,
 		fd_pwrite: () => 0,
-		clock_time_get: () => 0,
+		clock_res_get: (_id: number, resPtr: number) => {
+			if (!wasmMemory) return -1;
+			const view = new DataView(wasmMemory.buffer);
+			view.setBigUint64(resPtr, 1_000_000n, true);
+			return 0;
+		},
+		clock_time_get: (_id: number, _precision: bigint, timePtr: number) => {
+			if (!wasmMemory) return -1;
+			if (typeof timePtr === "number") {
+				const view = new DataView(wasmMemory.buffer);
+				view.setBigUint64(timePtr, BigInt(Date.now()) * 1_000_000n, true);
+			}
+			return 0;
+		},
 		random_get: () => 0,
 		proc_exit: (code: number): never => {
 			throw new Error(`WASI proc_exit(${code})`);

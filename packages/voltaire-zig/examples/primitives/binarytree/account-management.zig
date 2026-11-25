@@ -4,7 +4,7 @@ const BinaryTree = primitives.BinaryTree;
 
 // Helper functions for AccountData packing/unpacking
 fn packAccountData(account: BinaryTree.AccountData) [32]u8 {
-    var result = [_]u8{0} ** 32;
+    var result = @as([32]u8, @splat(0));
     @memset(&result, 0);
 
     // Pack using standard layout
@@ -22,7 +22,7 @@ fn unpackAccountData(data: [32]u8) BinaryTree.AccountData {
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

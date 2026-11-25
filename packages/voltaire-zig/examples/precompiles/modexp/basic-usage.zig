@@ -4,7 +4,7 @@ const primitives = @import("primitives");
 const Hardfork = primitives.Hardfork;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -14,7 +14,7 @@ pub fn main() !void {
     std.debug.print("=== Example 1: 2^3 mod 5 ===\n", .{});
 
     // Create input: baseLen(32) || expLen(32) || modLen(32) || base || exp || mod
-    var input1: [99]u8 = [_]u8{0} ** 99;
+    var input1: [99]u8 = @as([99]u8, @splat(0));
     input1[31] = 1; // base_len = 1
     input1[63] = 1; // exp_len = 1
     input1[95] = 1; // mod_len = 1
@@ -35,7 +35,7 @@ pub fn main() !void {
 
     // Example 2: 5^0 mod 7 = 1 (zero exponent)
     std.debug.print("\n=== Example 2: 5^0 mod 7 (Zero Exponent) ===\n", .{});
-    var input2: [99]u8 = [_]u8{0} ** 99;
+    var input2: [99]u8 = @as([99]u8, @splat(0));
     input2[31] = 1; // base_len = 1
     input2[63] = 1; // exp_len = 1
     input2[95] = 1; // mod_len = 1
@@ -55,7 +55,7 @@ pub fn main() !void {
 
     // Example 3: Multi-byte calculation - 10^5 mod 13 = 3
     std.debug.print("\n=== Example 3: 10^5 mod 13 ===\n", .{});
-    var input3: [99]u8 = [_]u8{0} ** 99;
+    var input3: [99]u8 = @as([99]u8, @splat(0));
     input3[31] = 1; // base_len = 1
     input3[63] = 1; // exp_len = 1
     input3[95] = 1; // mod_len = 1
@@ -75,7 +75,7 @@ pub fn main() !void {
 
     // Example 4: Modulus = 1 (always returns 0)
     std.debug.print("\n=== Example 4: Any Number mod 1 ===\n", .{});
-    var input4: [99]u8 = [_]u8{0} ** 99;
+    var input4: [99]u8 = @as([99]u8, @splat(0));
     input4[31] = 1; // base_len = 1
     input4[63] = 1; // exp_len = 1
     input4[95] = 1; // mod_len = 1
@@ -97,7 +97,7 @@ pub fn main() !void {
     std.debug.print("\n=== Example 5: Minimum Gas Cost ===\n", .{});
     std.debug.print("ModExp has a minimum gas cost of 200\n", .{});
 
-    var min_input: [99]u8 = [_]u8{0} ** 99;
+    var min_input: [99]u8 = @as([99]u8, @splat(0));
     min_input[31] = 1; // base_len = 1
     min_input[63] = 1; // exp_len = 1
     min_input[95] = 1; // mod_len = 1
@@ -113,7 +113,7 @@ pub fn main() !void {
 
     // Example 6: Zero modulus (returns empty output)
     std.debug.print("\n=== Example 6: Zero Modulus ===\n", .{});
-    var zero_mod_input: [99]u8 = [_]u8{0} ** 99;
+    var zero_mod_input: [99]u8 = @as([99]u8, @splat(0));
     zero_mod_input[31] = 1; // base_len = 1
     zero_mod_input[63] = 1; // exp_len = 1
     zero_mod_input[95] = 1; // mod_len = 1

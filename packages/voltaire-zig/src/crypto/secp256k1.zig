@@ -606,7 +606,7 @@ test "recover address from signature" {
         return;
     };
 
-    const zero_address = [_]u8{0} ** 20;
+    const zero_address = @as([20]u8, @splat(0));
     try std.testing.expect(!std.mem.eql(u8, &recovered_address.bytes, &zero_address));
 }
 
@@ -627,7 +627,7 @@ test "EIP-2 signature validation" {
 }
 
 test "signature recovery edge cases" {
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     const r_val: u256 = 0x1234567890123456789012345678901234567890123456789012345678901234;
     const s_val: u256 = 0x3456789012345678901234567890123456789012345678901234567890123456;
 

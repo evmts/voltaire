@@ -63,7 +63,7 @@ pub const StateManager = struct {
             .allocator = allocator,
             .journaled_state = try JournaledState.JournaledState.init(allocator, fork_backend),
             .snapshot_counter = 0,
-            .snapshots = .{},
+            .snapshots = .empty,
         };
     }
 
@@ -224,7 +224,7 @@ test "StateManager - basic state operations" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     // Set and get balance
     try manager.setBalance(addr, 1000);
@@ -253,7 +253,7 @@ test "StateManager - checkpoint operations" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     // Initial state
     try manager.setBalance(addr, 1000);
@@ -275,7 +275,7 @@ test "StateManager - checkpoint commit" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     // Initial state
     try manager.setBalance(addr, 1000);
@@ -297,7 +297,7 @@ test "StateManager - snapshot and revert" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     // Initial state
     try manager.setBalance(addr, 1000);
@@ -321,7 +321,7 @@ test "StateManager - multiple snapshots" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     // Level 0
     try manager.setBalance(addr, 1000);
@@ -364,7 +364,7 @@ test "StateManager - snapshot clears newer snapshots" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     try manager.setBalance(addr, 1000);
 
@@ -387,7 +387,7 @@ test "StateManager - revertToSnapshot rejects snapshot unwound by raw revert" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     try manager.setBalance(addr, 1000);
 
     // Outer checkpoint, then a snapshot recorded at depth 1
@@ -408,7 +408,7 @@ test "StateManager - revertToSnapshot rejects snapshot consumed by raw commit" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     try manager.setBalance(addr, 1000);
 
     const snap = try manager.snapshot();
@@ -427,7 +427,7 @@ test "StateManager - consumed snapshot stays invalid after the depth is reused" 
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     try manager.setBalance(addr, 1000);
 
     const snap = try manager.snapshot();
@@ -454,7 +454,7 @@ test "StateManager - raw commit of an inner checkpoint keeps the outer snapshot"
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     try manager.setBalance(addr, 1000);
 
     const snap = try manager.snapshot();
@@ -477,7 +477,7 @@ test "StateManager - snapshot is atomic under OOM" {
     var manager = try StateManager.init(allocator, null);
     defer manager.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     try manager.setBalance(addr, 1000);
     try manager.setStorage(addr, 42, 9999);
     try manager.setCode(addr, &[_]u8{ 0x60, 0x60 });

@@ -12,7 +12,7 @@ fn benchEncodeSmallBytes(allocator: std.mem.Allocator) void {
 
 // Benchmark: RLP encode large byte string (>55 bytes)
 fn benchEncodeLargeBytes(allocator: std.mem.Allocator) void {
-    const data = [_]u8{0xab} ** 100;
+    const data = @as([100]u8, @splat(0xab));
     const encoded = rlp.encodeBytes(allocator, &data) catch unreachable;
     defer allocator.free(encoded);
 }
@@ -72,11 +72,8 @@ fn benchDecodeList(allocator: std.mem.Allocator) void {
     defer decoded.data.deinit(allocator);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -90,7 +87,6 @@ pub fn main() !void {
     try bench.add("RLP.decodeBytes (4 bytes)", benchDecodeSmallBytes, .{});
     try bench.add("RLP.decodeList (3 items)", benchDecodeList, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

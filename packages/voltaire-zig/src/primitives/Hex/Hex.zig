@@ -407,7 +407,7 @@ pub fn xor(allocator: std.mem.Allocator, hex1: []const u8, hex2: []const u8) ![]
 }
 
 // Generate random hex of specified size
-pub fn random(allocator: std.mem.Allocator, size_bytes: usize) ![]u8 {
+pub fn random(allocator: std.mem.Allocator, io: std.Io, size_bytes: usize) ![]u8 {
     if (size_bytes == 0) {
         return allocator.dupe(u8, "0x");
     }
@@ -415,11 +415,7 @@ pub fn random(allocator: std.mem.Allocator, size_bytes: usize) ![]u8 {
     const bytes = try allocator.alloc(u8, size_bytes);
     defer allocator.free(bytes);
 
-    // Use nanosecond timestamp for better entropy
-    const seed = @as(u64, @intCast(std.time.nanoTimestamp()));
-    var prng = std.Random.DefaultPrng.init(seed);
-    const rand = prng.random();
-    rand.bytes(bytes);
+    io.random(bytes);
 
     return bytesToHex(allocator, bytes);
 }
@@ -817,7 +813,7 @@ test "size function" {
     const bytes2 = [_]u8{};
     try testing.expectEqual(@as(usize, 0), size(&bytes2));
 
-    const bytes3 = [_]u8{0x01} ** 1000;
+    const bytes3 = @as([1000]u8, @splat(0x01));
     try testing.expectEqual(@as(usize, 1000), size(&bytes3));
 }
 
@@ -1186,18 +1182,18 @@ test "random function" {
     const allocator = testing.allocator;
 
     // Generate random hex of various sizes
-    const hex1 = try random(allocator, 4);
+    const hex1 = try random(allocator, testing.io, 4);
     defer allocator.free(hex1);
     try testing.expect(isHex(hex1));
     try testing.expectEqual(@as(usize, 10), hex1.len); // "0x" + 8 hex chars
 
-    const hex2 = try random(allocator, 32);
+    const hex2 = try random(allocator, testing.io, 32);
     defer allocator.free(hex2);
     try testing.expect(isHex(hex2));
     try testing.expectEqual(@as(usize, 66), hex2.len); // "0x" + 64 hex chars
 
     // Zero size
-    const hex_zero = try random(allocator, 0);
+    const hex_zero = try random(allocator, testing.io, 0);
     defer allocator.free(hex_zero);
     try testing.expectEqualStrings("0x", hex_zero);
 
@@ -1205,9 +1201,9 @@ test "random function" {
     var all_equal = true;
     var i: usize = 0;
     while (i < 5) : (i += 1) {
-        const rand1 = try random(allocator, 32);
+        const rand1 = try random(allocator, testing.io, 32);
         defer allocator.free(rand1);
-        const rand2 = try random(allocator, 32);
+        const rand2 = try random(allocator, testing.io, 32);
         defer allocator.free(rand2);
         if (!equals(rand1, rand2)) {
             all_equal = false;
@@ -1275,12 +1271,12 @@ test "isSized function" {
     try testing.expect(!isSized("0x00", 0));
 
     // Address size (20 bytes)
-    const address = "0x" ++ "00" ** 20;
+    const address = "0x" ++ @as(*const [(20) * 2]u8, @ptrCast(&@as([20][2]u8, @splat("00".*))));
     try testing.expect(isSized(address, 20));
     try testing.expect(!isSized(address, 19));
 
     // Hash size (32 bytes)
-    const hash = "0x" ++ "00" ** 32;
+    const hash = "0x" ++ @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*))));
     try testing.expect(isSized(hash, 32));
     try testing.expect(!isSized(hash, 31));
 }

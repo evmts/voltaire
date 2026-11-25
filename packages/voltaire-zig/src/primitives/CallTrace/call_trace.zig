@@ -180,7 +180,7 @@ pub const CallTrace = struct {
 
     /// Get all calls (including nested) flattened
     pub fn flatten(self: Self, allocator: Allocator) ![]const CallTrace {
-        var result = std.ArrayList(CallTrace){};
+        var result = std.ArrayList(CallTrace).empty;
         defer result.deinit(allocator);
 
         try self.flattenInto(&result, allocator);
@@ -210,7 +210,7 @@ pub const CallTrace = struct {
 
     /// Encode to JSON
     pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.appendSlice(allocator, "{\"type\":\"");

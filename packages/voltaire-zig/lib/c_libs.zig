@@ -10,11 +10,8 @@ pub const createBlstLibrary = BlstLib.createBlstLibrary;
 pub const createCKzgLibrary = CKzgLib.createCKzgLibrary;
 pub const getRustLibraryPath = Bn254Lib.getRustLibraryPath;
 
-pub fn checkCargoInstalled() void {
-    const result = std.process.Child.run(.{
-        .allocator = std.heap.page_allocator,
-        .argv = &[_][]const u8{ "cargo", "--version" },
-    }) catch {
+pub fn checkCargoInstalled(b: *std.Build) void {
+    if (b.findProgram(.{ .names = &.{"cargo"} }) == null) {
         std.debug.print("\n", .{});
         std.debug.print("❌ ERROR: Cargo (Rust build tool) is not installed!\n", .{});
         std.debug.print("\n", .{});
@@ -24,19 +21,6 @@ pub fn checkCargoInstalled() void {
         std.debug.print("  https://rustup.rs/\n", .{});
         std.debug.print("\n", .{});
         std.debug.print("Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\n", .{});
-        std.debug.print("\n", .{});
-        std.process.exit(1);
-    };
-    defer {
-        std.heap.page_allocator.free(result.stdout);
-        std.heap.page_allocator.free(result.stderr);
-    }
-
-    if (result.term.Exited != 0) {
-        std.debug.print("\n", .{});
-        std.debug.print("❌ ERROR: Cargo command failed!\n", .{});
-        std.debug.print("\n", .{});
-        std.debug.print("Please ensure Cargo is properly installed and in your PATH.\n", .{});
         std.debug.print("\n", .{});
         std.process.exit(1);
     }
@@ -92,9 +76,7 @@ pub fn checkVendoredDeps(b: *std.Build) void {
     var missing = false;
 
     for (deps) |dep| {
-        const full_path = b.path(dep.path);
-        const path_str = full_path.getPath(b);
-        std.fs.cwd().access(path_str, .{}) catch {
+        std.Io.Dir.cwd().access(b.graph.io, dep.path, .{}) catch {
             if (!missing) {
                 std.debug.print("\n", .{});
                 std.debug.print("❌ ERROR: Required vendored dependencies are missing!\n", .{});

@@ -537,15 +537,15 @@ fn isValidSecretScalar(value: u256) bool {
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function implements private key generation without security review.
 /// Use at your own risk in production systems.
-pub fn unaudited_randomPrivateKey() !PrivateKey {
+pub fn unaudited_randomPrivateKey(io: std.Io) !PrivateKey {
     var private_key: PrivateKey = undefined;
-    crypto.random.bytes(&private_key);
+    try io.randomSecure(&private_key);
 
     // Ensure the private key is valid (non-zero and less than secp256k1 order)
     const key_as_u256 = std.mem.readInt(u256, &private_key, .big);
 
     if (!isValidSecretScalar(key_as_u256)) {
-        return unaudited_randomPrivateKey(); // Recursively generate until valid
+        return unaudited_randomPrivateKey(io); // Recursively generate until valid
     }
 
     return private_key;
@@ -654,11 +654,11 @@ fn unaudited_rfc6979Nonce(hash: Hash.Hash, private_key: PrivateKey) Rfc6979Nonce
     std.mem.writeInt(u256, &h_octets, h_reduced, .big);
 
     // Step c: Initialize V to 0x01 repeated hlen times
-    var v: [hlen]u8 = [_]u8{0x01} ** hlen;
+    var v: [hlen]u8 = @as([hlen]u8, @splat(0x01));
     defer std.crypto.secureZero(u8, &v);
 
     // Step d: Initialize K to 0x00 repeated hlen times
-    var k: [hlen]u8 = [_]u8{0x00} ** hlen;
+    var k: [hlen]u8 = @as([hlen]u8, @splat(0x00));
     defer std.crypto.secureZero(u8, &k);
 
     // Holds V || tag || int2octets(x) || bits2octets(h1); contains the private key.
@@ -772,7 +772,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     const r_scalar = Scalar.fromBytes(r_bytes, .big) catch return CryptoError.SigningFailed;
 
     // e = hash mod n (the hash may exceed n)
-    var e_wide: [48]u8 = [_]u8{0} ** 48;
+    var e_wide: [48]u8 = @as([48]u8, @splat(0));
     @memcpy(e_wide[16..], &hash);
     const e_scalar = Scalar.fromBytes48(e_wide, .big);
 
@@ -862,7 +862,7 @@ pub fn unaudited_verifyMessage(message: []const u8, signature: Signature, addres
 // ============================================================================
 
 test "private key generation" {
-    const private_key = try unaudited_randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey(std.testing.io);
 
     // Verify it's not all zeros
     var is_zero = true;
@@ -881,7 +881,7 @@ test "private key generation" {
 }
 
 test "public key derivation" {
-    const private_key = try unaudited_randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey(std.testing.io);
     const public_key = try unaudited_getPublicKey(private_key);
 
     // Verify public key is valid
@@ -892,12 +892,12 @@ test "public key derivation" {
 }
 
 test "address derivation" {
-    const private_key = try unaudited_randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey(std.testing.io);
     const public_key = try unaudited_getPublicKey(private_key);
     const address = public_key.toAddress();
 
     // Verify address is not zero
-    const zero_address = [_]u8{0} ** 20;
+    const zero_address = @as([20]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &address.bytes, &zero_address));
 }
 
@@ -916,7 +916,7 @@ test "message hashing" {
 }
 
 test "signature creation and verification" {
-    const private_key = try unaudited_randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey(std.testing.io);
     const message = "Test message for signing";
 
     // Sign the message
@@ -938,7 +938,7 @@ test "signature creation and verification" {
 }
 
 test "signature roundtrip" {
-    const private_key = try unaudited_randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey(std.testing.io);
     const message = "Roundtrip test message";
 
     // Sign message
@@ -962,7 +962,7 @@ test "signature roundtrip" {
 }
 
 test "invalid signature rejection" {
-    const private_key = try unaudited_randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey(std.testing.io);
     const message = "Test message";
     const signature = try unaudited_signMessage(message, private_key);
     const expected_address = (try unaudited_getPublicKey(private_key)).toAddress();
@@ -975,7 +975,7 @@ test "invalid signature rejection" {
     try testing.expect(!try unaudited_verifyMessage(wrong_message, signature, expected_address));
 
     // Test with wrong address
-    const wrong_address = [_]u8{0xFF} ** 20;
+    const wrong_address = @as([20]u8, @splat(0xFF));
     try testing.expect(!try unaudited_verifyMessage(message, signature, .{ .bytes = wrong_address }));
 
     // Test with invalid signature
@@ -1080,8 +1080,8 @@ test "signature hex encoding" {
 }
 
 test "generate private key" {
-    const key1 = try unaudited_randomPrivateKey();
-    const key2 = try unaudited_randomPrivateKey();
+    const key1 = try unaudited_randomPrivateKey(std.testing.io);
+    const key2 = try unaudited_randomPrivateKey(std.testing.io);
 
     // Keys should be different
     try testing.expect(!std.mem.eql(u8, &key1, &key2));
@@ -1091,7 +1091,7 @@ test "generate private key" {
     try testing.expectEqual(@as(usize, 32), key2.len);
 
     // Keys should not be zero
-    const zero_key = [_]u8{0} ** 32;
+    const zero_key = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &key1, &zero_key));
     try testing.expect(!std.mem.eql(u8, &key2, &zero_key));
 }
@@ -1242,7 +1242,7 @@ test "RFC 6979 deterministic signature - test vector 1" {
 test "RFC 6979 known answer - secp256k1 key 1, SHA-256(\"Satoshi Nakamoto\")" {
     // Widely published RFC 6979 secp256k1/SHA-256 vector (python-ecdsa, haskoin,
     // trezor-crypto): k = 8F8A276C19F4149656B280621E358CCE24F5F52542772691EE69063B74F15D15.
-    var private_key: PrivateKey = [_]u8{0} ** 32;
+    var private_key: PrivateKey = @as([32]u8, @splat(0));
     private_key[31] = 1;
     var hash: Hash.Hash = undefined;
     std.crypto.hash.sha2.Sha256.hash("Satoshi Nakamoto", &hash, .{});

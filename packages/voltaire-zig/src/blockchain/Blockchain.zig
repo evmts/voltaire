@@ -642,7 +642,7 @@ test "Blockchain - read flow with fork cache" {
         try std.testing.expect(false);
         return;
     };
-    const hash_hex = "0x" ++ ("11" ** 32);
+    const hash_hex = "0x" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("11".*)))));
     const response = try std.fmt.allocPrint(allocator, "{{\"hash\":\"{s}\",\"number\":\"0x0\"}}", .{hash_hex});
     defer allocator.free(response);
     try fork_cache.continueRequest(request.id, response);

@@ -3,7 +3,7 @@ const crypto = @import("crypto");
 const SHA256 = crypto.SHA256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -16,7 +16,7 @@ pub fn main() !void {
     // Test 1: Empty string
     {
         std.debug.print("Test: Empty string\n", .{});
-        std.debug.print("{s}\n", .{"-" ** 70});
+        std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
         const input = "";
         const expected = [_]u8{
@@ -40,7 +40,7 @@ pub fn main() !void {
     // Test 2: "abc"
     {
         std.debug.print("Test: abc\n", .{});
-        std.debug.print("{s}\n", .{"-" ** 70});
+        std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
         const input = "abc";
         const expected = [_]u8{
@@ -64,7 +64,7 @@ pub fn main() !void {
     // Test 3: "hello world"
     {
         std.debug.print("Test: hello world\n", .{});
-        std.debug.print("{s}\n", .{"-" ** 70});
+        std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
         const input = "hello world";
         const expected = [_]u8{
@@ -88,7 +88,7 @@ pub fn main() !void {
     // Test 4: 448-bit message
     {
         std.debug.print("Test: 448-bit message\n", .{});
-        std.debug.print("{s}\n", .{"-" ** 70});
+        std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
         const input = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
         const expected = [_]u8{
@@ -112,7 +112,7 @@ pub fn main() !void {
     // Test 5: 896-bit message
     {
         std.debug.print("Test: 896-bit message\n", .{});
-        std.debug.print("{s}\n", .{"-" ** 70});
+        std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
         const input = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
         const expected = [_]u8{
@@ -136,7 +136,7 @@ pub fn main() !void {
     // Test 6: One million 'a' characters
     {
         std.debug.print("Test: One million \"a\" characters\n", .{});
-        std.debug.print("{s}\n", .{"-" ** 70});
+        std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
         const expected = [_]u8{
             0xcd, 0xc7, 0x6e, 0x5c, 0x99, 0x14, 0xfb, 0x92,
@@ -176,7 +176,7 @@ pub fn main() !void {
 
     // Edge case tests
     std.debug.print("Edge Case Tests\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     // Single byte (0x00)
     {
@@ -195,7 +195,7 @@ pub fn main() !void {
 
     // All zeros (32 bytes)
     {
-        const input = [_]u8{0x00} ** 32;
+        const input = @as([32]u8, @splat(0x00));
         const expected = [_]u8{
             0x66, 0x68, 0x7a, 0xad, 0xf8, 0x62, 0xbd, 0x77,
             0x6c, 0x8f, 0xc1, 0x8b, 0x8e, 0x9f, 0x8e, 0x20,
@@ -210,7 +210,7 @@ pub fn main() !void {
 
     // All ones (32 bytes)
     {
-        const input = [_]u8{0xFF} ** 32;
+        const input = @as([32]u8, @splat(0xFF));
         const expected = [_]u8{
             0xaf, 0x96, 0x13, 0x76, 0x0f, 0x72, 0x63, 0x5f,
             0xbd, 0xb4, 0x4a, 0x5a, 0x0a, 0x63, 0xc3, 0x9f,
@@ -227,7 +227,7 @@ pub fn main() !void {
 
     // Unicode tests
     std.debug.print("Unicode Tests\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     // Emoji
     {
@@ -258,9 +258,9 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     // Summary
-    std.debug.print("{s}\n", .{"=" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('='))});
     std.debug.print("Test Summary\n", .{});
-    std.debug.print("{s}\n", .{"=" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('='))});
     std.debug.print("Total tests:  {}\n", .{passed + failed});
     std.debug.print("Passed:       {} ✓\n", .{passed});
     std.debug.print("Failed:       {}\n", .{failed});

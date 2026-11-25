@@ -13,7 +13,7 @@ const primitives = @import("primitives");
 const Hex = primitives.Hex;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -46,7 +46,7 @@ fn addressHandling(allocator: std.mem.Allocator) !void {
     }
 
     // Check for zero address
-    const zero_address = [_]u8{0} ** 20;
+    const zero_address = @as([20]u8, @splat(0));
     const is_burn = std.mem.eql(u8, addr_bytes, &zero_address);
     std.debug.print("  Is burn address? {}\n", .{is_burn});
 
@@ -169,8 +169,8 @@ fn signatureHandling(allocator: std.mem.Allocator) !void {
     std.debug.print("4. Signature handling:\n", .{});
 
     // ECDSA signature: r (32) + s (32) + v (1) = 65 bytes
-    const r = [_]u8{0xff} ** 32; // Mock r value
-    const s = [_]u8{0xee} ** 32; // Mock s value
+    const r = @as([32]u8, @splat(0xff)); // Mock r value
+    const s = @as([32]u8, @splat(0xee)); // Mock s value
     const v = [_]u8{27}; // v = 27 or 28
 
     const sig_parts = [_][]const u8{ &r, &s, &v };
@@ -209,10 +209,10 @@ fn create2Pattern(allocator: std.mem.Allocator) !void {
     defer allocator.free(deployer_bytes);
 
     // Salt (32 bytes)
-    const salt = [_]u8{0xab} ** 32;
+    const salt = @as([32]u8, @splat(0xab));
 
     // Bytecode hash (32 bytes)
-    const bytecode_hash = [_]u8{0xcd} ** 32;
+    const bytecode_hash = @as([32]u8, @splat(0xcd));
 
     // Concatenate all parts
     const create2_parts = [_][]const u8{ &prefix, deployer_bytes, &salt, &bytecode_hash };

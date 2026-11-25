@@ -16,7 +16,7 @@ const Address = primitives.Address.Address;
 const Hash = primitives.Hash.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -24,7 +24,7 @@ pub fn main() !void {
 
     // Example 1: Basic EIP-1559 transaction
     std.debug.print("1. Basic EIP-1559 Transaction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -39,8 +39,8 @@ pub fn main() !void {
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
         .v = 0, // yParity
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Type: EIP-1559 (0x02)\n", .{});
@@ -56,7 +56,7 @@ pub fn main() !void {
 
     // Example 2: Effective gas price calculation
     std.debug.print("2. Effective Gas Price Calculation\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const Scenario = struct {
         base_fee: u64,
@@ -88,7 +88,7 @@ pub fn main() !void {
 
     // Example 3: Transaction with access list
     std.debug.print("3. Transaction with Access List\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const dai_contract = try Address.fromHex("0x6B175474E89094C44Da98b954EedeAC495271d0F");
     const user_address = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
@@ -123,8 +123,8 @@ pub fn main() !void {
         .data = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb }, // transfer() selector
         .access_list = &access_list,
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Has Access List: {}\n", .{access_list_tx.access_list.len > 0});
@@ -139,7 +139,7 @@ pub fn main() !void {
 
     // Example 4: Fee estimation strategies
     std.debug.print("4. Fee Estimation Strategies\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const current_base_fee: u64 = 15_000_000_000; // 15 gwei
 
@@ -163,7 +163,7 @@ pub fn main() !void {
 
     // Example 5: Cost calculation
     std.debug.print("5. Transaction Cost Calculation\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const base_fee: u64 = 15_000_000_000;
     const gas_used: u64 = 21000;
@@ -185,7 +185,7 @@ pub fn main() !void {
 
     // Example 6: Benefits over legacy
     std.debug.print("6. EIP-1559 vs Legacy Benefits\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("  ✓ Predictable fees (base fee adjusts automatically)\n", .{});
     std.debug.print("  ✓ No overpaying (pay actual, refund excess)\n", .{});
     std.debug.print("  ✓ Faster inclusion (priority fee to miners)\n", .{});
@@ -195,7 +195,7 @@ pub fn main() !void {
 
     // Example 7: Contract deployment
     std.debug.print("7. Contract Deployment with EIP-1559\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const bytecode = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
 
@@ -210,8 +210,8 @@ pub fn main() !void {
         .data = &bytecode,
         .access_list = &[_]AccessListItem{},
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  To: null (contract creation)\n", .{});

@@ -8,7 +8,7 @@ const primitives = @import("primitives");
 const Trie = primitives.Trie;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -83,7 +83,7 @@ pub fn main() !void {
     // 6. All zeros key
     std.debug.print("\n6. All-Zeros Key\n", .{});
     std.debug.print("----------------\n", .{});
-    const zero_key = [_]u8{0} ** 32;
+    const zero_key = @as([32]u8, @splat(0));
     try trie.put(&zero_key, "all_zeros");
     const retrieved_zeros = try trie.get(&zero_key);
     std.debug.print("Key: [0x00 × 32]\n", .{});
@@ -93,7 +93,7 @@ pub fn main() !void {
     // 7. All ones key
     std.debug.print("\n7. All-Ones Key\n", .{});
     std.debug.print("---------------\n", .{});
-    const ones_key = [_]u8{0xFF} ** 32;
+    const ones_key = @as([32]u8, @splat(0xFF));
     try trie.put(&ones_key, "all_ones");
     const retrieved_ones = try trie.get(&ones_key);
     std.debug.print("Key: [0xFF × 32]\n", .{});

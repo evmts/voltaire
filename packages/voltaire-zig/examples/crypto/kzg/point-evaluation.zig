@@ -13,7 +13,7 @@ const c_kzg = crypto.c_kzg;
 const Sha256 = crypto.sha256.Sha256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -26,7 +26,7 @@ pub fn main() !void {
 
     // Step 1: Create blob and commitment
     std.debug.print("1. Creating Blob and Commitment\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var blob = getRandomBlob(12345);
     const commitment = try c_kzg.blobToKZGCommitment(&blob);
@@ -40,7 +40,7 @@ pub fn main() !void {
 
     // Step 2: Compute versioned hash
     std.debug.print("2. Computing Versioned Hash\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var commitment_hash: [32]u8 = undefined;
     Sha256.hash(&commitment, &commitment_hash);
@@ -64,7 +64,7 @@ pub fn main() !void {
 
     // Step 3: Generate proof
     std.debug.print("3. Generating KZG Proof\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var z: c_kzg.Bytes32 = undefined;
     @memset(&z, 0x42);
@@ -91,7 +91,7 @@ pub fn main() !void {
 
     // Step 4: Prepare precompile input
     std.debug.print("4. Preparing Precompile Input (192 bytes)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var precompile_input: [192]u8 = undefined;
     @memcpy(precompile_input[0..32], &versioned_hash);
@@ -134,7 +134,7 @@ pub fn main() !void {
 
     // Step 5: Verify (simulates precompile)
     std.debug.print("5. Simulating Precompile Verification\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Verify versioned hash
     var expected_hash: [32]u8 = undefined;
@@ -153,7 +153,7 @@ pub fn main() !void {
 
     // Step 6: Output format
     std.debug.print("6. Precompile Output Format\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     if (precompile_success) {
         const FIELD_ELEMENTS_PER_BLOB = 4096;
@@ -169,14 +169,14 @@ pub fn main() !void {
 
     // Step 7: Gas cost
     std.debug.print("7. Gas Cost\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("Fixed gas cost: 50,000 gas\n", .{});
     std.debug.print("Covers: BLS12-381 pairing + field arithmetic + SHA-256\n", .{});
     std.debug.print("Independent of blob size or proof validity\n\n", .{});
 
     // Step 8: Real-world usage
     std.debug.print("8. Real-World Usage\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("Use cases:\n", .{});
     std.debug.print("  1. Optimistic Rollups: Verify fraud proof blob references\n", .{});
     std.debug.print("  2. ZK Rollups: Sample blob data for data availability\n", .{});

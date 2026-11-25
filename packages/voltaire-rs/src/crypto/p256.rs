@@ -91,16 +91,16 @@ impl P256 {
     /// Returns (secret_key, public_key) where public_key is uncompressed (64 bytes).
     #[cfg(feature = "std")]
     pub fn generate_keypair() -> (SecretKey, PublicKey) {
-        use p256::elliptic_curve::rand_core::OsRng;
         use p256::ecdsa::SigningKey;
+        use p256::elliptic_curve::Generate;
 
-        let signing_key = SigningKey::random(&mut OsRng);
+        let signing_key = SigningKey::generate();
         let verifying_key = signing_key.verifying_key();
 
         let mut secret = [0u8; 32];
         secret.copy_from_slice(&signing_key.to_bytes()[..]);
 
-        let pubkey_point = verifying_key.to_encoded_point(false);
+        let pubkey_point = verifying_key.to_sec1_point(false);
         let mut public = [0u8; 64];
         // Skip the 0x04 prefix byte
         public.copy_from_slice(&pubkey_point.as_bytes()[1..65]);
@@ -118,7 +118,7 @@ impl P256 {
             .map_err(|_| Error::invalid_input("invalid P-256 secret key"))?;
 
         let verifying_key = signing_key.verifying_key();
-        let pubkey_point = verifying_key.to_encoded_point(false);
+        let pubkey_point = verifying_key.to_sec1_point(false);
 
         let mut public = [0u8; 64];
         public.copy_from_slice(&pubkey_point.as_bytes()[1..65]);
@@ -141,7 +141,7 @@ impl P256 {
             .map_err(|_| Error::invalid_input("P-256 signing failed"))?;
 
         // Normalize to low-s
-        let normalized = sig.normalize_s().unwrap_or(sig);
+        let normalized = sig.normalize_s();
 
         let mut signature = [0u8; 64];
         signature.copy_from_slice(&normalized.to_bytes()[..]);
@@ -158,17 +158,17 @@ impl P256 {
         public_key: &PublicKey,
     ) -> Result<bool> {
         use p256::ecdsa::{VerifyingKey, Signature as P256Sig, signature::hazmat::PrehashVerifier};
-        use p256::EncodedPoint;
+        use p256::Sec1Point;
 
         // Construct uncompressed point with 0x04 prefix
         let mut encoded = [0u8; 65];
         encoded[0] = 0x04;
         encoded[1..65].copy_from_slice(public_key);
 
-        let point = EncodedPoint::from_bytes(&encoded)
+        let point = Sec1Point::from_bytes(&encoded)
             .map_err(|_| Error::invalid_input("invalid P-256 public key encoding"))?;
 
-        let verifying_key = VerifyingKey::from_encoded_point(&point)
+        let verifying_key = VerifyingKey::from_sec1_point(&point)
             .map_err(|_| Error::invalid_input("invalid P-256 public key"))?;
 
         let sig = P256Sig::from_bytes(signature.into())
@@ -183,18 +183,18 @@ impl P256 {
     /// Computes shared secret from our secret key and their public key.
     /// Returns 32-byte shared secret (x-coordinate of shared point).
     pub fn ecdh(secret_key: &SecretKey, their_public: &PublicKey) -> Result<[u8; 32]> {
-        use p256::{PublicKey as P256PublicKey, EncodedPoint};
-        use p256::elliptic_curve::sec1::FromEncodedPoint;
+        use p256::{PublicKey as P256PublicKey, Sec1Point};
+        use p256::elliptic_curve::sec1::FromSec1Point;
 
         // Parse their public key
         let mut encoded = [0u8; 65];
         encoded[0] = 0x04;
         encoded[1..65].copy_from_slice(their_public);
 
-        let point = EncodedPoint::from_bytes(&encoded)
+        let point = Sec1Point::from_bytes(&encoded)
             .map_err(|_| Error::invalid_input("invalid P-256 public key encoding"))?;
 
-        let their_pk = P256PublicKey::from_encoded_point(&point)
+        let their_pk = P256PublicKey::from_sec1_point(&point)
             .into_option()
             .ok_or_else(|| Error::invalid_input("invalid P-256 public key"))?;
 
@@ -203,7 +203,7 @@ impl P256 {
             .map_err(|_| Error::invalid_input("invalid P-256 secret key"))?;
 
         // Compute shared point: their_public * our_secret
-        use p256::elliptic_curve::ops::MulByGenerator;
+        use p256::elliptic_curve::Group;
         let _ = p256::ProjectivePoint::mul_by_generator(&scalar); // Verify scalar is valid
 
         // Use diffie_hellman directly
@@ -219,14 +219,14 @@ impl P256 {
     ///
     /// Converts 64-byte uncompressed key to 33-byte compressed format.
     pub fn compress_public_key(public_key: &PublicKey) -> CompressedPublicKey {
-        use p256::EncodedPoint;
+        use p256::Sec1Point;
 
         // Construct uncompressed point with 0x04 prefix
         let mut encoded = [0u8; 65];
         encoded[0] = 0x04;
         encoded[1..65].copy_from_slice(public_key);
 
-        let point = EncodedPoint::from_bytes(&encoded).expect("valid point");
+        let point = Sec1Point::from_bytes(&encoded).expect("valid point");
         let compressed = point.compress();
 
         let mut result = [0u8; 33];
@@ -239,22 +239,22 @@ impl P256 {
     ///
     /// Converts 33-byte compressed key to 64-byte uncompressed format.
     pub fn decompress_public_key(compressed: &CompressedPublicKey) -> Result<PublicKey> {
-        use p256::{AffinePoint, EncodedPoint};
-        use p256::elliptic_curve::sec1::FromEncodedPoint;
+        use p256::{AffinePoint, Sec1Point};
+        use p256::elliptic_curve::sec1::FromSec1Point;
 
         // sec1 also parses tag 0x05 (compact point); only SEC1 compressed tags are valid here.
         if compressed[0] != 0x02 && compressed[0] != 0x03 {
             return Err(Error::invalid_input("invalid compressed P-256 public key prefix"));
         }
 
-        let point = EncodedPoint::from_bytes(compressed)
+        let point = Sec1Point::from_bytes(compressed)
             .map_err(|_| Error::invalid_input("invalid compressed P-256 public key"))?;
 
-        let affine = AffinePoint::from_encoded_point(&point)
+        let affine = AffinePoint::from_sec1_point(&point)
             .into_option()
             .ok_or_else(|| Error::invalid_input("point not on P-256 curve"))?;
 
-        let uncompressed = EncodedPoint::from(affine);
+        let uncompressed = Sec1Point::from(affine);
 
         let mut result = [0u8; 64];
         result.copy_from_slice(&uncompressed.as_bytes()[1..65]);
@@ -264,19 +264,19 @@ impl P256 {
 
     /// Validate that a public key is a valid point on the P-256 curve.
     pub fn validate_public_key(public_key: &PublicKey) -> bool {
-        use p256::{AffinePoint, EncodedPoint};
-        use p256::elliptic_curve::sec1::FromEncodedPoint;
+        use p256::{AffinePoint, Sec1Point};
+        use p256::elliptic_curve::sec1::FromSec1Point;
 
         // Construct uncompressed point with 0x04 prefix
         let mut encoded = [0u8; 65];
         encoded[0] = 0x04;
         encoded[1..65].copy_from_slice(public_key);
 
-        let Ok(point) = EncodedPoint::from_bytes(&encoded) else {
+        let Ok(point) = Sec1Point::from_bytes(&encoded) else {
             return false;
         };
 
-        AffinePoint::from_encoded_point(&point).into_option().is_some()
+        AffinePoint::from_sec1_point(&point).into_option().is_some()
     }
 
     /// Validate that a secret key is a valid scalar for P-256.
@@ -311,7 +311,7 @@ impl P256 {
         let sig = P256Sig::from_bytes(signature.into())
             .map_err(|_| Error::invalid_signature("invalid P-256 signature format"))?;
 
-        let normalized = sig.normalize_s().unwrap_or(sig);
+        let normalized = sig.normalize_s();
 
         let mut result = [0u8; 64];
         result.copy_from_slice(&normalized.to_bytes()[..]);

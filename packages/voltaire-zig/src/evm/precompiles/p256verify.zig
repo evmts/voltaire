@@ -34,7 +34,7 @@ pub const OUTPUT_LENGTH: usize = 32;
 
 /// Reduce a 32-byte big-endian integer modulo the curve order `n`.
 fn reduceToScalar(bytes: [32]u8) Scalar {
-    var wide = [_]u8{0} ** 48;
+    var wide = @as([48]u8, @splat(0));
     @memcpy(wide[16..], &bytes);
     return Scalar.fromBytes48(wide, .big);
 }
@@ -152,7 +152,7 @@ fn expectValid(input: []const u8) !void {
     const result = try execute(testing.allocator, input, GAS);
     defer result.deinit(testing.allocator);
     try testing.expectEqual(GAS, result.gas_used);
-    const expected = [_]u8{0} ** 31 ++ [_]u8{1};
+    const expected = @as([31]u8, @splat(0)) ++ [_]u8{1};
     try testing.expectEqualSlices(u8, &expected, result.output);
 }
 
@@ -214,7 +214,7 @@ test "P256VERIFY - invalid lengths return empty output and charge 6900 gas" {
     try expectInvalid(&.{});
     try expectInvalid(valid[0..1]);
     try expectInvalid(valid[0..159]);
-    var long = [_]u8{0} ** 161;
+    var long = @as([161]u8, @splat(0));
     @memcpy(long[0..160], &valid);
     try expectInvalid(&long);
 }

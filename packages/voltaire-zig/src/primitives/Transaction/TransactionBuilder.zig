@@ -207,7 +207,7 @@ pub const TransactionBuilder = struct {
     /// Validate fields and produce an unsigned transaction (zero signature).
     pub fn build(self: TransactionBuilder) BuildError!Built {
         const t = try self.resolveType();
-        const zero = [_]u8{0} ** 32;
+        const zero = @as([32]u8, @splat(0));
         const gas_limit = self.gas_limit orelse return BuildError.MissingGasLimit;
         const access_list: []const AccessListItem = self.access_list orelse &.{};
 
@@ -463,7 +463,7 @@ test "builder detects eip1559 from fee fields" {
 }
 
 test "builder detects eip4844 from blob fields" {
-    const hashes = [_]VersionedHash{.{ .bytes = [_]u8{0x01} ++ [_]u8{0xaa} ** 31 }};
+    const hashes = [_]VersionedHash{.{ .bytes = [_]u8{0x01} ++ @as([31]u8, @splat(0xaa)) }};
     const built = try TransactionBuilder.init()
         .setChainId(1)
         .setMaxFeePerGas(30)
@@ -484,8 +484,8 @@ test "builder detects eip7702 from authorization list" {
         .address = try recipient(),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{1} ** 32,
-        .s = [_]u8{2} ** 32,
+        .r = @as([32]u8, @splat(1)),
+        .s = @as([32]u8, @splat(2)),
     }};
     const built = try TransactionBuilder.init()
         .setChainId(1)
@@ -523,7 +523,7 @@ test "builder rejects invalid field combinations" {
     try testing.expectError(BuildError.MissingGasPrice, base.setType(.legacy).build());
 
     const fees = base.setChainId(1).setMaxFeePerGas(2).setMaxPriorityFeePerGas(1);
-    const hashes = [_]VersionedHash{.{ .bytes = [_]u8{0x01} ** 32 }};
+    const hashes = [_]VersionedHash{.{ .bytes = @as([32]u8, @splat(0x01)) }};
     try testing.expectError(BuildError.MissingRecipient, fees.setMaxFeePerBlobGas(1).setBlobVersionedHashes(&hashes).build());
     try testing.expectError(BuildError.MissingBlobVersionedHashes, fees.setTo(try recipient()).setMaxFeePerBlobGas(1).build());
     try testing.expectError(BuildError.MissingBlobVersionedHashes, fees.setTo(try recipient()).setMaxFeePerBlobGas(1).setBlobVersionedHashes(&.{}).build());
@@ -553,8 +553,8 @@ test "builder sign recovers signer for every type" {
     const allocator = testing.allocator;
     const me = try signer();
     const to = try recipient();
-    const hashes = [_]VersionedHash{.{ .bytes = [_]u8{0x01} ++ [_]u8{0xbb} ** 31 }};
-    const auths = [_]Authorization{.{ .chain_id = 1, .address = to, .nonce = 0, .v = 0, .r = [_]u8{1} ** 32, .s = [_]u8{2} ** 32 }};
+    const hashes = [_]VersionedHash{.{ .bytes = [_]u8{0x01} ++ @as([31]u8, @splat(0xbb)) }};
+    const auths = [_]Authorization{.{ .chain_id = 1, .address = to, .nonce = 0, .v = 0, .r = @as([32]u8, @splat(1)), .s = @as([32]u8, @splat(2)) }};
     const fees = TransactionBuilder.init().setChainId(1).setGasLimit(60_000).setTo(to).setMaxFeePerGas(30).setMaxPriorityFeePerGas(2);
 
     const builders = [_]TransactionBuilder{

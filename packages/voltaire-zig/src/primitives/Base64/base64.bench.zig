@@ -3,8 +3,8 @@ const zbench = @import("zbench");
 const primitives = @import("primitives");
 const Base64 = primitives.Base64;
 
-const data_64 = [_]u8{0xab} ** 64;
-const data_1k = [_]u8{0xcd} ** 1024;
+const data_64 = @as([64]u8, @splat(0xab));
+const data_1k = @as([1024]u8, @splat(0xcd));
 const b64_64 = "q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urqw==";
 
 fn benchBase64Encode64B(allocator: std.mem.Allocator) void {
@@ -31,11 +31,8 @@ fn benchBase64IsValid(allocator: std.mem.Allocator) void {
     std.mem.doNotOptimizeAway(valid);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -44,7 +41,6 @@ pub fn main() !void {
     try bench.add("Base64.decode (64B)", benchBase64Decode64B, .{});
     try bench.add("Base64.isValid (64B)", benchBase64IsValid, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

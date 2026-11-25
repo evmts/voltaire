@@ -188,7 +188,7 @@ test "JournaledState - basic operations without fork" {
     var state = try JournaledState.init(allocator, null);
     defer state.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const account = StateCache.AccountState{
         .nonce = 5,
         .balance = 1000,
@@ -219,7 +219,7 @@ test "JournaledState - checkpoint and revert" {
     var state = try JournaledState.init(allocator, null);
     defer state.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const account1 = StateCache.AccountState{
         .nonce = 5,
         .balance = 1000,
@@ -266,7 +266,7 @@ test "JournaledState - checkpoint and commit" {
     var state = try JournaledState.init(allocator, null);
     defer state.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const account1 = StateCache.AccountState{
         .nonce = 5,
         .balance = 1000,
@@ -301,7 +301,7 @@ test "JournaledState - default values without fork" {
     var state = try JournaledState.init(allocator, null);
     defer state.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x99} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x99} ++ @as([19]u8, @splat(0)) };
 
     // Should return default values for non-existent data
     const account = try state.getAccount(addr);
@@ -320,7 +320,7 @@ test "JournaledState - nested checkpoints" {
     var state = try JournaledState.init(allocator, null);
     defer state.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
 
     // Level 0
     try state.putStorage(addr, 1, 100);
@@ -349,8 +349,8 @@ test "JournaledState - nested checkpoints" {
 }
 
 test "JournaledState - checkpoint is atomic under OOM" {
-    const addr1 = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
-    const addr2 = Address{ .bytes = [_]u8{0x22} ++ [_]u8{0} ** 19 };
+    const addr1 = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
+    const addr2 = Address{ .bytes = [_]u8{0x22} ++ @as([19]u8, @splat(0)) };
     const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
 
     // Fail every allocation index in turn so each of the three cache

@@ -44,7 +44,7 @@ fn encodeIndex(allocator: std.mem.Allocator, index: usize) ![]u8 {
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -56,8 +56,8 @@ pub fn main() !void {
 
     // Transaction 0: Transfer
     const tx0 = Transaction{
-        .from = [_]u8{0x12} ++ [_]u8{0} ** 19,
-        .to = [_]u8{0x34} ++ [_]u8{0} ** 19,
+        .from = [_]u8{0x12} ++ @as([19]u8, @splat(0)),
+        .to = [_]u8{0x34} ++ @as([19]u8, @splat(0)),
         .value = 1_000_000_000_000_000_000, // 1 ETH
         .nonce = 5,
         .gas_limit = 21000,
@@ -77,8 +77,8 @@ pub fn main() !void {
 
     // Transaction 1: Contract call
     const tx1 = Transaction{
-        .from = [_]u8{0x56} ++ [_]u8{0} ** 19,
-        .to = [_]u8{0xAB} ++ [_]u8{0} ** 19,
+        .from = [_]u8{0x56} ++ @as([19]u8, @splat(0)),
+        .to = [_]u8{0xAB} ++ @as([19]u8, @splat(0)),
         .value = 0, // No ETH transfer
         .nonce = 10,
         .gas_limit = 100000,
@@ -98,8 +98,8 @@ pub fn main() !void {
 
     // Transaction 2: Another transfer
     const tx2 = Transaction{
-        .from = [_]u8{0x78} ++ [_]u8{0} ** 19,
-        .to = [_]u8{0x9A} ++ [_]u8{0} ** 19,
+        .from = [_]u8{0x78} ++ @as([19]u8, @splat(0)),
+        .to = [_]u8{0x9A} ++ @as([19]u8, @splat(0)),
         .value = 500_000_000_000_000_000, // 0.5 ETH
         .nonce = 3,
         .gas_limit = 21000,

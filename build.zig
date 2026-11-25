@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) void {
     lib_build.checkVendoredDeps(b);
 
     // STEP 2: Verify Cargo is installed for Rust dependencies
-    lib_build.checkCargoInstalled();
+    lib_build.checkCargoInstalled(b);
 
     // STEP 3: Build Rust crate (crypto_wrappers: bn254 + keccak FFI)
     const cargo_build_step = lib_build.createCargoBuildStep(b, optimize, target);
@@ -35,16 +35,8 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(blst_lib);
     b.installArtifact(c_kzg_lib);
 
-    // Create c_kzg module with proper bindings root
-    const c_kzg_mod = b.addModule("c_kzg", .{
-        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    c_kzg_mod.linkLibrary(c_kzg_lib);
-    c_kzg_mod.linkLibrary(blst_lib);
-    c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
-    c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+    // Create c_kzg module with proper bindings root (via addTranslateC)
+    const c_kzg_mod = createCKzgModule(b, "c_kzg", target, optimize, c_kzg_lib, blst_lib);
 
     // Crypto module - export for external packages
     const crypto_mod = b.addModule("crypto", .{
@@ -53,6 +45,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
+    addCryptoCImports(b, crypto_mod, target, optimize);
     crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib")); // For keccak_wrapper.h
 
     // z-ens-normalize module
@@ -777,15 +770,7 @@ pub fn build(b: *std.Build) void {
     const wasm_c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, wasm_target, .ReleaseSmall, wasm_blst_lib);
 
     // Create WASM-targeted c_kzg module
-    const wasm_c_kzg_mod = b.addModule("c_kzg_wasm", .{
-        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/root.zig"),
-        .target = wasm_target,
-        .optimize = .ReleaseSmall,
-    });
-    wasm_c_kzg_mod.linkLibrary(wasm_c_kzg_lib);
-    wasm_c_kzg_mod.linkLibrary(wasm_blst_lib);
-    wasm_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
-    wasm_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+    const wasm_c_kzg_mod = createCKzgModule(b, "c_kzg_wasm", wasm_target, .ReleaseSmall, wasm_c_kzg_lib, wasm_blst_lib);
 
     // Create WASM-targeted crypto module
     const wasm_crypto_mod = b.addModule("crypto_wasm", .{
@@ -794,6 +779,7 @@ pub fn build(b: *std.Build) void {
         .optimize = .ReleaseSmall,
     });
     wasm_crypto_mod.addImport("c_kzg", wasm_c_kzg_mod);
+    addCryptoCImports(b, wasm_crypto_mod, wasm_target, .ReleaseSmall);
     wasm_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
 
     // Create WASM-targeted primitives module
@@ -873,11 +859,12 @@ fn buildBenchmarks(
     cargo_build_step: *std.Build.Step,
 ) void {
     // Try to open bench directory
-    const bench_dir = std.fs.cwd().openDir("packages/voltaire-zig/bench", .{ .iterate = true }) catch return;
+    var bench_dir = std.Io.Dir.cwd().openDir(b.graph.io, "packages/voltaire-zig/bench", .{ .iterate = true }) catch return;
+    defer bench_dir.close(b.graph.io);
     var walker = bench_dir.walk(b.allocator) catch return;
     defer walker.deinit();
 
-    while (walker.next() catch null) |entry| {
+    while (walker.next(b.graph.io) catch null) |entry| {
         if (entry.kind != .file) continue;
         if (!std.mem.endsWith(u8, entry.basename, ".zig")) continue;
 
@@ -944,12 +931,13 @@ fn buildZBenchmarks(
     const bench_step = b.step("bench", "Run zbench performance benchmarks");
 
     // Recursively find all *.bench.zig files in src/
-    const src_dir = std.fs.cwd().openDir("packages/voltaire-zig/src", .{ .iterate = true }) catch return;
+    var src_dir = std.Io.Dir.cwd().openDir(b.graph.io, "packages/voltaire-zig/src", .{ .iterate = true }) catch return;
+    defer src_dir.close(b.graph.io);
     var walker = src_dir.walk(b.allocator) catch return;
     defer walker.deinit();
 
     var bench_count: u32 = 0;
-    while (walker.next() catch null) |entry| {
+    while (walker.next(b.graph.io) catch null) |entry| {
         if (entry.kind != .file) continue;
         if (!std.mem.endsWith(u8, entry.basename, ".bench.zig")) continue;
 
@@ -1236,16 +1224,27 @@ fn addGoBuildSteps(b: *std.Build, build_ts_native_step: ?*std.Build.Step) void {
     go_build.step.dependOn(native_step);
     build_go_step.dependOn(&go_build.step);
 
-    const native_dir = b.getInstallPath(.{ .custom = "native" }, "");
+    const cwd_path = std.Io.Dir.cwd().realPathFileAlloc(b.graph.io, ".", b.allocator) catch null;
+    const native_dir = if (cwd_path) |cwd|
+        b.pathJoin(&.{ cwd, "zig-out", "native" })
+    else
+        "../../zig-out/native";
     const host_os = b.graph.host.result.os.tag;
-    const existing_flags = b.graph.env_map.get("CGO_LDFLAGS") orelse "-O2 -g";
+    const existing_flags = b.graph.environ_map.get("CGO_LDFLAGS") orelse "-O2 -g";
     const link_flags = if (host_os == .windows)
         b.fmt("{s} '-L{s}'", .{ existing_flags, native_dir })
     else
         b.fmt("{s} '-L{s}' '-Wl,-rpath,{s}'", .{ existing_flags, native_dir, native_dir });
     go_test.setEnvironmentVariable("CGO_LDFLAGS", link_flags);
     go_build.setEnvironmentVariable("CGO_LDFLAGS", link_flags);
-    if (host_os == .windows) go_test.addPathDir(native_dir);
+    if (host_os == .windows) {
+        const existing_path = b.graph.environ_map.get("PATH") orelse "";
+        const updated_path = if (existing_path.len > 0)
+            b.fmt("{s};{s}", .{ native_dir, existing_path })
+        else
+            native_dir;
+        go_test.setEnvironmentVariable("PATH", updated_path);
+    }
 }
 
 /// Add TypeScript-related build steps
@@ -1481,15 +1480,7 @@ fn addCrossPlatformNativeBuilds(
         const target_cargo_build_step = lib_build.createCargoBuildStep(b, .ReleaseFast, target);
 
         // Create target-specific c_kzg module
-        const target_c_kzg_mod = b.addModule(b.fmt("c_kzg_{s}", .{platform.name}), .{
-            .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/root.zig"),
-            .target = target,
-            .optimize = .ReleaseFast,
-        });
-        target_c_kzg_mod.linkLibrary(target_c_kzg_lib);
-        target_c_kzg_mod.linkLibrary(target_blst_lib);
-        target_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
-        target_c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+        const target_c_kzg_mod = createCKzgModule(b, b.fmt("c_kzg_{s}", .{platform.name}), target, .ReleaseFast, target_c_kzg_lib, target_blst_lib);
 
         // Create target-specific crypto module
         const target_crypto_mod = b.addModule(b.fmt("crypto_{s}", .{platform.name}), .{
@@ -1498,6 +1489,7 @@ fn addCrossPlatformNativeBuilds(
             .optimize = .ReleaseFast,
         });
         target_crypto_mod.addImport("c_kzg", target_c_kzg_mod);
+        addCryptoCImports(b, target_crypto_mod, target, .ReleaseFast);
         target_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
 
         // z-ens-normalize module for this target
@@ -1673,6 +1665,69 @@ fn addCryptoWasmBuilds(
         "Note: Complex crypto modules (secp256k1, bn254, ripemd160) require refactoring for standalone WASM builds.",
     });
     crypto_wasm_step.dependOn(&echo_msg.step);
+}
+
+fn createCKzgModule(
+    b: *std.Build,
+    name: []const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+) *std.Build.Module {
+    const ckzg_c = b.addTranslateC(.{
+        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/src/ckzg.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    ckzg_c.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
+    ckzg_c.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+
+    const blst_c = b.addTranslateC(.{
+        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings/blst.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    blst_c.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+
+    const c_kzg_mod = b.addModule(name, .{
+        .root_source_file = b.path("packages/voltaire-zig/lib/c_kzg_root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    c_kzg_mod.addImport("ckzg_c", ckzg_c.createModule());
+    c_kzg_mod.addImport("blst_c", blst_c.createModule());
+    c_kzg_mod.addAnonymousImport("trusted_setup.txt", .{
+        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/trusted_setup.txt"),
+    });
+    c_kzg_mod.linkLibrary(c_kzg_lib);
+    c_kzg_mod.linkLibrary(blst_lib);
+    c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));
+    c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
+    return c_kzg_mod;
+}
+
+fn addCryptoCImports(
+    b: *std.Build,
+    crypto_mod: *std.Build.Module,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) void {
+    const bn254_c = b.addTranslateC(.{
+        .root_source_file = b.path("packages/voltaire-zig/lib/bn254_wrapper.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    crypto_mod.addImport("bn254_c", bn254_c.createModule());
+
+    if (target.result.cpu.arch != .wasm32) {
+        const keccak_c = b.addTranslateC(.{
+            .root_source_file = b.path("packages/voltaire-zig/lib/keccak_wrapper.h"),
+            .target = target,
+            .optimize = optimize,
+        });
+        crypto_mod.addImport("keccak_c", keccak_c.createModule());
+    }
 }
 
 /// Links the system libraries that the Rust `crypto_wrappers` staticlib needs.

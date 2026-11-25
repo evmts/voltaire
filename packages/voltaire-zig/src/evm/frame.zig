@@ -101,7 +101,7 @@ pub fn Frame(comptime config: EvmConfig) type {
             hardfork: Hardfork,
             is_static: bool,
         ) !Self {
-            var stack = std.ArrayList(u256){};
+            var stack = std.ArrayList(u256).empty;
             try stack.ensureTotalCapacity(allocator, 1024);
             errdefer stack.deinit(allocator);
 

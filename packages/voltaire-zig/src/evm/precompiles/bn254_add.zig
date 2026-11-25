@@ -45,7 +45,7 @@ fn executeAtGas(
     }
 
     // Input: 128 bytes (two points, 64 bytes each)
-    var input_buf: [128]u8 = [_]u8{0} ** 128;
+    var input_buf: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(input_buf[0..@min(input.len, 128)], input[0..@min(input.len, 128)]);
 
     const output = try allocator.alloc(u8, 64);
@@ -68,7 +68,7 @@ test "bn254Add - point at infinity" {
     const allocator = testing.allocator;
 
     // Adding point at infinity to itself
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -80,7 +80,7 @@ test "bn254Add - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = execute(allocator, &input, GAS - 1);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -89,7 +89,7 @@ test "bn254Add - exact gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -100,7 +100,7 @@ test "bn254Add - input too short" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 127;
+    const input = @as([127]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -111,7 +111,7 @@ test "bn254Add - input too long padded correctly" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 200;
+    const input = @as([200]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -139,7 +139,7 @@ test "bn254Add - output size validation" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -200,7 +200,7 @@ test "bn254Add - geth cdetrio1 empty input" {
     const allocator = testing.allocator;
 
     const input = [_]u8{};
-    const expected = [_]u8{0} ** 64;
+    const expected = @as([64]u8, @splat(0));
 
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
@@ -471,13 +471,13 @@ test "bn254Add - non-canonical coordinates that alias valid points are rejected"
         "0000000000000000000000000000000000000000000000000000000000000001" ++ "0000000000000000000000000000000000000000000000000000000000000002" ++ "0000000000000000000000000000000000000000000000000000000000000001" ++ "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49",
     };
     for (cases) |case| {
-        var input: [128]u8 = [_]u8{0} ** 128;
+        var input: [128]u8 = @as([128]u8, @splat(0));
         _ = try std.fmt.hexToBytes(&input, case);
         try testing.expectError(error.InvalidPoint, execute(allocator, &input, 1_000_000));
     }
 
     // The canonical generator plus infinity still succeeds.
-    var input: [128]u8 = [_]u8{0} ** 128;
+    var input: [128]u8 = @as([128]u8, @splat(0));
     input[31] = 1;
     input[63] = 2;
     const result = try execute(allocator, &input, GAS);
@@ -494,7 +494,7 @@ test "bn254Add - Byzantium and Istanbul pricing" {
     try testing.expectEqual(@as(u64, 150), gasCost(.ISTANBUL));
     try testing.expectEqual(@as(u64, 150), gasCost(.PRAGUE));
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
 
     // EIP-196 price before Istanbul
     try testing.expectError(error.OutOfGas, executeWithHardfork(allocator, &input, 499, .BYZANTIUM));

@@ -7,7 +7,7 @@ const Keccak256 = crypto.Keccak256;
 const Hardfork = primitives.Hardfork;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -34,7 +34,7 @@ pub fn main() !void {
 
     // Prepare ECRECOVER input (128 bytes)
     // Format: hash(32) || v(32, padded) || r(32) || s(32)
-    var input: [128]u8 = [_]u8{0} ** 128;
+    var input: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(input[0..32], &message_hash);
     input[63] = signature.v; // v in last byte of second 32-byte word
     @memcpy(input[64..96], &signature.r);
@@ -60,7 +60,7 @@ pub fn main() !void {
 
     // Example 2: Invalid signature (returns zero address)
     std.debug.print("\n=== Invalid Signature Test ===\n", .{});
-    var invalid_input: [128]u8 = [_]u8{0} ** 128;
+    var invalid_input: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(invalid_input[0..32], &message_hash);
     invalid_input[63] = 27; // Valid v
     // r and s are all zeros (invalid)

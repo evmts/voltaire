@@ -15,7 +15,7 @@ pub fn main() !void {
 
     // 1. Key Generation
     try stdout.print("1. Key Generation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("BLS key generation:\n", .{});
     try stdout.print("  1. Generate random 32-byte private key (scalar)\n", .{});
@@ -25,7 +25,7 @@ pub fn main() !void {
 
     // 2. Message Hashing
     try stdout.print("2. Hash-to-Curve (Message -> G1 Point)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Convert message to G1 curve point:\n", .{});
     try stdout.print("  1. Hash message with domain separation tag (DST)\n", .{});
@@ -37,7 +37,7 @@ pub fn main() !void {
 
     // 3. Signature Generation
     try stdout.print("3. Signature Generation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Create signature:\n", .{});
     try stdout.print("  signature = privkey * H(message)\n", .{});
@@ -48,7 +48,7 @@ pub fn main() !void {
 
     // 4. Signature Verification
     try stdout.print("4. Signature Verification\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Verification equation:\n", .{});
     try stdout.print("  e(signature, G2_generator) = e(H(message), publicKey)\n", .{});
@@ -60,7 +60,7 @@ pub fn main() !void {
 
     // 5. Pairing Check Format
     try stdout.print("5. Pairing Check Format\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Rearrange verification for single check:\n", .{});
     try stdout.print("  e(sig, G2) * e(-H(msg), pubkey) = 1\n", .{});
@@ -71,7 +71,7 @@ pub fn main() !void {
 
     // 6. Deterministic Signatures
     try stdout.print("6. Deterministic Signatures\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("BLS signatures are deterministic:\n", .{});
     try stdout.print("  - Same message + key -> same signature\n", .{});
@@ -81,7 +81,7 @@ pub fn main() !void {
 
     // 7. Domain Separation
     try stdout.print("7. Domain Separation Tags (DST)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Ethereum uses different DSTs for each signature type:\n", .{});
     try stdout.print("\nBeacon blocks:\n", .{});
@@ -94,7 +94,7 @@ pub fn main() !void {
 
     // 8. Security Considerations
     try stdout.print("8. Security Considerations\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Private key security:\n", .{});
     try stdout.print("  - Must be 32 random bytes from CSPRNG\n", .{});
@@ -107,7 +107,7 @@ pub fn main() !void {
 
     // 9. Performance
     try stdout.print("9. Performance (Native BLST)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Operation timings:\n", .{});
     try stdout.print("  - Key generation: ~80 μs\n", .{});
@@ -120,7 +120,7 @@ pub fn main() !void {
 
     // 10. Ethereum Validator Example
     try stdout.print("10. Ethereum Validator Workflow\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Validator signs beacon block:\n", .{});
     try stdout.print("  1. Compute block root (32-byte hash)\n", .{});

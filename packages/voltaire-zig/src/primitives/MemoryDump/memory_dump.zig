@@ -111,7 +111,7 @@ pub const MemoryDump = struct {
 
     /// Encode to JSON
     pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.appendSlice(allocator, "{\"data\":\"");
@@ -169,16 +169,16 @@ test "MemoryDump: empty" {
 }
 
 test "MemoryDump: wordCount" {
-    const data1 = [_]u8{0} ** 32;
+    const data1 = @as([32]u8, @splat(0));
     try testing.expectEqual(@as(usize, 1), MemoryDump.from(&data1).wordCount());
 
-    const data2 = [_]u8{0} ** 33;
+    const data2 = @as([33]u8, @splat(0));
     try testing.expectEqual(@as(usize, 2), MemoryDump.from(&data2).wordCount());
 
-    const data3 = [_]u8{0} ** 64;
+    const data3 = @as([64]u8, @splat(0));
     try testing.expectEqual(@as(usize, 2), MemoryDump.from(&data3).wordCount());
 
-    const data4 = [_]u8{0} ** 65;
+    const data4 = @as([65]u8, @splat(0));
     try testing.expectEqual(@as(usize, 3), MemoryDump.from(&data4).wordCount());
 }
 

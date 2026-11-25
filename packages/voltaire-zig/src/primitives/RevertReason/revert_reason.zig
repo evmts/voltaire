@@ -104,7 +104,7 @@ pub const RevertReason = union(enum) {
 
     /// Create a Panic reason
     pub fn panic(code: u256) RevertReason {
-        const panic_code: PanicCode = if (code <= 255) @enumFromInt(@as(u8, @intCast(code))) else .generic;
+        const panic_code: PanicCode = if (code <= 255) @fromBackingInt(@intCast(@as(u8, @intCast(code)))) else .generic;
         return RevertReason{ .Panic = .{
             .code = code,
             .description = panic_code.description(),
@@ -397,7 +397,7 @@ test "PanicCode.description - known codes" {
 }
 
 test "PanicCode.description - unknown code" {
-    const unknown_code: PanicCode = @enumFromInt(255);
+    const unknown_code: PanicCode = @fromBackingInt(@intCast(255));
     try std.testing.expectEqualStrings("Unknown panic code", unknown_code.description());
 }
 

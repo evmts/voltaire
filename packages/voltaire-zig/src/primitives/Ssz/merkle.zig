@@ -6,7 +6,7 @@ const sha256 = std.crypto.hash.sha2.Sha256;
 ///
 /// Hash tree root computation for Merkle proofs
 const CHUNK_SIZE = 32;
-const ZERO_HASH = [_]u8{0} ** 32;
+const ZERO_HASH = @as([32]u8, @splat(0));
 
 /// Chunks data into 32-byte leaves, padding the last chunk with zeros if needed
 fn chunkify(allocator: std.mem.Allocator, data: []const u8) ![][CHUNK_SIZE]u8 {
@@ -245,7 +245,7 @@ test "MerkleTree from empty errors" {
 
 test "MerkleTree single leaf root is leaf" {
     const allocator = std.testing.allocator;
-    const a = [_]u8{0x11} ** 32;
+    const a = @as([32]u8, @splat(0x11));
     const tree = try MerkleTree.from(allocator, &.{a});
     defer tree.deinit(allocator);
     try std.testing.expectEqual(a, tree.getRoot());
@@ -260,7 +260,7 @@ test "MerkleTree single leaf root is leaf" {
 test "MerkleTree keccak256 known vector" {
     // keccak256(0x00 ** 64)
     const allocator = std.testing.allocator;
-    const z = [_]u8{0} ** 32;
+    const z = @as([32]u8, @splat(0));
     const tree = try MerkleTree.from(allocator, &.{ z, z });
     defer tree.deinit(allocator);
     var expected: [32]u8 = undefined;
@@ -270,9 +270,9 @@ test "MerkleTree keccak256 known vector" {
 
 test "MerkleTree odd leaves pad with last leaf" {
     const allocator = std.testing.allocator;
-    const a = [_]u8{1} ** 32;
-    const b = [_]u8{2} ** 32;
-    const c = [_]u8{3} ** 32;
+    const a = @as([32]u8, @splat(1));
+    const b = @as([32]u8, @splat(2));
+    const c = @as([32]u8, @splat(3));
     const tree = try MerkleTree.from(allocator, &.{ a, b, c });
     defer tree.deinit(allocator);
 
@@ -286,7 +286,7 @@ test "MerkleTree odd leaves pad with last leaf" {
 test "MerkleTree proofs verify for every leaf" {
     const allocator = std.testing.allocator;
     var leaves: [5][32]u8 = undefined;
-    for (&leaves, 0..) |*l, i| l.* = [_]u8{@intCast(i + 1)} ** 32;
+    for (&leaves, 0..) |*l, i| l.* = @as([32]u8, @splat(@intCast(i + 1)));
     const tree = try MerkleTree.from(allocator, &leaves);
     defer tree.deinit(allocator);
     try std.testing.expectEqual(@as(usize, 3), tree.depth);
@@ -302,10 +302,10 @@ test "MerkleTree proofs verify for every leaf" {
 
 test "MerkleTree proof sibling order" {
     const allocator = std.testing.allocator;
-    const a = [_]u8{1} ** 32;
-    const b = [_]u8{2} ** 32;
-    const c = [_]u8{3} ** 32;
-    const d = [_]u8{4} ** 32;
+    const a = @as([32]u8, @splat(1));
+    const b = @as([32]u8, @splat(2));
+    const c = @as([32]u8, @splat(3));
+    const d = @as([32]u8, @splat(4));
     const proof = try MerkleTree.proofFromLeaves(allocator, &.{ a, b, c, d }, 2);
     defer proof.deinit(allocator);
     try std.testing.expectEqual(d, proof.siblings[0]);
@@ -314,7 +314,7 @@ test "MerkleTree proof sibling order" {
 
 test "MerkleTree verify rejects tampered proof" {
     const allocator = std.testing.allocator;
-    const leaves = [_][32]u8{ [_]u8{1} ** 32, [_]u8{2} ** 32, [_]u8{3} ** 32, [_]u8{4} ** 32 };
+    const leaves = [_][32]u8{ @as([32]u8, @splat(1)), @as([32]u8, @splat(2)), @as([32]u8, @splat(3)), @as([32]u8, @splat(4)) };
     const tree = try MerkleTree.from(allocator, &leaves);
     defer tree.deinit(allocator);
 
@@ -330,12 +330,12 @@ test "MerkleTree verify rejects tampered proof" {
     try std.testing.expect(!try MerkleTree.verify(proof, tree.getRoot()));
     proof.leaf_index = 1;
 
-    try std.testing.expect(!try MerkleTree.verify(proof, [_]u8{0} ** 32));
+    try std.testing.expect(!try MerkleTree.verify(proof, @as([32]u8, @splat(0))));
 }
 
 test "MerkleTree verify rejects wrong proof length" {
     const allocator = std.testing.allocator;
-    const leaves = [_][32]u8{ [_]u8{1} ** 32, [_]u8{2} ** 32 };
+    const leaves = [_][32]u8{ @as([32]u8, @splat(1)), @as([32]u8, @splat(2)) };
     const tree = try MerkleTree.from(allocator, &leaves);
     defer tree.deinit(allocator);
     var proof = try tree.getProof(allocator, 0);
@@ -346,14 +346,14 @@ test "MerkleTree verify rejects wrong proof length" {
 
 test "MerkleTree getProof out of bounds" {
     const allocator = std.testing.allocator;
-    const leaves = [_][32]u8{ [_]u8{1} ** 32, [_]u8{2} ** 32 };
+    const leaves = [_][32]u8{ @as([32]u8, @splat(1)), @as([32]u8, @splat(2)) };
     try std.testing.expectError(MerkleTree.Error.LeafIndexOutOfBounds, MerkleTree.proofFromLeaves(allocator, &leaves, 2));
     try std.testing.expectError(MerkleTree.Error.EmptyTree, MerkleTree.proofFromLeaves(allocator, &.{}, 0));
 }
 
 test "chunkify single chunk" {
     const allocator = std.testing.allocator;
-    const data = [_]u8{1} ** 16; // Half chunk
+    const data = @as([16]u8, @splat(1)); // Half chunk
     const chunks = try chunkify(allocator, &data);
     defer allocator.free(chunks);
 
@@ -366,7 +366,7 @@ test "chunkify single chunk" {
 
 test "chunkify multiple chunks" {
     const allocator = std.testing.allocator;
-    const data = [_]u8{0xAA} ** 64; // Two full chunks
+    const data = @as([64]u8, @splat(0xAA)); // Two full chunks
     const chunks = try chunkify(allocator, &data);
     defer allocator.free(chunks);
 

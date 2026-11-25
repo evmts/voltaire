@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const a = gpa.allocator();
 
@@ -208,7 +208,7 @@ pub fn main() !void {
     std.debug.print("6. Zero Hash Validation\n\n", .{});
 
     const hashes = [_]Hash{
-        Hash.fromBytes(&([_]u8{0} ** 32)), // Zero
+        Hash.fromBytes(&(@as([32]u8, @splat(0)))), // Zero
         try Hash.keccak256String("hello"), // Non-zero
         Hash.ZERO, // Zero constant
         Hash.random(), // Non-zero

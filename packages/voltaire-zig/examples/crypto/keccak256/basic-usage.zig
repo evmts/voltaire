@@ -15,7 +15,7 @@ pub fn main() !void {
 
     // 1. Hash raw bytes
     try stdout.print("1. Hash Raw Bytes\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const data = [_]u8{ 1, 2, 3, 4, 5 };
     var hash: [32]u8 = undefined;
@@ -30,7 +30,7 @@ pub fn main() !void {
 
     // 2. Hash UTF-8 string
     try stdout.print("2. Hash UTF-8 String\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const message = "hello";
     var message_hash: [32]u8 = undefined;
@@ -54,7 +54,7 @@ pub fn main() !void {
 
     // 3. Hash hex-encoded data (manual decode)
     try stdout.print("3. Hash Hex-Encoded Data\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const hex_bytes = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
     var hex_hash: [32]u8 = undefined;
@@ -69,7 +69,7 @@ pub fn main() !void {
 
     // 4. Empty input (produces known constant)
     try stdout.print("4. Empty Input Hash\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const empty: []const u8 = &.{};
     var empty_hash: [32]u8 = undefined;
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     // 5. Determinism - same input always produces same output
     try stdout.print("5. Deterministic Hashing\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const input = "test";
     var hash1: [32]u8 = undefined;
@@ -117,7 +117,7 @@ pub fn main() !void {
 
     // 6. Avalanche effect - small input change causes large output change
     try stdout.print("6. Avalanche Effect\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const original = "The quick brown fox jumps over the lazy dog";
     const modified = "The quick brown fox jumps over the lazy doh"; // Changed last letter

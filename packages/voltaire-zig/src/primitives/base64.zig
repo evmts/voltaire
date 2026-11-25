@@ -40,7 +40,7 @@ pub fn calcEncodedSize(data_len: usize) usize {
 
 /// Calculate maximum decoded size for given encoded length
 pub fn calcDecodedSize(encoded_len: usize) !usize {
-    return std.base64.standard.Decoder.calcSizeForSlice(&[_]u8{0} ** encoded_len);
+    return std.base64.standard.Decoder.calcSizeForSlice(&@as([encoded_len]u8, @splat(0)));
 }
 
 /// Encode UTF-8 string to standard base64
@@ -149,7 +149,7 @@ pub fn calcEncodedSizeUrlSafe(data_len: usize) usize {
 
 /// Calculate maximum decoded size for URL-safe base64
 pub fn calcDecodedSizeUrlSafe(encoded_len: usize) !usize {
-    return std.base64.url_safe_no_pad.Decoder.calcSizeForSlice(&[_]u8{0} ** encoded_len);
+    return std.base64.url_safe_no_pad.Decoder.calcSizeForSlice(&@as([encoded_len]u8, @splat(0)));
 }
 
 // ============================================================================

@@ -12,7 +12,7 @@ const crypto = @import("crypto");
 const c_kzg = crypto.c_kzg;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -20,7 +20,7 @@ pub fn main() !void {
 
     // Step 1: Understanding trusted setup
     std.debug.print("1. What is the Trusted Setup?\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("KZG requires a \"Powers of Tau\" ceremony:\n", .{});
     std.debug.print("  - Secret value τ (tau) from multi-party computation\n", .{});
@@ -36,7 +36,7 @@ pub fn main() !void {
 
     // Step 2: Loading trusted setup
     std.debug.print("2. Loading Trusted Setup\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Loading embedded trusted setup...\n", .{});
     const ckzg = @import("c_kzg");
@@ -45,7 +45,7 @@ pub fn main() !void {
 
     // Step 3: Using KZG operations
     std.debug.print("3. Using KZG After Setup\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var blob = getRandomBlob(12345);
     std.debug.print("Generated blob: {} bytes\n", .{blob.len});
@@ -56,7 +56,7 @@ pub fn main() !void {
 
     // Step 4: Trusted setup structure
     std.debug.print("4. Trusted Setup Structure\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("G1 points (for commitments):\n", .{});
     std.debug.print("  Count: 4096 points\n", .{});
@@ -75,7 +75,7 @@ pub fn main() !void {
 
     // Step 5: Security properties
     std.debug.print("5. Security Properties\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Trust assumptions:\n", .{});
     std.debug.print("  ✓ At least 1 of 140,000+ participants honest\n", .{});
@@ -95,7 +95,7 @@ pub fn main() !void {
 
     // Step 6: Performance
     std.debug.print("6. Performance Considerations\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Load once, reuse:\n", .{});
     std.debug.print("  - Setup loaded once per process\n", .{});
@@ -104,7 +104,7 @@ pub fn main() !void {
 
     // Step 7: Cleanup
     std.debug.print("7. Cleanup and Lifecycle\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Freeing trusted setup...\n", .{});
     try ckzg.freeTrustedSetup();
@@ -126,7 +126,7 @@ pub fn main() !void {
 
     // Step 8: Constants
     std.debug.print("8. Setup-Related Constants\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Blob parameters:\n", .{});
     std.debug.print("  FIELD_ELEMENTS_PER_BLOB: {}\n", .{c_kzg.FIELD_ELEMENTS_PER_BLOB});

@@ -15,7 +15,7 @@ pub fn main() !void {
 
     // 1. The Rogue Key Attack
     try stdout.print("1. The Rogue Key Attack Problem\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Scenario:\n", .{});
     try stdout.print("  - Honest validator has pubkey_H = privkey_H * G2\n", .{});
@@ -36,7 +36,7 @@ pub fn main() !void {
 
     // 2. Proof of Possession Solution
     try stdout.print("2. Proof of Possession Solution\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("PoP Definition:\n", .{});
     try stdout.print("  PoP = Sign(pubkey, privkey)\n", .{});
@@ -53,7 +53,7 @@ pub fn main() !void {
 
     // 3. PoP Generation
     try stdout.print("3. PoP Generation Process\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Step 1: Generate key pair\n", .{});
     try stdout.print("  privkey = random 32 bytes (scalar in Fr)\n", .{});
@@ -72,7 +72,7 @@ pub fn main() !void {
 
     // 4. PoP Verification
     try stdout.print("4. PoP Verification Process\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Step 1: Deserialize PoP and pubkey\n", .{});
     try stdout.print("  PoP = deserialize_g1(PoP_bytes)\n", .{});
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     // 5. Ethereum Deposit Contract
     try stdout.print("5. Ethereum Validator Deposit\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Deposit Data Structure:\n", .{});
     try stdout.print("  struct DepositData {{\n", .{});
@@ -113,7 +113,7 @@ pub fn main() !void {
 
     // 6. Cost Analysis
     try stdout.print("6. PoP Cost Analysis\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("One-time costs (per validator):\n", .{});
     try stdout.print("  - PoP generation: ~100 μs (offline)\n", .{});
@@ -128,7 +128,7 @@ pub fn main() !void {
 
     // 7. Domain Separation
     try stdout.print("7. Domain Separation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("PoP uses separate DST from regular signatures:\n", .{});
     try stdout.print("\nPoP DST:\n", .{});
@@ -145,7 +145,7 @@ pub fn main() !void {
 
     // 8. Security Guarantees
     try stdout.print("8. Security Guarantees\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("With PoP requirement:\n", .{});
     try stdout.print("  ✓ Rogue key attacks prevented\n", .{});
@@ -161,7 +161,7 @@ pub fn main() !void {
 
     // 9. Implementation Notes
     try stdout.print("9. Implementation Notes\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Using BLS12-381 precompiles:\n", .{});
 
@@ -182,7 +182,7 @@ pub fn main() !void {
 
     // 10. Production Checklist
     try stdout.print("10. Production Checklist\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Validator Setup:\n", .{});
     try stdout.print("  [ ] Generate privkey from secure random source (32 bytes)\n", .{});

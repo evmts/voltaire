@@ -5,7 +5,7 @@ const crypto = @import("crypto");
 const Hardfork = primitives.Hardfork;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -67,7 +67,7 @@ pub fn main() !void {
     // Fermat test: if p is prime and a < p, then a^(p-1) ≡ 1 (mod p)
 
     // Testing if 97 is prime: compute 2^96 mod 97
-    var fermat_input: [99]u8 = [_]u8{0} ** 99;
+    var fermat_input: [99]u8 = @as([99]u8, @splat(0));
     fermat_input[31] = 1; // base_len = 1
     fermat_input[63] = 1; // exp_len = 1
     fermat_input[95] = 1; // mod_len = 1
@@ -91,7 +91,7 @@ pub fn main() !void {
     // For prime p: a^(-1) ≡ a^(p-2) (mod p)
     // Computing inverse of 3 mod 7: 3^5 mod 7
 
-    var inv_input: [99]u8 = [_]u8{0} ** 99;
+    var inv_input: [99]u8 = @as([99]u8, @splat(0));
     inv_input[31] = 1; // base_len = 1
     inv_input[63] = 1; // exp_len = 1
     inv_input[95] = 1; // mod_len = 1
@@ -119,7 +119,7 @@ pub fn main() !void {
     // Computing 2^1000 mod 1009 (1009 is prime)
 
     // For larger exponents, we need multi-byte representation
-    var large_exp_input: [100]u8 = [_]u8{0} ** 100;
+    var large_exp_input: [100]u8 = @as([100]u8, @splat(0));
     large_exp_input[31] = 1; // base_len = 1
     large_exp_input[63] = 2; // exp_len = 2
     large_exp_input[95] = 2; // mod_len = 2

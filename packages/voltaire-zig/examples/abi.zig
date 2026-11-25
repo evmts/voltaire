@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const abi = primitives.AbiEncoding;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -83,7 +83,7 @@ fn exampleDecodeFunctionData(allocator: std.mem.Allocator) !void {
 
     const transfer_selector = abi.computeSelector("transfer(address,uint256)");
 
-    const recipient_bytes = [_]u8{0xaa} ** 20;
+    const recipient_bytes = @as([20]u8, @splat(0xaa));
     const amount: u256 = 42_000;
 
     const params = [_]abi.AbiValue{
@@ -160,7 +160,7 @@ fn exampleEncodeParameters(allocator: std.mem.Allocator) !void {
 fn exampleDecodeParameters(allocator: std.mem.Allocator) !void {
     std.debug.print("--- Example 5: Decoding Parameters ---\n", .{});
 
-    const test_address_bytes = [_]u8{0xbb} ** 20;
+    const test_address_bytes = @as([20]u8, @splat(0xbb));
     const params = [_]abi.AbiValue{
         abi.uint256_value(99999),
         abi.boolValue(false),

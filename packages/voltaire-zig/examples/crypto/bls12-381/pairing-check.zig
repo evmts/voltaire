@@ -15,7 +15,7 @@ pub fn main() !void {
 
     // 1. Basic Pairing Computation
     try stdout.print("1. Basic Pairing Computation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Pairing input format: pairs of (G1, G2) points
     // Each pair: 128 bytes (G1) + 256 bytes (G2) = 384 bytes
@@ -27,7 +27,7 @@ pub fn main() !void {
 
     // 2. Pairing Properties
     try stdout.print("2. Pairing Properties\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Bilinearity: e(a*P, b*Q) = e(P, Q)^(ab)\n", .{});
     try stdout.print("Non-degeneracy: e(G1, G2) != 1\n", .{});
@@ -35,7 +35,7 @@ pub fn main() !void {
 
     // 3. Multi-Pairing Check
     try stdout.print("3. Multi-Pairing Product Check\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Check: e(P1, Q1) * e(P2, Q2) * ... * e(Pn, Qn) = 1
     // Input: n pairs (384 bytes each)
@@ -48,7 +48,7 @@ pub fn main() !void {
 
     // 4. BLS Signature Verification Pattern
     try stdout.print("4. BLS Signature Verification Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Signature verification equation:\n", .{});
     try stdout.print("  e(signature, G2_gen) = e(H(msg), pubkey)\n", .{});
@@ -58,7 +58,7 @@ pub fn main() !void {
 
     // 5. Aggregate Signature Verification
     try stdout.print("5. Aggregate Signature Verification\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Same message signed by n validators:\n", .{});
     try stdout.print("  1. Aggregate signatures: sig1 + sig2 + ... + sign\n", .{});
@@ -68,7 +68,7 @@ pub fn main() !void {
 
     // 6. Batch Verification (Different Messages)
     try stdout.print("6. Batch Verification (Different Messages)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Different messages, different signers:\n", .{});
     try stdout.print("  e(sig1+sig2+sig3, G2) = e(msg1, pk1) * e(msg2, pk2) * e(msg3, pk3)\n", .{});
@@ -79,7 +79,7 @@ pub fn main() !void {
 
     // 7. Ethereum Use Cases
     try stdout.print("7. Ethereum Use Cases\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Sync Committee (512 validators):\n", .{});
     try stdout.print("  - All sign same block root\n", .{});
@@ -92,7 +92,7 @@ pub fn main() !void {
 
     // 8. Performance Characteristics
     try stdout.print("8. Performance Characteristics\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Native (BLST library):\n", .{});
     try stdout.print("  - Single pairing: ~1.2 ms\n", .{});
@@ -105,7 +105,7 @@ pub fn main() !void {
 
     // 9. Security Considerations
     try stdout.print("9. Security Considerations\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Subgroup checks are critical:\n", .{});
     try stdout.print("  - G1 points must be in prime-order subgroup\n", .{});

@@ -48,7 +48,7 @@ fn benchEcrecoverShortInput(allocator: std.mem.Allocator) void {
 
 // Benchmark: ECRECOVER with invalid signature (returns zero)
 fn benchEcrecoverInvalidSignature(allocator: std.mem.Allocator) void {
-    const invalid_input = [_]u8{0x00} ** 128; // All zeros
+    const invalid_input = @as([128]u8, @splat(0x00)); // All zeros
     const result = ecrecover.execute(allocator, &invalid_input, 1_000_000) catch return;
     defer result.deinit(allocator);
 }
@@ -61,11 +61,8 @@ fn benchEcrecoverV27(allocator: std.mem.Allocator) void {
     defer result.deinit(allocator);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -75,7 +72,6 @@ pub fn main() !void {
     try bench.add("ECRECOVER (invalid sig)", benchEcrecoverInvalidSignature, .{});
     try bench.add("ECRECOVER (v=27)", benchEcrecoverV27, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

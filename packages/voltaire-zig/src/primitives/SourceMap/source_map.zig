@@ -115,7 +115,7 @@ pub const SourceMap = struct {
 
     /// Parse source map string into entries
     pub fn parse(allocator: Allocator, raw: []const u8) !Self {
-        var entries = std.ArrayList(SourceMapEntry){};
+        var entries = std.ArrayList(SourceMapEntry).empty;
         defer entries.deinit(allocator);
 
         if (raw.len == 0) {
@@ -191,7 +191,7 @@ pub const SourceMap = struct {
 
     /// Get entries for a specific file
     pub fn getEntriesForFile(self: Self, allocator: Allocator, file_idx: i32) ![]SourceMapEntry {
-        var result = std.ArrayList(SourceMapEntry){};
+        var result = std.ArrayList(SourceMapEntry).empty;
         defer result.deinit(allocator);
 
         for (self.entries) |entry| {
@@ -205,7 +205,7 @@ pub const SourceMap = struct {
 
     /// Encode back to string
     pub fn toString(self: Self, allocator: Allocator) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         // Use sentinel values so first entry always outputs all fields

@@ -44,12 +44,12 @@ pub const BlockchainHandle = *anyopaque;
 // Global Allocator
 // ============================================================================
 
-var gpa_instance: std.heap.GeneralPurposeAllocator(.{}) = undefined;
+var gpa_instance: std.heap.DebugAllocator(.{}) = undefined;
 var gpa_initialized = false;
 
 fn getAllocator() std.mem.Allocator {
     if (!gpa_initialized) {
-        gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+        gpa_instance = std.heap.DebugAllocator(.{}){};
         gpa_initialized = true;
     }
     return gpa_instance.allocator();

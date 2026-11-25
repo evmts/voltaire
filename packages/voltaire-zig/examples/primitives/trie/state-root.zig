@@ -29,7 +29,7 @@ const AccountState = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -40,12 +40,12 @@ pub fn main() !void {
     defer state_trie.deinit();
 
     // Account 1: EOA with balance
-    const addr1 = [_]u8{0x12} ++ [_]u8{0} ** 19; // 20-byte address
+    const addr1 = [_]u8{0x12} ++ @as([19]u8, @splat(0)); // 20-byte address
     const account1 = AccountState{
         .nonce = 5,
         .balance = 1_000_000_000_000_000_000, // 1 ETH in wei
-        .storage_root = [_]u8{0} ** 32, // Empty storage
-        .code_hash = [_]u8{0} ** 32, // No code (EOA)
+        .storage_root = @as([32]u8, @splat(0)), // Empty storage
+        .code_hash = @as([32]u8, @splat(0)), // No code (EOA)
     };
     const encoded1 = try account1.encode(allocator);
     defer allocator.free(encoded1);
@@ -55,12 +55,12 @@ pub fn main() !void {
     std.debug.print("  Balance: {} wei (1 ETH)\n", .{account1.balance});
 
     // Account 2: Contract with storage
-    const addr2 = [_]u8{0xAB} ++ [_]u8{0} ** 19;
+    const addr2 = [_]u8{0xAB} ++ @as([19]u8, @splat(0));
     const account2 = AccountState{
         .nonce = 1,
         .balance = 500_000_000_000_000_000, // 0.5 ETH
-        .storage_root = [_]u8{0xAA} ** 32, // Has storage
-        .code_hash = [_]u8{0xBB} ** 32, // Has code
+        .storage_root = @as([32]u8, @splat(0xAA)), // Has storage
+        .code_hash = @as([32]u8, @splat(0xBB)), // Has code
     };
     const encoded2 = try account2.encode(allocator);
     defer allocator.free(encoded2);
@@ -70,12 +70,12 @@ pub fn main() !void {
     std.debug.print("  Balance: {} wei (0.5 ETH)\n", .{account2.balance});
 
     // Account 3: Another EOA
-    const addr3 = [_]u8{0x34} ++ [_]u8{0} ** 19;
+    const addr3 = [_]u8{0x34} ++ @as([19]u8, @splat(0));
     const account3 = AccountState{
         .nonce = 0,
         .balance = 2_500_000_000_000_000_000, // 2.5 ETH
-        .storage_root = [_]u8{0} ** 32,
-        .code_hash = [_]u8{0} ** 32,
+        .storage_root = @as([32]u8, @splat(0)),
+        .code_hash = @as([32]u8, @splat(0)),
     };
     const encoded3 = try account3.encode(allocator);
     defer allocator.free(encoded3);

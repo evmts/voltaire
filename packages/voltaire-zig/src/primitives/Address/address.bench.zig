@@ -13,7 +13,7 @@ fn benchFromHex(allocator: std.mem.Allocator) void {
 
 // Benchmark: Address.toHex
 fn benchToHex(allocator: std.mem.Allocator) void {
-    const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
+    const addr = Address{ .bytes = @as([20]u8, @splat(0x74)) };
     const hex = Address.toHex(addr);
     _ = hex;
     _ = allocator;
@@ -21,7 +21,7 @@ fn benchToHex(allocator: std.mem.Allocator) void {
 
 // Benchmark: Address.toChecksummed (EIP-55)
 fn benchToChecksummed(allocator: std.mem.Allocator) void {
-    const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
+    const addr = Address{ .bytes = @as([20]u8, @splat(0x74)) };
     const checksum = Address.toChecksummed(addr);
     _ = checksum;
     _ = allocator;
@@ -38,7 +38,7 @@ fn benchFromPublicKey(allocator: std.mem.Allocator) void {
 
 // Benchmark: Address.calculateCreateAddress (CREATE opcode)
 fn benchCalculateCreate(allocator: std.mem.Allocator) void {
-    const deployer = Address{ .bytes = [_]u8{0x12} ** 20 };
+    const deployer = Address{ .bytes = @as([20]u8, @splat(0x12)) };
     const nonce: u64 = 42;
     const addr = Address.calculateCreateAddress(allocator, deployer, nonce) catch unreachable;
     _ = addr;
@@ -46,9 +46,9 @@ fn benchCalculateCreate(allocator: std.mem.Allocator) void {
 
 // Benchmark: Address.getCreate2Address (CREATE2 opcode, pre-hashed init code)
 fn benchCalculateCreate2(allocator: std.mem.Allocator) void {
-    const deployer = Address{ .bytes = [_]u8{0x12} ** 20 };
-    const salt = [_]u8{0xab} ** 32;
-    const init_code_hash = [_]u8{0xcd} ** 32;
+    const deployer = Address{ .bytes = @as([20]u8, @splat(0x12)) };
+    const salt = @as([32]u8, @splat(0xab));
+    const init_code_hash = @as([32]u8, @splat(0xcd));
     const addr = Address.getCreate2Address(deployer, salt, init_code_hash);
     _ = addr;
     _ = allocator;
@@ -56,7 +56,7 @@ fn benchCalculateCreate2(allocator: std.mem.Allocator) void {
 
 // Benchmark: Address.toU256
 fn benchToU256(allocator: std.mem.Allocator) void {
-    const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
+    const addr = Address{ .bytes = @as([20]u8, @splat(0x74)) };
     const value = Address.toU256(addr);
     _ = value;
     _ = allocator;
@@ -72,8 +72,8 @@ fn benchFromU256(allocator: std.mem.Allocator) void {
 
 // Benchmark: Address.equals
 fn benchEquals(allocator: std.mem.Allocator) void {
-    const addr1 = Address{ .bytes = [_]u8{0x74} ** 20 };
-    const addr2 = Address{ .bytes = [_]u8{0x74} ** 20 };
+    const addr1 = Address{ .bytes = @as([20]u8, @splat(0x74)) };
+    const addr2 = Address{ .bytes = @as([20]u8, @splat(0x74)) };
     const result = Address.equals(addr1, addr2);
     _ = result;
     _ = allocator;
@@ -87,11 +87,8 @@ fn benchIsZero(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -106,7 +103,6 @@ pub fn main() !void {
     try bench.add("Address.equals", benchEquals, .{});
     try bench.add("Address.isZero", benchIsZero, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

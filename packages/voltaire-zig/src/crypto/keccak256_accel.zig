@@ -174,7 +174,7 @@ pub const Keccak256_Accel = struct {
 
     /// Full absorb/pad/squeeze using SIMD keccak_f permutation
     fn hash_simd(data: []const u8, output: *[DIGEST_SIZE]u8) void {
-        var state: [STATE_SIZE]u64 = [_]u64{0} ** STATE_SIZE;
+        var state: [STATE_SIZE]u64 = @as([STATE_SIZE]u64, @splat(0));
 
         // Absorb full blocks
         var offset: usize = 0;
@@ -183,7 +183,7 @@ pub const Keccak256_Accel = struct {
         }
 
         // Final block with Keccak padding (0x01 ... 0x80)
-        var last: [RATE]u8 = [_]u8{0} ** RATE;
+        var last: [RATE]u8 = @as([RATE]u8, @splat(0));
         const remaining = data.len - offset;
         @memcpy(last[0..remaining], data[offset..][0..remaining]);
         last[remaining] = 0x01;
@@ -257,7 +257,7 @@ test "Keccak256 hardware acceleration correctness" {
 
 test "Keccak256 edge cases" {
     // Test data exactly at rate boundary (136 bytes)
-    const rate_data = "a" ** 136;
+    const rate_data = &@as([136]u8, @splat('a'));
     var output1: [32]u8 = undefined;
     var output2: [32]u8 = undefined;
 
@@ -266,13 +266,13 @@ test "Keccak256 edge cases" {
     try std.testing.expectEqualSlices(u8, &output2, &output1);
 
     // Test data one byte over rate boundary
-    const over_rate = "a" ** 137;
+    const over_rate = &@as([137]u8, @splat('a'));
     Keccak256_Accel.hash(over_rate, &output1);
     std.crypto.hash.sha3.Keccak256.hash(over_rate, &output2, .{});
     try std.testing.expectEqualSlices(u8, &output2, &output1);
 
     // Test data one byte under rate boundary
-    const under_rate = "a" ** 135;
+    const under_rate = &@as([135]u8, @splat('a'));
     Keccak256_Accel.hash(under_rate, &output1);
     std.crypto.hash.sha3.Keccak256.hash(under_rate, &output2, .{});
     try std.testing.expectEqualSlices(u8, &output2, &output1);
@@ -319,25 +319,23 @@ test "Keccak256 benchmark comparison" {
             byte.* = @as(u8, @intCast(i & 0xFF));
         }
 
-        var timer = try std.time.Timer.start();
-
         // Benchmark hardware-accelerated version
-        timer.reset();
+        const accel_start = std.Io.Timestamp.now(std.testing.io, .awake);
         var i: usize = 0;
         while (i < iterations) : (i += 1) {
             var output: [32]u8 = undefined;
             Keccak256_Accel.hash(test_data, &output);
         }
-        const accel_time = timer.read();
+        const accel_time: u64 = @intCast(@max(0, accel_start.durationTo(std.Io.Timestamp.now(std.testing.io, .awake)).nanoseconds));
 
         // Benchmark standard library version
-        timer.reset();
+        const std_start = std.Io.Timestamp.now(std.testing.io, .awake);
         i = 0;
         while (i < iterations) : (i += 1) {
             var output: [32]u8 = undefined;
             std.crypto.hash.sha3.Keccak256.hash(test_data, &output, .{});
         }
-        const std_time = timer.read();
+        const std_time: u64 = @intCast(@max(0, std_start.durationTo(std.Io.Timestamp.now(std.testing.io, .awake)).nanoseconds));
 
         std.log.debug("Keccak256 {s} ({} iterations):", .{ test_case.name, iterations });
         std.log.debug("  Hardware-accelerated: {} ns", .{accel_time});
@@ -429,9 +427,9 @@ test "Keccak256 absorb block alignment" {
 
 test "Keccak256 state transformation correctness" {
     const test_patterns = [_][]const u8{
-        &[_]u8{0x00} ** 200,
-        &[_]u8{0xFF} ** 200,
-        &[_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05 } ** 40,
+        &@as([200]u8, @splat(0x00)),
+        &@as([200]u8, @splat(0xFF)),
+        &@as(*const [(40) * 5]u8, @ptrCast(&@as([40][5]u8, @splat(.{ 0x01, 0x02, 0x03, 0x04, 0x05 })))).*,
     };
 
     for (test_patterns) |pattern| {

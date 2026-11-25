@@ -78,10 +78,10 @@ pub const Uncle = struct {
 };
 
 /// Empty bloom filter constant
-pub const EMPTY_BLOOM: [256]u8 = [_]u8{0} ** 256;
+pub const EMPTY_BLOOM: [256]u8 = @as([256]u8, @splat(0));
 
 /// Empty nonce constant
-pub const EMPTY_NONCE: [8]u8 = [_]u8{0} ** 8;
+pub const EMPTY_NONCE: [8]u8 = @as([8]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -221,7 +221,7 @@ fn encodeU64(allocator: std.mem.Allocator, value: u64) ![]u8 {
 
 /// RLP encode the uncle header (pre-merge format, 15 fields)
 pub fn rlpEncode(uncle: *const Uncle, allocator: std.mem.Allocator) ![]u8 {
-    var fields = std.ArrayList([]u8){};
+    var fields = std.ArrayList([]u8).empty;
     defer {
         for (fields.items) |item| {
             allocator.free(item);
@@ -291,7 +291,7 @@ pub fn rlpEncode(uncle: *const Uncle, allocator: std.mem.Allocator) ![]u8 {
     }
 
     // Build result with list header
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     if (total_len < 56) {
@@ -337,13 +337,13 @@ pub fn equalsHash(a: *const Uncle, b: *const Uncle, allocator: std.mem.Allocator
 // ============================================================================
 
 test "Uncle.from creates uncle" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0xaa} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0xbb} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0xdd} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0xee} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xff} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0x11} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0xaa));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0xbb));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0xdd));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0xee));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xff));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0x11));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -368,13 +368,13 @@ test "Uncle.from creates uncle" {
 }
 
 test "Uncle accessors work correctly" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x22} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x33} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x44} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x55} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x66} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0x77} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0x88} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x22));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x33));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x44)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x55));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x66));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0x77));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0x88));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -403,13 +403,13 @@ test "Uncle accessors work correctly" {
 }
 
 test "Uncle.equals compares uncles" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x99} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0xaa} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0xcc} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0xdd} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xee} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xff} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x99));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0xaa));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0xcc));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0xdd));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xee));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xff));
 
     const uncle1 = from(.{
         .parent_hash = parent_hash,
@@ -447,7 +447,7 @@ test "Uncle.equals compares uncles" {
         .nonce = EMPTY_NONCE,
     });
 
-    const other_beneficiary = Address.Address{ .bytes = [_]u8{0x11} ** 20 };
+    const other_beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
     const uncle3 = from(.{
         .parent_hash = parent_hash,
         .ommers_hash = ommers_hash,
@@ -472,13 +472,13 @@ test "Uncle.equals compares uncles" {
 
 test "Uncle.rlpEncode produces valid RLP" {
     const allocator = std.testing.allocator;
-    const parent_hash: BlockHash.BlockHash = [_]u8{0xaa} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0xbb} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0xdd} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0xee} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xff} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0x11} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0xaa));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0xbb));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0xdd));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0xee));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xff));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0x11));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -508,13 +508,13 @@ test "Uncle.rlpEncode produces valid RLP" {
 
 test "Uncle.hash computes deterministic hash" {
     const allocator = std.testing.allocator;
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -544,13 +544,13 @@ test "Uncle.hash computes deterministic hash" {
 
 test "Uncle.hash different uncles have different hashes" {
     const allocator = std.testing.allocator;
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const uncle1 = from(.{
         .parent_hash = parent_hash,
@@ -596,13 +596,13 @@ test "Uncle.hash different uncles have different hashes" {
 
 test "Uncle.equalsHash compares by hash" {
     const allocator = std.testing.allocator;
-    const parent_hash: BlockHash.BlockHash = [_]u8{0xab} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0xcd} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0xef} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x12} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x34} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0x56} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0x78} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0xab));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0xcd));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0xef)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x12));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x34));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0x56));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0x78));
 
     const uncle1 = from(.{
         .parent_hash = parent_hash,
@@ -851,13 +851,13 @@ pub fn getNephewReward(including_block_number: BlockNumber.BlockNumber) u256 {
 
 test "Uncle.fromRlp round trip" {
     const allocator = std.testing.allocator;
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const original = from(.{
         .parent_hash = parent_hash,
@@ -898,13 +898,13 @@ test "Uncle.fromRlp round trip" {
 
 test "Uncle.toRlp alias works" {
     const allocator = std.testing.allocator;
-    const parent_hash: BlockHash.BlockHash = [_]u8{0xaa} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0xbb} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0xdd} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0xee} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xff} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0x11} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0xaa));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0xbb));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0xdd));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0xee));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xff));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0x11));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -939,13 +939,13 @@ test "Uncle.toRlp alias works" {
 // ============================================================================
 
 test "Uncle.getReward - depth 1" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -973,13 +973,13 @@ test "Uncle.getReward - depth 1" {
 }
 
 test "Uncle.getReward - depth 6 (max)" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -1007,13 +1007,13 @@ test "Uncle.getReward - depth 6 (max)" {
 }
 
 test "Uncle.getReward - too old (depth > 6)" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -1039,13 +1039,13 @@ test "Uncle.getReward - too old (depth > 6)" {
 }
 
 test "Uncle.getReward - invalid (uncle >= block)" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     const uncle = from(.{
         .parent_hash = parent_hash,
@@ -1071,13 +1071,13 @@ test "Uncle.getReward - invalid (uncle >= block)" {
 }
 
 test "Uncle.getReward - different forks" {
-    const parent_hash: BlockHash.BlockHash = [_]u8{0x12} ** 32;
-    const ommers_hash: Hash.Hash = [_]u8{0x34} ** 32;
-    const beneficiary = Address.Address{ .bytes = [_]u8{0x56} ** 20 };
-    const state_root: Hash.Hash = [_]u8{0x78} ** 32;
-    const txs_root: Hash.Hash = [_]u8{0x9a} ** 32;
-    const receipts_root: Hash.Hash = [_]u8{0xbc} ** 32;
-    const mix_hash: Hash.Hash = [_]u8{0xde} ** 32;
+    const parent_hash: BlockHash.BlockHash = @as([32]u8, @splat(0x12));
+    const ommers_hash: Hash.Hash = @as([32]u8, @splat(0x34));
+    const beneficiary = Address.Address{ .bytes = @as([20]u8, @splat(0x56)) };
+    const state_root: Hash.Hash = @as([32]u8, @splat(0x78));
+    const txs_root: Hash.Hash = @as([32]u8, @splat(0x9a));
+    const receipts_root: Hash.Hash = @as([32]u8, @splat(0xbc));
+    const mix_hash: Hash.Hash = @as([32]u8, @splat(0xde));
 
     // Frontier era uncle (block 100)
     const frontier_uncle = from(.{

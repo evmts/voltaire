@@ -846,10 +846,10 @@ export fn primitives_signature_serialize(
 export fn primitives_generate_private_key(
     out_private_key: *[32]u8,
 ) c_int {
-    var rng = std.crypto.random;
+    const io = std.Io.Threaded.global_single_threaded.io();
 
     // Generate random 32 bytes
-    rng.bytes(out_private_key);
+    io.randomSecure(out_private_key) catch return PRIMITIVES_ERROR_INVALID_INPUT;
 
     // Ensure the key is valid (< secp256k1 curve order)
     const key_value = std.mem.readInt(u256, out_private_key, .big);
@@ -2299,8 +2299,8 @@ export fn primitives_authorization_signing_hash(
         .address = primitives.Address{ .bytes = address_ptr.bytes },
         .nonce = nonce,
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     const hash = auth.signingHash() catch {
@@ -3343,7 +3343,7 @@ export fn kzg_verify_blob_proof(
 
 test "primitives_bytes_to_hex requires room for the NUL terminator" {
     const data = [_]u8{ 0xde, 0xad };
-    var buf: [7]u8 = [_]u8{0xaa} ** 7;
+    var buf: [7]u8 = @as([7]u8, @splat(0xaa));
     // "0xdead" is 6 chars; 6 bytes leaves no room for the NUL
     try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_LENGTH, primitives_bytes_to_hex(&data, data.len, &buf, 6));
     try std.testing.expectEqual(@as(u8, 0xaa), buf[6]);
@@ -3438,8 +3438,8 @@ test "blake2Hash uses the BLAKE2b parameter block digest length" {
 
 test "KZG C API reports a missing trusted setup as KZG_NOT_LOADED" {
     crypto.c_kzg.freeTrustedSetup() catch {};
-    const zero32 = [_]u8{0} ** 32;
-    var infinity = [_]u8{0} ** 48;
+    const zero32 = @as([32]u8, @splat(0));
+    var infinity = @as([48]u8, @splat(0));
     infinity[0] = 0xc0;
     try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_NOT_LOADED, kzg_verify_proof(&infinity, &zero32, &zero32, &infinity));
     const blob = try std.testing.allocator.alloc(u8, KZG_BLOB_SIZE);
@@ -3456,7 +3456,7 @@ test "KZG C API reports a missing trusted setup as KZG_NOT_LOADED" {
     defer _ = kzg_free_trusted_setup();
     try std.testing.expectEqual(@as(c_int, 1), kzg_verify_proof(&infinity, &zero32, &zero32, &infinity));
     // A malformed proof is still an invalid proof, not "not loaded"
-    var bad = [_]u8{0xff} ** 48;
+    var bad = @as([48]u8, @splat(0xff));
     try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_INVALID_PROOF, kzg_verify_proof(&infinity, &zero32, &zero32, &bad));
 }
 

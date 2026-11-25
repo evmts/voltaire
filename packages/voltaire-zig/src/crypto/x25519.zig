@@ -71,19 +71,19 @@ pub const PublicKeyError = error{
 /// constant time.
 pub const LOW_ORDER_POINTS = [7][PUBLIC_KEY_SIZE]u8{
     // u = 0 (order 2)
-    [_]u8{0} ** 32,
+    @as([32]u8, @splat(0)),
     // u = 1 (order 4)
-    [_]u8{1} ++ [_]u8{0} ** 31,
+    [_]u8{1} ++ @as([31]u8, @splat(0)),
     // order 8
     .{ 0xe0, 0xeb, 0x7a, 0x7c, 0x3b, 0x41, 0xb8, 0xae, 0x16, 0x56, 0xe3, 0xfa, 0xf1, 0x9f, 0xc4, 0x6a, 0xda, 0x09, 0x8d, 0xeb, 0x9c, 0x32, 0xb1, 0xfd, 0x86, 0x62, 0x05, 0x16, 0x5f, 0x49, 0xb8, 0x00 },
     // order 8
     .{ 0x5f, 0x9c, 0x95, 0xbc, 0xa3, 0x50, 0x8c, 0x24, 0xb1, 0xd0, 0xb1, 0x55, 0x9c, 0x83, 0xef, 0x5b, 0x04, 0x44, 0x5c, 0xc4, 0x58, 0x1c, 0x8e, 0x86, 0xd8, 0x22, 0x4e, 0xdd, 0xd0, 0x9f, 0x11, 0x57 },
     // u = p - 1 (order 4, on the twist)
-    [_]u8{0xec} ++ [_]u8{0xff} ** 30 ++ [_]u8{0x7f},
+    [_]u8{0xec} ++ @as([30]u8, @splat(0xff)) ++ [_]u8{0x7f},
     // u = p (non-canonical encoding of 0)
-    [_]u8{0xed} ++ [_]u8{0xff} ** 30 ++ [_]u8{0x7f},
+    [_]u8{0xed} ++ @as([30]u8, @splat(0xff)) ++ [_]u8{0x7f},
     // u = p + 1 (non-canonical encoding of 1)
-    [_]u8{0xee} ++ [_]u8{0xff} ** 30 ++ [_]u8{0x7f},
+    [_]u8{0xee} ++ @as([30]u8, @splat(0xff)) ++ [_]u8{0x7f},
 };
 
 /// Field prime p = 2^255 - 19 for Curve25519
@@ -153,7 +153,7 @@ pub fn publicKeyFromSecret(
 ) ![]u8 {
     if (secret_key.len != SECRET_KEY_SIZE) return error.InvalidSecretKeyLength;
 
-    const public_key = try X25519.recoverPublicKey(secret_key[0..SECRET_KEY_SIZE].*);
+    const public_key = X25519.recoverPublicKey(secret_key[0..SECRET_KEY_SIZE].*);
 
     const result = try allocator.alloc(u8, PUBLIC_KEY_SIZE);
     @memcpy(result, &public_key);
@@ -196,7 +196,7 @@ pub fn keypairFromSeed(seed: []const u8) !struct { secret_key: [SECRET_KEY_SIZE]
     if (seed.len != SECRET_KEY_SIZE) return error.InvalidSeedLength;
 
     const secret_key = seed[0..SECRET_KEY_SIZE].*;
-    const public_key = try X25519.recoverPublicKey(secret_key);
+    const public_key = X25519.recoverPublicKey(secret_key);
 
     return .{
         .secret_key = secret_key,
@@ -208,7 +208,7 @@ test "x25519 basic" {
     const allocator = std.testing.allocator;
 
     // Test key generation
-    const secret = [_]u8{1} ** SECRET_KEY_SIZE;
+    const secret = @as([SECRET_KEY_SIZE]u8, @splat(1));
     const public_key = try publicKeyFromSecret(allocator, &secret);
     defer allocator.free(public_key);
 
@@ -219,8 +219,8 @@ test "x25519 key exchange" {
     const allocator = std.testing.allocator;
 
     // Generate two keypairs
-    const secret1 = [_]u8{1} ** SECRET_KEY_SIZE;
-    const secret2 = [_]u8{2} ** SECRET_KEY_SIZE;
+    const secret1 = @as([SECRET_KEY_SIZE]u8, @splat(1));
+    const secret2 = @as([SECRET_KEY_SIZE]u8, @splat(2));
 
     const public1 = try publicKeyFromSecret(allocator, &secret1);
     defer allocator.free(public1);
@@ -238,7 +238,7 @@ test "x25519 key exchange" {
 }
 
 test "x25519 keypair from seed" {
-    const seed = [_]u8{3} ** SECRET_KEY_SIZE;
+    const seed = @as([SECRET_KEY_SIZE]u8, @splat(3));
     const keypair = try keypairFromSeed(&seed);
 
     try std.testing.expectEqualSlices(u8, &keypair.secret_key, &seed);
@@ -256,8 +256,8 @@ fn withHighBit(key: [32]u8) [32]u8 {
 }
 
 const test_secret_keys = [_][32]u8{
-    [_]u8{1} ** 32,
-    [_]u8{0xff} ** 32,
+    @as([32]u8, @splat(1)),
+    @as([32]u8, @splat(0xff)),
     // RFC 7748 section 6.1, Alice
     .{ 0x77, 0x07, 0x6d, 0x0a, 0x73, 0x18, 0xa5, 0x7d, 0x3c, 0x16, 0xc1, 0x72, 0x51, 0xb2, 0x66, 0x45, 0xdf, 0x4c, 0x2f, 0x87, 0xeb, 0xc0, 0x99, 0x2a, 0xb1, 0x77, 0xfb, 0xa5, 0x1d, 0xb9, 0x2c, 0x2a },
 };
@@ -313,7 +313,7 @@ test "x25519 low-order table entries reach infinity after three doublings" {
     }
 
     // Control: the base point u = 9 does not
-    var x = Fe.fromBytes([_]u8{9} ++ [_]u8{0} ** 31);
+    var x = Fe.fromBytes([_]u8{9} ++ @as([31]u8, @splat(0)));
     var z = Fe.one;
     for (0..3) |_| {
         const xx = x.sq();
@@ -331,18 +331,18 @@ test "x25519 validatePublicKey accepts honest keys" {
     const allocator = std.testing.allocator;
 
     // Base point u = 9
-    const base = [_]u8{9} ++ [_]u8{0} ** 31;
+    const base = [_]u8{9} ++ @as([31]u8, @splat(0));
     try std.testing.expect(!isWeakPublicKey(&base));
     try validatePublicKey(&base);
     try std.testing.expect(isValidPublicKey(&base));
 
     // u = 2 and the neighbour of p - 1
-    try validatePublicKey(&([_]u8{2} ++ [_]u8{0} ** 31));
-    try validatePublicKey(&([_]u8{0xeb} ++ [_]u8{0xff} ** 30 ++ [_]u8{0x7f}));
+    try validatePublicKey(&([_]u8{2} ++ @as([31]u8, @splat(0))));
+    try validatePublicKey(&([_]u8{0xeb} ++ @as([30]u8, @splat(0xff)) ++ [_]u8{0x7f}));
 
     var i: u8 = 1;
     while (i <= 32) : (i += 1) {
-        const secret = [_]u8{i} ** 32;
+        const secret = @as([32]u8, @splat(i));
         const public_key = try publicKeyFromSecret(allocator, &secret);
         defer allocator.free(public_key);
         try std.testing.expect(!isWeakPublicKey(public_key));
@@ -352,8 +352,8 @@ test "x25519 validatePublicKey accepts honest keys" {
 
 test "x25519 non-canonical u = p + 2 is accepted and reduced (RFC 7748 section 5)" {
     const allocator = std.testing.allocator;
-    const non_canonical = [_]u8{0xef} ++ [_]u8{0xff} ** 30 ++ [_]u8{0x7f};
-    const canonical = [_]u8{2} ++ [_]u8{0} ** 31;
+    const non_canonical = [_]u8{0xef} ++ @as([30]u8, @splat(0xff)) ++ [_]u8{0x7f};
+    const canonical = [_]u8{2} ++ @as([31]u8, @splat(0));
     try validatePublicKey(&non_canonical);
     for (test_secret_keys) |secret| {
         const a = try scalarmult(allocator, &secret, &non_canonical);
@@ -366,7 +366,7 @@ test "x25519 non-canonical u = p + 2 is accepted and reduced (RFC 7748 section 5
 
 test "x25519 bit 255 of a valid key is ignored (RFC 7748 section 5)" {
     const allocator = std.testing.allocator;
-    const public_key = try publicKeyFromSecret(allocator, &([_]u8{7} ** 32));
+    const public_key = try publicKeyFromSecret(allocator, &(@as([32]u8, @splat(7))));
     defer allocator.free(public_key);
     const masked = withHighBit(public_key[0..32].*);
     for (test_secret_keys) |secret| {
@@ -379,7 +379,7 @@ test "x25519 bit 255 of a valid key is ignored (RFC 7748 section 5)" {
 }
 
 test "x25519 public key length handling" {
-    const buffer = [_]u8{0} ** 64;
+    const buffer = @as([64]u8, @splat(0));
     for ([_]usize{ 0, 1, 31, 33, 64 }) |len| {
         try std.testing.expect(!isWeakPublicKey(buffer[0..len]));
         try std.testing.expectError(error.InvalidPublicKeyLength, validatePublicKey(buffer[0..len]));

@@ -54,10 +54,10 @@ jobs:
           submodules: recursive
           ref: ${{ env.RELEASE_SHA }}
 
-      - name: Install Zig 0.15.2
+      - name: Install Zig 0.17.1
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.2
+          version: 0.17.1
 
       - name: Install Rust wasm32 target
         run: rustup target add wasm32-unknown-unknown

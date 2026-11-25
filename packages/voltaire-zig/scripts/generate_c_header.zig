@@ -1,19 +1,18 @@
 const std = @import("std");
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
+    const io = init.io;
 
     // Read c_api.zig
-    const cwd = std.fs.cwd();
-    const source = try cwd.readFileAlloc(allocator, "packages/voltaire-zig/src/c_api.zig", 1024 * 1024);
+    const cwd = std.Io.Dir.cwd();
+    const source = try cwd.readFileAlloc(io, "packages/voltaire-zig/src/c_api.zig", allocator, .limited(1024 * 1024));
     defer allocator.free(source);
 
     // Parse and generate header
-    var header = std.ArrayList(u8){};
-    defer header.deinit(allocator);
-    const writer = header.writer(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    defer aw.deinit();
+    const writer = &aw.writer;
 
     try writeHeaderPreamble(writer);
     try writeErrorCodes(writer, source);
@@ -22,12 +21,13 @@ pub fn main() !void {
     try writeHeaderPostamble(writer);
 
     // Write to file
-    try cwd.writeFile(.{
+    const data = aw.written();
+    try cwd.writeFile(io, .{
         .sub_path = "packages/voltaire-zig/src/primitives.h",
-        .data = header.items,
+        .data = data,
     });
 
-    std.debug.print("Generated packages/voltaire-zig/src/primitives.h with {d} bytes\n", .{header.items.len});
+    std.debug.print("Generated packages/voltaire-zig/src/primitives.h with {d} bytes\n", .{data.len});
 }
 
 fn writeHeaderPreamble(writer: anytype) !void {
@@ -183,7 +183,7 @@ fn writeTypes(writer: anytype, source: []const u8) !void {
 fn writeFunctions(writer: anytype, source: []const u8) !void {
     var current_section: ?[]const u8 = null;
     var in_comment = false;
-    var comment_buffer = std.ArrayList(u8){};
+    var comment_buffer = std.ArrayList(u8).empty;
     defer comment_buffer.deinit(std.heap.page_allocator);
 
     var i: usize = 0;
@@ -215,7 +215,7 @@ fn writeFunctions(writer: anytype, source: []const u8) !void {
                 in_comment = true;
             }
             const comment = std.mem.trim(u8, trimmed[3..], " ");
-            try comment_buffer.writer(std.heap.page_allocator).print(" * {s}\n", .{comment});
+            try comment_buffer.print(std.heap.page_allocator, " * {s}\n", .{comment});
             i = line_end + 1;
             continue;
         }
@@ -269,7 +269,7 @@ fn writeFunctionSignature(writer: anytype, source: []const u8) !void {
     const params = source[paren_idx + 1 .. closing_paren];
 
     // Collect parameters
-    var param_list = std.ArrayList(struct { name: []const u8, c_type: []const u8 }){};
+    var param_list = std.ArrayList(struct { name: []const u8, c_type: []const u8 }).empty;
     defer param_list.deinit(std.heap.page_allocator);
 
     var param_iter = std.mem.splitScalar(u8, params, ',');

@@ -290,7 +290,7 @@ fn transform(s: *[5]u32, chunk: *const [64]u8) void {
     var dr = dl;
     var er = el;
 
-    if (comptime builtin.mode == .ReleaseSmall) {
+    if (comptime builtin.mode == .small) {
         // Dynamic version for size optimization
         // Process both left and right lines in parallel
         var i: usize = 0;
@@ -665,7 +665,7 @@ test "RIPEMD160: million 'a' characters" {
     var h = RIPEMD160.init();
     var i: usize = 0;
     while (i < 1000000) : (i += 1000) {
-        h.update("a" ** 1000);
+        h.update(&@as([1000]u8, @splat('a')));
     }
     const result = h.final();
 
@@ -742,9 +742,9 @@ test "RIPEMD160: partial block updates" {
 
 test "RIPEMD160: update cycle across block boundary" {
     // Test updates that cross 64-byte block boundaries
-    const part1 = "a" ** 60; // 60 bytes
-    const part2 = "b" ** 10; // 10 bytes - total 70 bytes, crosses boundary
-    const part3 = "c" ** 30; // 30 bytes
+    const part1 = &@as([60]u8, @splat('a')); // 60 bytes
+    const part2 = &@as([10]u8, @splat('b')); // 10 bytes - total 70 bytes, crosses boundary
+    const part3 = &@as([30]u8, @splat('c')); // 30 bytes
 
     var h1 = RIPEMD160.init();
     h1.update(part1 ++ part2 ++ part3);
@@ -780,7 +780,7 @@ test "RIPEMD160: state machine - reset functionality" {
 
 test "RIPEMD160: exactly 64 bytes" {
     // Test message that is exactly one block (64 bytes)
-    const input = "a" ** 64;
+    const input = &@as([64]u8, @splat('a'));
 
     const expected = [_]u8{
         0x9d, 0xfb, 0x7d, 0x37, 0x4a, 0xd9, 0x24, 0xf3,
@@ -797,7 +797,7 @@ test "RIPEMD160: exactly 64 bytes" {
 
 test "RIPEMD160: exactly 128 bytes" {
     // Test message that is exactly two blocks (128 bytes)
-    const input = "a" ** 128;
+    const input = &@as([128]u8, @splat('a'));
 
     const expected = [_]u8{
         0x8d, 0xfd, 0xfb, 0x32, 0xb2, 0xed, 0x5c, 0xb4,
@@ -856,7 +856,7 @@ test "RIPEMD160: incremental hashing vs single update" {
 test "RIPEMD160: boundary condition - 55 bytes" {
     // 55 bytes is critical: leaves exactly 9 bytes in block after padding byte
     // This is the maximum size that fits in one block with padding
-    const input = "a" ** 55;
+    const input = &@as([55]u8, @splat('a'));
 
     const expected = [_]u8{
         0x0d, 0x8a, 0x8c, 0x90, 0x63, 0xa4, 0x85, 0x76,
@@ -873,7 +873,7 @@ test "RIPEMD160: boundary condition - 55 bytes" {
 
 test "RIPEMD160: boundary condition - 56 bytes" {
     // 56 bytes forces padding into second block
-    const input = "a" ** 56;
+    const input = &@as([56]u8, @splat('a'));
 
     const expected = [_]u8{
         0xe7, 0x23, 0x34, 0xb4, 0x6c, 0x83, 0xcc, 0x70,
@@ -1025,7 +1025,7 @@ test "RIPEMD160: empty input produces 20-byte output" {
 
 test "RIPEMD160: large input produces 20-byte output" {
     // Even very large inputs compress to exactly 20 bytes
-    const large_input = "a" ** 10000;
+    const large_input = &@as([10000]u8, @splat('a'));
     const result = unauditedHash(large_input);
     try std.testing.expectEqual(@as(usize, 20), result.len);
 }

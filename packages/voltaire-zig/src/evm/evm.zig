@@ -213,15 +213,15 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.nonces.clearRetainingCapacity();
             self.code.clearRetainingCapacity();
             self.access_list_manager = AccessListManager.init(arena_allocator);
-            self.frames = std.ArrayList(FrameType){};
+            self.frames = std.ArrayList(FrameType).empty;
             try self.frames.ensureTotalCapacity(arena_allocator, 16);
-            self.logs = std.ArrayList(call_result.Log){};
+            self.logs = std.ArrayList(call_result.Log).empty;
             self.created_accounts = std.AutoHashMap(primitives.Address, void).init(arena_allocator);
             self.selfdestructed_accounts = std.AutoHashMap(primitives.Address, void).init(arena_allocator);
             self.touched_accounts = std.AutoHashMap(primitives.Address, void).init(arena_allocator);
-            self.balance_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, u256)){};
-            self.nonce_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, u64)){};
-            self.code_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, []const u8)){};
+            self.balance_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, u256)).empty;
+            self.nonce_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, u64)).empty;
+            self.code_snapshot_stack = std.ArrayList(*std.AutoHashMap(primitives.Address, []const u8)).empty;
 
             // Set blob versioned hashes for EIP-4844
             // CRITICAL: Must copy blob hashes into arena to ensure correct lifetime
@@ -439,8 +439,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // RLP encoding of [sender (20 bytes), nonce]
             // For simplicity, use a fixed buffer (max size for nonce encoding is small)
             var buffer: [64]u8 = undefined;
-            var fbs = std.io.fixedBufferStream(&buffer);
-            const writer = fbs.writer();
+            var writer: std.Io.Writer = .fixed(&buffer);
 
             // Calculate nonce encoding length
             const nonce_len: usize = blk: {
@@ -477,7 +476,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 try writer.writeAll(nonce_bytes[start..]);
             }
 
-            const rlp_data = fbs.getWritten();
+            const rlp_data = writer.buffered();
 
             // Compute keccak256 hash
             var hash: [32]u8 = undefined;
@@ -1370,7 +1369,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Restore storage on failure
                 // IMPORTANT: Identify slots to delete BEFORE restoring original_storage
                 // First, identify slots that were added during the call (exist in original_storage but not in snapshot)
-                var added_slots = std.ArrayList(StorageKey){};
+                var added_slots = std.ArrayList(StorageKey).empty;
                 added_slots.ensureTotalCapacity(self.arena.allocator(), 10) catch {
                     return makeFailure(self.arena.allocator(), 0);
                 };
@@ -1495,7 +1494,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             if (frame.reverted) {
                 // IMPORTANT: Identify slots to delete BEFORE restoring original_storage
                 // First, identify slots that were added during the call (exist in original_storage but not in snapshot)
-                var added_slots = std.ArrayList(StorageKey){};
+                var added_slots = std.ArrayList(StorageKey).empty;
                 added_slots.ensureTotalCapacity(self.arena.allocator(), 10) catch {
                     return makeFailure(self.arena.allocator(), 0);
                 };
@@ -1652,7 +1651,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Calculate new contract address
             const new_address = if (salt) |s| blk: {
                 // CREATE2: keccak256(0xff ++ caller ++ salt ++ keccak256(init_code))[12:]
-                var hash_input = std.ArrayList(u8){};
+                var hash_input = std.ArrayList(u8).empty;
                 defer hash_input.deinit(self.arena.allocator());
 
                 try hash_input.append(self.arena.allocator(), 0xff);

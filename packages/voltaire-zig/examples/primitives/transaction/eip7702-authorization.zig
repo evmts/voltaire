@@ -13,7 +13,7 @@ pub fn main() !void {
 
     // Example 1: Basic authorization structure
     std.debug.print("1. Basic EIP-7702 Authorization\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const smart_wallet = try Address.fromHex("0x1111111111111111111111111111111111111111");
 
@@ -34,7 +34,7 @@ pub fn main() !void {
 
     // Example 2: Use cases
     std.debug.print("2. Common Use Cases\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Batched Transactions:\n", .{});
     std.debug.print("  Delegate to batch wallet contract\n", .{});
@@ -62,7 +62,7 @@ pub fn main() !void {
 
     // Example 3: Security considerations
     std.debug.print("3. Security Considerations\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Nonce Protection:\n", .{});
     std.debug.print("  Authorization includes EOA nonce\n", .{});
@@ -90,7 +90,7 @@ pub fn main() !void {
 
     // Example 4: Comparison with Account Abstraction
     std.debug.print("4. EIP-7702 vs Account Abstraction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("EIP-7702:\n", .{});
     std.debug.print("  Account Type: EOA (temporary)\n", .{});
@@ -110,7 +110,7 @@ pub fn main() !void {
 
     // Example 5: Authorization signing
     std.debug.print("5. Authorization Signing Process\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Signing Hash Structure:\n", .{});
     std.debug.print("  MAGIC = 0x05 (EIP-7702 authority type)\n", .{});

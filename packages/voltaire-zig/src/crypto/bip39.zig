@@ -327,6 +327,7 @@ pub const Bip39Error = error{
     WeakParameters,
     OutputTooLong,
     BufferTooSmall,
+    EntropyUnavailable,
 };
 
 /// Get word count from entropy bits
@@ -368,7 +369,7 @@ const max_word_len = 8;
 /// zero-padded to `max_word_len`. The length byte keeps "abc" distinct from
 /// "abc\x00".
 fn padWord(word: []const u8) [max_word_len + 1]u8 {
-    var out = [_]u8{0} ** (max_word_len + 1);
+    var out = @as([max_word_len + 1]u8, @splat(0));
     out[0] = @intCast(word.len);
     @memcpy(out[1..][0..word.len], word);
     return out;
@@ -665,6 +666,7 @@ pub fn mnemonicStringToSeed(
 /// Generate a random mnemonic with the given entropy size
 /// entropy_bits must be 128, 160, 192, 224, or 256
 pub fn generateMnemonic(
+    io: std.Io,
     entropy_bits: u16,
     out_indices: []u11,
 ) Bip39Error![]u11 {
@@ -679,7 +681,7 @@ pub fn generateMnemonic(
 
     // Generate random entropy
     var entropy: [32]u8 = undefined;
-    crypto.random.bytes(entropy[0..entropy_bytes]);
+    io.randomSecure(entropy[0..entropy_bytes]) catch return Bip39Error.EntropyUnavailable;
 
     return entropyToMnemonic(entropy[0..entropy_bytes], out_indices);
 }
@@ -738,7 +740,7 @@ test "getEntropyBits" {
 
 test "entropyToMnemonic - all zeros 16 bytes" {
     // All zeros should produce "abandon" x11 + "about"
-    const entropy = [_]u8{0} ** 16;
+    const entropy = @as([16]u8, @splat(0));
     var indices: [12]u11 = undefined;
 
     const result = try entropyToMnemonic(&entropy, &indices);
@@ -754,7 +756,7 @@ test "entropyToMnemonic - all zeros 16 bytes" {
 
 test "entropyToMnemonic - all zeros 32 bytes" {
     // All zeros 32 bytes should produce "abandon" x23 + "art"
-    const entropy = [_]u8{0} ** 32;
+    const entropy = @as([32]u8, @splat(0));
     var indices: [24]u11 = undefined;
 
     const result = try entropyToMnemonic(&entropy, &indices);
@@ -913,13 +915,13 @@ test "mnemonicToSeed - letter advice test vector" {
 
 test "mnemonicToSeed - long passphrase and long words match std pbkdf2" {
     const allocator = std.testing.allocator;
-    const long_word = "x" ** 300;
+    const long_word = &@as([300]u8, @splat('x'));
     const cases = [_]struct { words: []const []const u8, passphrase: []const u8 }{
         .{ .words = &.{ "abandon", "about" }, .passphrase = "" },
-        .{ .words = &.{ "abandon", "about" }, .passphrase = "p" ** 1000 },
+        .{ .words = &.{ "abandon", "about" }, .passphrase = &@as([1000]u8, @splat('p')) },
         .{ .words = &.{ long_word, "abandon", long_word }, .passphrase = "TREZOR" },
-        .{ .words = &.{"a" ** 128}, .passphrase = "q" ** 249 },
-        .{ .words = &.{"a" ** 129}, .passphrase = "" },
+        .{ .words = &.{&@as([128]u8, @splat('a'))}, .passphrase = &@as([249]u8, @splat('q')) },
+        .{ .words = &.{&@as([129]u8, @splat('a'))}, .passphrase = "" },
     };
     for (cases) |c| {
         const joined = try std.mem.join(allocator, " ", c.words);
@@ -960,7 +962,7 @@ test "mnemonicStringToSeed - invalid checksum" {
 
 test "generateMnemonic - generates valid 12-word mnemonic" {
     var indices: [12]u11 = undefined;
-    const result = try generateMnemonic(128, &indices);
+    const result = try generateMnemonic(std.testing.io, 128, &indices);
 
     try std.testing.expectEqual(@as(usize, 12), result.len);
 
@@ -980,7 +982,7 @@ test "generateMnemonic - generates valid 12-word mnemonic" {
 
 test "generateMnemonic - generates valid 24-word mnemonic" {
     var indices: [24]u11 = undefined;
-    const result = try generateMnemonic(256, &indices);
+    const result = try generateMnemonic(std.testing.io, 256, &indices);
 
     try std.testing.expectEqual(@as(usize, 24), result.len);
 
@@ -995,7 +997,7 @@ test "generateMnemonic - generates valid 24-word mnemonic" {
 
 test "generateMnemonic - invalid entropy size" {
     var indices: [24]u11 = undefined;
-    try std.testing.expectError(Bip39Error.InvalidEntropySize, generateMnemonic(100, &indices));
+    try std.testing.expectError(Bip39Error.InvalidEntropySize, generateMnemonic(std.testing.io, 100, &indices));
 }
 
 test "indicesToString" {
@@ -1043,7 +1045,7 @@ test "all valid entropy sizes" {
 
     for (sizes) |s| {
         var entropy: [32]u8 = undefined;
-        crypto.random.bytes(entropy[0..s.bytes]);
+        std.testing.io.random(entropy[0..s.bytes]);
 
         var indices: [24]u11 = undefined;
         const result = try entropyToMnemonic(entropy[0..s.bytes], &indices);
@@ -1117,7 +1119,7 @@ test "mnemonicToEntropy - rejects word counts that wrap when narrowed to u8" {
 test "indicesToString - returns BufferTooSmall for every short buffer" {
     const indices = [_]u11{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3 };
     const expected = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-    var buf = [_]u8{0} ** expected.len;
+    var buf = @as([expected.len]u8, @splat(0));
     var n: usize = 0;
     while (n < expected.len) : (n += 1) {
         try std.testing.expectError(Bip39Error.BufferTooSmall, indicesToString(&indices, buf[0..n]));

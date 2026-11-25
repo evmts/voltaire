@@ -2,7 +2,7 @@ const std = @import("std");
 const crypto = @import("crypto");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -10,10 +10,10 @@ pub fn main() !void {
 
     // 1. Zcash-style hashing (32-byte output)
     std.debug.print("1. Zcash-Style Hashing (BLAKE2b-256)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     // Zcash uses Blake2b with 32-byte output in Equihash PoW
-    const zcash_header = [_]u8{0x01} ** 140; // Zcash block header
+    const zcash_header = @as([140]u8, @splat(0x01)); // Zcash block header
     const zcash_hash = try crypto.Blake2.hash(&zcash_header, 32, allocator);
     defer allocator.free(zcash_hash);
 
@@ -26,7 +26,7 @@ pub fn main() !void {
 
     // 2. EIP-152 precompile context
     std.debug.print("2. EIP-152 Blake2b Precompile Context\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("Address: 0x0000000000000000000000000000000000000009\n", .{});
     std.debug.print("Purpose: Blake2b F compression function\n", .{});
     std.debug.print("Use case: ZCash transaction verification on Ethereum\n", .{});
@@ -39,7 +39,7 @@ pub fn main() !void {
 
     // 3. Ethereum use cases
     std.debug.print("3. Ethereum Use Cases for Blake2\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const ethereum_data = "Ethereum transaction data";
     const blake2_hash = try crypto.Blake2.hash(ethereum_data, 32, allocator);
@@ -58,7 +58,7 @@ pub fn main() !void {
 
     // 4. Merkle tree with Blake2
     std.debug.print("4. Merkle Tree with Blake2 (Performance)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const leaf1 = "leaf1";
     const leaf2 = "leaf2";
@@ -85,12 +85,12 @@ pub fn main() !void {
     for (hash4) |byte| std.debug.print("{x:0>2}", .{byte});
 
     // Combine pairs and hash
-    var combined1 = std.ArrayList(u8){};
+    var combined1 = std.ArrayList(u8).empty;
     defer combined1.deinit(allocator);
     try combined1.appendSlice(allocator, hash1);
     try combined1.appendSlice(allocator, hash2);
 
-    var combined2 = std.ArrayList(u8){};
+    var combined2 = std.ArrayList(u8).empty;
     defer combined2.deinit(allocator);
     try combined2.appendSlice(allocator, hash3);
     try combined2.appendSlice(allocator, hash4);
@@ -106,7 +106,7 @@ pub fn main() !void {
     for (parent2) |byte| std.debug.print("{x:0>2}", .{byte});
 
     // Final root
-    var root_data = std.ArrayList(u8){};
+    var root_data = std.ArrayList(u8).empty;
     defer root_data.deinit(allocator);
     try root_data.appendSlice(allocator, parent1);
     try root_data.appendSlice(allocator, parent2);
@@ -120,9 +120,9 @@ pub fn main() !void {
 
     // 5. IPFS content addressing
     std.debug.print("5. IPFS-Style Content Addressing\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
-    const file_content = [_]u8{0xFF} ** 1024;
+    const file_content = @as([1024]u8, @splat(0xFF));
     const content_hash = try crypto.Blake2.hash(&file_content, 32, allocator);
     defer allocator.free(content_hash);
 
@@ -138,11 +138,11 @@ pub fn main() !void {
 
     // 6. Fast checksums
     std.debug.print("6. Fast Checksums for Data Deduplication\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
-    const chunk1 = [_]u8{0xAA} ** 4096;
-    const chunk2 = [_]u8{0xBB} ** 4096;
-    const chunk3 = [_]u8{0xAA} ** 4096; // Same as chunk1
+    const chunk1 = @as([4096]u8, @splat(0xAA));
+    const chunk2 = @as([4096]u8, @splat(0xBB));
+    const chunk3 = @as([4096]u8, @splat(0xAA)); // Same as chunk1
 
     const checksum1 = try crypto.Blake2.hash(&chunk1, 16, allocator);
     defer allocator.free(checksum1);
@@ -165,7 +165,7 @@ pub fn main() !void {
 
     // 7. EIP-152 gas costs
     std.debug.print("7. EIP-152 Gas Cost Comparison\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Blake2 F precompile gas costs (EIP-152):\n", .{});
     std.debug.print("- Base: 0 gas\n", .{});

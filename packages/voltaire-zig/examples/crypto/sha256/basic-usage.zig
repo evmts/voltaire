@@ -7,7 +7,7 @@ pub fn main() !void {
 
     // Example 1: Hash raw bytes
     std.debug.print("1. Hashing Raw Bytes\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const data = [_]u8{ 1, 2, 3, 4, 5 };
     const hash1 = SHA256.hash(&data);
     std.debug.print("Input: {any}\n", .{data});
@@ -16,7 +16,7 @@ pub fn main() !void {
 
     // Example 2: Hash UTF-8 strings
     std.debug.print("2. Hashing Strings\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const message = "hello world";
     const hash2 = SHA256.hash(message);
     std.debug.print("Input: {s}\n", .{message});
@@ -39,7 +39,7 @@ pub fn main() !void {
 
     // Example 3: Hash hex-encoded data
     std.debug.print("3. Hashing Hex Data\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const hex_data = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
     const hash3 = SHA256.hash(&hex_data);
     std.debug.print("Input (hex): 0xdeadbeef\n", .{});
@@ -47,7 +47,7 @@ pub fn main() !void {
 
     // Example 4: Empty string (produces known constant)
     std.debug.print("4. Empty String Hash\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const empty = "";
     const empty_hash = SHA256.hash(empty);
     std.debug.print("Empty string hash: 0x{s}\n", .{std.fmt.fmtSliceHexLower(&empty_hash)});
@@ -63,7 +63,7 @@ pub fn main() !void {
 
     // Example 5: Unicode handling
     std.debug.print("5. Unicode Strings\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const emoji = "🚀"; // UTF-8: F0 9F 9A 80
     const emoji_hash = SHA256.hash(emoji);
     std.debug.print("Emoji \"🚀\": 0x{s}\n", .{std.fmt.fmtSliceHexLower(&emoji_hash)});
@@ -74,7 +74,7 @@ pub fn main() !void {
 
     // Example 6: Determinism - same input always produces same hash
     std.debug.print("6. Deterministic Output\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const input = [_]u8{ 42, 42, 42 };
     const hash_a = SHA256.hash(&input);
     const hash_b = SHA256.hash(&input);
@@ -88,7 +88,7 @@ pub fn main() !void {
 
     // Example 7: Avalanche effect - small change = big difference
     std.debug.print("7. Avalanche Effect\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 50});
+    std.debug.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     const input1 = [_]u8{ 1, 2, 3, 4, 5 };
     const input2 = [_]u8{ 1, 2, 3, 4, 6 }; // Last byte different
     const hash_input1 = SHA256.hash(&input1);

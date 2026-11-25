@@ -227,7 +227,7 @@ test "peerdas operations fail without a trusted setup" {
     try testing.expectError(error.TrustedSetupNotLoaded, computeCells(fx.blob, fx.cells));
     try testing.expectError(error.TrustedSetupNotLoaded, computeCellsAndKzgProofs(fx.blob, fx.cells, fx.proofs));
 
-    const commitments = [_]Bytes48{[_]u8{0} ** 48};
+    const commitments = [_]Bytes48{@as([48]u8, @splat(0))};
     const indices = [_]u64{0};
     try testing.expectError(error.TrustedSetupNotLoaded, verifyCellKzgProofBatch(&commitments, &indices, fx.cells[0..1], fx.proofs[0..1]));
 
@@ -363,7 +363,7 @@ test "peerdas verifyCellKzgProofBatch validates inputs" {
     try computeCells(fx.blob, fx.cells);
     @memset(std.mem.sliceAsBytes(fx.proofs), 0);
 
-    const commitments = [_]Bytes48{ [_]u8{0} ** 48, [_]u8{0} ** 48 };
+    const commitments = [_]Bytes48{ @as([48]u8, @splat(0)), @as([48]u8, @splat(0)) };
     const indices = [_]u64{ 0, 1 };
 
     try testing.expectError(error.LengthMismatch, verifyCellKzgProofBatch(commitments[0..1], &indices, fx.cells[0..2], fx.proofs[0..2]));
@@ -382,7 +382,7 @@ test "peerdas verifyCellKzgProofBatch validates inputs" {
 
     // Non-canonical field element in a cell, with well-formed points (the
     // compressed point at infinity)
-    const infinity = [_]u8{0xc0} ++ [_]u8{0} ** 47;
+    const infinity = [_]u8{0xc0} ++ @as([47]u8, @splat(0));
     const points = [_]Bytes48{infinity};
     var bad_cell = [_]Cell{fx.cells[0]};
     @memset(bad_cell[0][0..32], 0xff);

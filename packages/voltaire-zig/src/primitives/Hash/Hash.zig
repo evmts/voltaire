@@ -29,7 +29,7 @@ pub const SIZE = 32;
 pub const Hash = [SIZE]u8;
 
 /// Zero hash constant
-pub const ZERO: Hash = [_]u8{0} ** SIZE;
+pub const ZERO: Hash = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -44,7 +44,7 @@ pub fn fromBytes(bytes: []const u8) Hash {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{1} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(1));
     const hash = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, hash.len);
     try std.testing.expectEqual(@as(u8, 1), hash[0]);
@@ -52,7 +52,7 @@ test "fromBytes - valid 32 bytes" {
 }
 
 test "fromBytes - creates independent copy" {
-    var bytes = [_]u8{42} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(42));
     const hash = fromBytes(&bytes);
     bytes[0] = 99;
     try std.testing.expectEqual(@as(u8, 42), hash[0]);
@@ -69,14 +69,14 @@ pub fn fromHex(hex: []const u8) !Hash {
 }
 
 test "fromHex - with 0x prefix" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     const hash = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xab), hash[0]);
     try std.testing.expectEqual(@as(u8, 0xab), hash[31]);
 }
 
 test "fromHex - without 0x prefix" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     const hash = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xcd), hash[0]);
 }
@@ -87,7 +87,7 @@ test "fromHex - invalid length" {
 }
 
 test "fromHex - invalid hex chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expectError(error.InvalidHexCharacter, fromHex(hex));
 }
 
@@ -128,19 +128,19 @@ test "from - Hash passthrough" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(42));
     const hash = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 42), hash[0]);
 }
 
 test "from - hex with 0x" {
-    const hex = "0x" ++ ("ef" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ef".*)))));
     const hash = try from(hex);
     try std.testing.expectEqual(@as(u8, 0xef), hash[0]);
 }
 
 test "from - hex without 0x" {
-    const hex = "12" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("12".*))));
     const hash = try from(hex);
     try std.testing.expectEqual(@as(u8, 0x12), hash[0]);
 }
@@ -176,7 +176,7 @@ test "toHex - with 0x prefix" {
 
     try std.testing.expectEqual(2 + SIZE * 2, hex.len);
     try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
-    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ ("ff" ** SIZE)));
+    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ff".*)))))));
 }
 
 /// Alias for toHex for string representation
@@ -203,19 +203,19 @@ pub fn equals(a: *const Hash, b: *const Hash) bool {
 }
 
 test "equals - same hash" {
-    const hash: Hash = [_]u8{42} ** SIZE;
+    const hash: Hash = @as([SIZE]u8, @splat(42));
     try std.testing.expect(equals(&hash, &hash));
 }
 
 test "equals - identical hashes" {
-    const hash1: Hash = [_]u8{99} ** SIZE;
-    const hash2: Hash = [_]u8{99} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(99));
+    const hash2: Hash = @as([SIZE]u8, @splat(99));
     try std.testing.expect(equals(&hash1, &hash2));
 }
 
 test "equals - different hashes" {
-    const hash1: Hash = [_]u8{1} ** SIZE;
-    const hash2: Hash = [_]u8{2} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(1));
+    const hash2: Hash = @as([SIZE]u8, @splat(2));
     try std.testing.expect(!equals(&hash1, &hash2));
 }
 
@@ -269,12 +269,12 @@ pub fn isValidHex(hex: []const u8) bool {
 }
 
 test "isValidHex - valid with 0x" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     try std.testing.expect(isValidHex(hex));
 }
 
 test "isValidHex - valid without 0x" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     try std.testing.expect(isValidHex(hex));
 }
 
@@ -283,7 +283,7 @@ test "isValidHex - invalid length" {
 }
 
 test "isValidHex - invalid chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expect(!isValidHex(hex));
 }
 
@@ -308,7 +308,7 @@ test "isHash - pointer types" {
 }
 
 test "isHash - non-Hash type" {
-    const bytes = [_]u8{0} ** 16;
+    const bytes = @as([16]u8, @splat(0));
     try std.testing.expect(!isHash(bytes));
 }
 
@@ -324,7 +324,7 @@ pub fn clone(hash: *const Hash) Hash {
 }
 
 test "clone - creates independent copy" {
-    var original: Hash = [_]u8{42} ** SIZE;
+    var original: Hash = @as([SIZE]u8, @splat(42));
     var copy = clone(&original);
     try std.testing.expect(equals(&original, &copy));
 
@@ -351,7 +351,7 @@ test "slice - partial slice" {
 }
 
 test "slice - full slice" {
-    const hash: Hash = [_]u8{77} ** SIZE;
+    const hash: Hash = @as([SIZE]u8, @splat(77));
     const s = slice(&hash, 0, SIZE);
     try std.testing.expectEqual(SIZE, s.len);
     try std.testing.expectEqualSlices(u8, &hash, s);
@@ -371,21 +371,21 @@ test "format - returns hex string" {
 }
 
 /// Generate random hash (for testing)
-pub fn random() Hash {
+pub fn random(io: std.Io) Hash {
     var hash: Hash = undefined;
-    std.crypto.random.bytes(&hash);
+    io.random(&hash);
     return hash;
 }
 
 test "random - generates different hashes" {
-    const hash1 = random();
-    const hash2 = random();
+    const hash1 = random(std.testing.io);
+    const hash2 = random(std.testing.io);
     // Astronomically unlikely to be equal
     try std.testing.expect(!equals(&hash1, &hash2));
 }
 
 test "random - correct size" {
-    const hash = random();
+    const hash = random(std.testing.io);
     try std.testing.expectEqual(SIZE, hash.len);
 }
 
@@ -468,8 +468,8 @@ pub fn concat(allocator: std.mem.Allocator, hashes: []const Hash) !Hash {
 }
 
 test "concat - two hashes" {
-    const hash1: Hash = [_]u8{0xaa} ** SIZE;
-    const hash2: Hash = [_]u8{0xbb} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(0xaa));
+    const hash2: Hash = @as([SIZE]u8, @splat(0xbb));
     const hashes = [_]Hash{ hash1, hash2 };
 
     const result = try concat(std.testing.allocator, &hashes);
@@ -484,7 +484,7 @@ test "concat - two hashes" {
 }
 
 test "concat - single hash" {
-    const hash1: Hash = [_]u8{0xcc} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(0xcc));
     const hashes = [_]Hash{hash1};
     const result = try concat(std.testing.allocator, &hashes);
     const expected = keccak256(&hash1);
@@ -532,15 +532,15 @@ test "merkleRoot - empty array" {
 }
 
 test "merkleRoot - single hash" {
-    const hash: Hash = [_]u8{0xaa} ** SIZE;
+    const hash: Hash = @as([SIZE]u8, @splat(0xaa));
     const hashes = [_]Hash{hash};
     const root = try merkleRoot(std.testing.allocator, &hashes);
     try std.testing.expect(equals(&root, &hash));
 }
 
 test "merkleRoot - two hashes" {
-    const hash1: Hash = [_]u8{0xaa} ** SIZE;
-    const hash2: Hash = [_]u8{0xbb} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(0xaa));
+    const hash2: Hash = @as([SIZE]u8, @splat(0xbb));
     const hashes = [_]Hash{ hash1, hash2 };
 
     const root = try merkleRoot(std.testing.allocator, &hashes);
@@ -551,9 +551,9 @@ test "merkleRoot - two hashes" {
 }
 
 test "merkleRoot - three hashes (odd)" {
-    const hash1: Hash = [_]u8{0x11} ** SIZE;
-    const hash2: Hash = [_]u8{0x22} ** SIZE;
-    const hash3: Hash = [_]u8{0x33} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(0x11));
+    const hash2: Hash = @as([SIZE]u8, @splat(0x22));
+    const hash3: Hash = @as([SIZE]u8, @splat(0x33));
     const hashes = [_]Hash{ hash1, hash2, hash3 };
 
     const root = try merkleRoot(std.testing.allocator, &hashes);
@@ -573,10 +573,10 @@ test "merkleRoot - three hashes (odd)" {
 }
 
 test "merkleRoot - four hashes (even)" {
-    const hash1: Hash = [_]u8{0x11} ** SIZE;
-    const hash2: Hash = [_]u8{0x22} ** SIZE;
-    const hash3: Hash = [_]u8{0x33} ** SIZE;
-    const hash4: Hash = [_]u8{0x44} ** SIZE;
+    const hash1: Hash = @as([SIZE]u8, @splat(0x11));
+    const hash2: Hash = @as([SIZE]u8, @splat(0x22));
+    const hash3: Hash = @as([SIZE]u8, @splat(0x33));
+    const hash4: Hash = @as([SIZE]u8, @splat(0x44));
     const hashes = [_]Hash{ hash1, hash2, hash3, hash4 };
 
     const root = try merkleRoot(std.testing.allocator, &hashes);

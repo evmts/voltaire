@@ -216,7 +216,7 @@ impl Hex {
     #[cfg(feature = "getrandom")]
     pub fn random(len: usize) -> Vec<u8> {
         let mut buf = vec![0u8; len];
-        getrandom::getrandom(&mut buf).expect("getrandom failed");
+        getrandom::fill(&mut buf).expect("getrandom failed");
         buf
     }
 

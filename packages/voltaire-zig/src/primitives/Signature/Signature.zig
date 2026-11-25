@@ -145,8 +145,8 @@ pub const Signature = struct {
         defer allocator.free(s);
 
         // Convert to 32-byte arrays
-        var r_bytes: [32]u8 = [_]u8{0} ** 32;
-        var s_bytes: [32]u8 = [_]u8{0} ** 32;
+        var r_bytes: [32]u8 = @as([32]u8, @splat(0));
+        var s_bytes: [32]u8 = @as([32]u8, @splat(0));
 
         const r_offset = if (r.len <= 32) 32 - r.len else 0;
         const s_offset = if (s.len <= 32) 32 - s.len else 0;
@@ -418,8 +418,8 @@ fn encodeDERInteger(allocator: std.mem.Allocator, value: []const u8) ![]u8 {
 // Tests
 
 test "Signature.fromSecp256k1" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
     const v: u8 = 27;
 
     const sig = Signature.fromSecp256k1(r, s, v);
@@ -431,8 +431,8 @@ test "Signature.fromSecp256k1" {
 }
 
 test "Signature.fromP256" {
-    const r: [32]u8 = [_]u8{3} ** 32;
-    const s: [32]u8 = [_]u8{4} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(3));
+    const s: [32]u8 = @as([32]u8, @splat(4));
 
     const sig = Signature.fromP256(r, s);
 
@@ -469,8 +469,8 @@ test "Signature.fromCompact" {
 }
 
 test "Signature.toBytes with v" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
     const sig = Signature.fromSecp256k1(r, s, 27);
 
     const allocator = std.testing.allocator;
@@ -484,8 +484,8 @@ test "Signature.toBytes with v" {
 }
 
 test "Signature.toBytes without v" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
     const sig = Signature.fromP256(r, s);
 
     const allocator = std.testing.allocator;
@@ -498,8 +498,8 @@ test "Signature.toBytes without v" {
 }
 
 test "Signature.toCompact" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
     const sig = Signature.fromSecp256k1(r, s, 27);
 
     const compact = sig.toCompact();
@@ -510,8 +510,8 @@ test "Signature.toCompact" {
 }
 
 test "Signature.getR" {
-    const r: [32]u8 = [_]u8{0xaa} ** 32;
-    const s: [32]u8 = [_]u8{0xbb} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(0xaa));
+    const s: [32]u8 = @as([32]u8, @splat(0xbb));
     const sig = Signature.fromSecp256k1(r, s, null);
 
     const retrieved_r = sig.getR();
@@ -519,8 +519,8 @@ test "Signature.getR" {
 }
 
 test "Signature.getS" {
-    const r: [32]u8 = [_]u8{0xaa} ** 32;
-    const s: [32]u8 = [_]u8{0xbb} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(0xaa));
+    const s: [32]u8 = @as([32]u8, @splat(0xbb));
     const sig = Signature.fromSecp256k1(r, s, null);
 
     const retrieved_s = sig.getS();
@@ -528,8 +528,8 @@ test "Signature.getS" {
 }
 
 test "Signature.getV" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
 
     const sig_with_v = Signature.fromSecp256k1(r, s, 27);
     try std.testing.expectEqual(@as(?u8, 27), sig_with_v.getV());
@@ -539,33 +539,33 @@ test "Signature.getV" {
 }
 
 test "Signature.isCanonical - Ed25519 always canonical" {
-    const sig_bytes = [_]u8{0xff} ** 64;
+    const sig_bytes = @as([64]u8, @splat(0xff));
     const sig = Signature.fromEd25519(sig_bytes);
 
     try std.testing.expect(sig.isCanonical());
 }
 
 test "Signature.isCanonical - secp256k1 canonical s" {
-    const r: [32]u8 = [_]u8{1} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
     // s < SECP256K1_N_DIV_2 (canonical)
-    const s: [32]u8 = [_]u8{0x10} ** 32;
+    const s: [32]u8 = @as([32]u8, @splat(0x10));
 
     const sig = Signature.fromSecp256k1(r, s, null);
     try std.testing.expect(sig.isCanonical());
 }
 
 test "Signature.isCanonical - secp256k1 non-canonical s" {
-    const r: [32]u8 = [_]u8{1} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
     // s > SECP256K1_N_DIV_2 (non-canonical)
-    const s: [32]u8 = [_]u8{0xff} ** 32;
+    const s: [32]u8 = @as([32]u8, @splat(0xff));
 
     const sig = Signature.fromSecp256k1(r, s, null);
     try std.testing.expect(!sig.isCanonical());
 }
 
 test "Signature.normalize - already canonical" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{0x10} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(0x10));
 
     const sig = Signature.fromSecp256k1(r, s, 27);
     const normalized = sig.normalize();
@@ -574,7 +574,7 @@ test "Signature.normalize - already canonical" {
 }
 
 test "Signature.normalize - non-canonical" {
-    const r: [32]u8 = [_]u8{1} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
     // Non-canonical s (just above SECP256K1_N_DIV_2)
     const s: [32]u8 = .{
         0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -593,8 +593,8 @@ test "Signature.normalize - non-canonical" {
 }
 
 test "Signature.equals - same signatures" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
 
     const sig1 = Signature.fromSecp256k1(r, s, 27);
     const sig2 = Signature.fromSecp256k1(r, s, 27);
@@ -603,8 +603,8 @@ test "Signature.equals - same signatures" {
 }
 
 test "Signature.equals - different algorithms" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
 
     const sig1 = Signature.fromSecp256k1(r, s, null);
     const sig2 = Signature.fromP256(r, s);
@@ -613,8 +613,8 @@ test "Signature.equals - different algorithms" {
 }
 
 test "Signature.equals - different v values" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
 
     const sig1 = Signature.fromSecp256k1(r, s, 27);
     const sig2 = Signature.fromSecp256k1(r, s, 28);
@@ -623,8 +623,8 @@ test "Signature.equals - different v values" {
 }
 
 test "Signature.toDER and fromDER roundtrip" {
-    const r: [32]u8 = [_]u8{1} ** 32;
-    const s: [32]u8 = [_]u8{2} ** 32;
+    const r: [32]u8 = @as([32]u8, @splat(1));
+    const s: [32]u8 = @as([32]u8, @splat(2));
 
     const original = Signature.fromSecp256k1(r, s, null);
 
@@ -640,7 +640,7 @@ test "Signature.toDER and fromDER roundtrip" {
 }
 
 test "Signature.toDER - Ed25519 returns error" {
-    const sig_bytes = [_]u8{1} ** 64;
+    const sig_bytes = @as([64]u8, @splat(1));
     const sig = Signature.fromEd25519(sig_bytes);
 
     const allocator = std.testing.allocator;

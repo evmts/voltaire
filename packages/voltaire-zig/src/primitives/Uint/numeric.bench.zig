@@ -119,11 +119,8 @@ fn benchCalculatePercentageOf(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -142,7 +139,6 @@ pub fn main() !void {
     try bench.add("Numeric.calculateGasCost", benchCalculateGasCost, .{});
     try bench.add("Numeric.calculatePercentageOf", benchCalculatePercentageOf, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

@@ -3,7 +3,7 @@ const precompiles = @import("precompiles");
 const crypto = @import("crypto");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -75,10 +75,10 @@ pub fn main() !void {
     std.debug.print("\n=== Example 3: Bitcoin Merkle Tree Construction ===\n", .{});
 
     // Simulate transaction hashes (Bitcoin uses double SHA-256 for each)
-    const tx1 = [_]u8{0x11} ** 32;
-    const tx2 = [_]u8{0x22} ** 32;
-    const tx3 = [_]u8{0x33} ** 32;
-    const tx4 = [_]u8{0x44} ** 32;
+    const tx1 = @as([32]u8, @splat(0x11));
+    const tx2 = @as([32]u8, @splat(0x22));
+    const tx3 = @as([32]u8, @splat(0x33));
+    const tx4 = @as([32]u8, @splat(0x44));
 
     std.debug.print("Building Merkle tree for 4 transactions...\n", .{});
 

@@ -29,7 +29,7 @@ pub const SIZE = 32;
 pub const EventSignature = [SIZE]u8;
 
 /// Zero event signature constant
-pub const ZERO: EventSignature = [_]u8{0} ** SIZE;
+pub const ZERO: EventSignature = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Well-known event signatures (precomputed)

@@ -81,7 +81,7 @@ test "fromHex - creates from hex string" {
 
 test "fromHex - invalid hex" {
     try std.testing.expectError(error.InvalidHexFormat, fromHex("0xinvalid"));
-    try std.testing.expectError(error.InvalidHexString, fromHex("0xzz" ++ "00" ** 19));
+    try std.testing.expectError(error.InvalidHexString, fromHex("0xzz" ++ @as(*const [(19) * 2]u8, @ptrCast(&@as([19][2]u8, @splat("00".*))))));
 }
 
 // ============================================================================
@@ -224,7 +224,7 @@ test "parse - invalid chain id" {
 /// Format ParsedTransactionUrl as ERC-681 URL string
 /// Caller owns returned memory
 pub fn format(allocator: std.mem.Allocator, url: ParsedTransactionUrl) ![]u8 {
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     errdefer result.deinit(allocator);
 
     // Scheme and checksummed address
@@ -569,7 +569,7 @@ pub fn explorerUrl(allocator: std.mem.Allocator, tx_hash: Hash.Hash, chain_id: u
     const expl = explorer orelse Explorer.defaultForChain(chain_id);
     const base_url = expl.getBaseUrl(chain_id) orelse return error.UnsupportedChain;
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     errdefer result.deinit(allocator);
 
     try result.appendSlice(allocator, base_url);
@@ -653,7 +653,7 @@ pub fn explorerAddressUrl(allocator: std.mem.Allocator, address: Address.Address
     const expl = explorer orelse Explorer.defaultForChain(chain_id);
     const base_url = expl.getBaseUrl(chain_id) orelse return error.UnsupportedChain;
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     errdefer result.deinit(allocator);
 
     try result.appendSlice(allocator, base_url);
@@ -684,7 +684,7 @@ pub fn explorerBlockUrl(allocator: std.mem.Allocator, block_number: u64, chain_i
     const expl = explorer orelse Explorer.defaultForChain(chain_id);
     const base_url = expl.getBaseUrl(chain_id) orelse return error.UnsupportedChain;
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     errdefer result.deinit(allocator);
 
     try result.appendSlice(allocator, base_url);
@@ -714,7 +714,7 @@ pub fn explorerTokenUrl(allocator: std.mem.Allocator, token_address: Address.Add
     const expl = explorer orelse Explorer.defaultForChain(chain_id);
     const base_url = expl.getBaseUrl(chain_id) orelse return error.UnsupportedChain;
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     errdefer result.deinit(allocator);
 
     try result.appendSlice(allocator, base_url);

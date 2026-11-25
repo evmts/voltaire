@@ -32,7 +32,7 @@ pub const SIZE = 32;
 pub const Bytes32 = [SIZE]u8;
 
 /// Zero constant
-pub const ZERO: Bytes32 = [_]u8{0} ** SIZE;
+pub const ZERO: Bytes32 = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -47,7 +47,7 @@ pub fn fromBytes(bytes: []const u8) Bytes32 {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{1} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(1));
     const b32 = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, b32.len);
     try std.testing.expectEqual(@as(u8, 1), b32[0]);
@@ -55,7 +55,7 @@ test "fromBytes - valid 32 bytes" {
 }
 
 test "fromBytes - creates independent copy" {
-    var bytes = [_]u8{42} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(42));
     const b32 = fromBytes(&bytes);
     bytes[0] = 99;
     try std.testing.expectEqual(@as(u8, 42), b32[0]);
@@ -79,14 +79,14 @@ pub fn fromHex(hex: []const u8) !Bytes32 {
 }
 
 test "fromHex - with 0x prefix" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     const b32 = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xab), b32[0]);
     try std.testing.expectEqual(@as(u8, 0xab), b32[31]);
 }
 
 test "fromHex - without 0x prefix" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     const b32 = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xcd), b32[0]);
 }
@@ -97,7 +97,7 @@ test "fromHex - invalid length" {
 }
 
 test "fromHex - invalid hex chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expectError(error.InvalidHexCharacter, fromHex(hex));
 }
 
@@ -199,19 +199,19 @@ test "from - Bytes32 passthrough" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(42));
     const b32 = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 42), b32[0]);
 }
 
 test "from - hex with 0x" {
-    const hex = "0x" ++ ("ef" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ef".*)))));
     const b32 = try from(hex);
     try std.testing.expectEqual(@as(u8, 0xef), b32[0]);
 }
 
 test "from - hex without 0x" {
-    const hex = "12" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("12".*))));
     const b32 = try from(hex);
     try std.testing.expectEqual(@as(u8, 0x12), b32[0]);
 }
@@ -270,7 +270,7 @@ test "toHex - with 0x prefix" {
 
     try std.testing.expectEqual(2 + SIZE * 2, hex.len);
     try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
-    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ ("ff" ** SIZE)));
+    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ff".*)))))));
 }
 
 /// Convert Bytes32 to bigint (big-endian)
@@ -345,19 +345,19 @@ pub fn equals(a: *const Bytes32, b: *const Bytes32) bool {
 }
 
 test "equals - same" {
-    const b32: Bytes32 = [_]u8{42} ** SIZE;
+    const b32: Bytes32 = @as([SIZE]u8, @splat(42));
     try std.testing.expect(equals(&b32, &b32));
 }
 
 test "equals - identical" {
-    const b1: Bytes32 = [_]u8{99} ** SIZE;
-    const b2: Bytes32 = [_]u8{99} ** SIZE;
+    const b1: Bytes32 = @as([SIZE]u8, @splat(99));
+    const b2: Bytes32 = @as([SIZE]u8, @splat(99));
     try std.testing.expect(equals(&b1, &b2));
 }
 
 test "equals - different" {
-    const b1: Bytes32 = [_]u8{1} ** SIZE;
-    const b2: Bytes32 = [_]u8{2} ** SIZE;
+    const b1: Bytes32 = @as([SIZE]u8, @splat(1));
+    const b2: Bytes32 = @as([SIZE]u8, @splat(2));
     try std.testing.expect(!equals(&b1, &b2));
 }
 
@@ -372,22 +372,22 @@ pub fn compare(a: *const Bytes32, b: *const Bytes32) i8 {
 }
 
 test "compare - equal" {
-    const b1: Bytes32 = [_]u8{42} ** SIZE;
-    const b2: Bytes32 = [_]u8{42} ** SIZE;
+    const b1: Bytes32 = @as([SIZE]u8, @splat(42));
+    const b2: Bytes32 = @as([SIZE]u8, @splat(42));
     try std.testing.expectEqual(@as(i8, 0), compare(&b1, &b2));
 }
 
 test "compare - less" {
-    var b1: Bytes32 = [_]u8{42} ** SIZE;
-    var b2: Bytes32 = [_]u8{42} ** SIZE;
+    var b1: Bytes32 = @as([SIZE]u8, @splat(42));
+    var b2: Bytes32 = @as([SIZE]u8, @splat(42));
     b1[0] = 1;
     b2[0] = 2;
     try std.testing.expectEqual(@as(i8, -1), compare(&b1, &b2));
 }
 
 test "compare - greater" {
-    var b1: Bytes32 = [_]u8{42} ** SIZE;
-    var b2: Bytes32 = [_]u8{42} ** SIZE;
+    var b1: Bytes32 = @as([SIZE]u8, @splat(42));
+    var b2: Bytes32 = @as([SIZE]u8, @splat(42));
     b1[0] = 3;
     b2[0] = 2;
     try std.testing.expectEqual(@as(i8, 1), compare(&b1, &b2));
@@ -431,7 +431,7 @@ pub fn clone(b32: *const Bytes32) Bytes32 {
 }
 
 test "clone - creates independent copy" {
-    var original: Bytes32 = [_]u8{42} ** SIZE;
+    var original: Bytes32 = @as([SIZE]u8, @splat(42));
     var copy = clone(&original);
     try std.testing.expect(equals(&original, &copy));
 

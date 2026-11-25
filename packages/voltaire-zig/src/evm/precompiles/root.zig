@@ -211,7 +211,7 @@ test "precompile - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 32;
+    const input = @as([32]u8, @splat(0));
     const result = sha256.execute(allocator, &input, 10);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -252,7 +252,7 @@ test "execute - P256VERIFY dispatches at 0x0100 from Osaka" {
     const valid = try execute(allocator, P256VERIFY_ADDRESS, &input, p256verify.GAS, .OSAKA);
     defer valid.deinit(allocator);
     try testing.expectEqual(@as(u64, 6900), valid.gas_used);
-    try testing.expectEqualSlices(u8, &([_]u8{0} ** 31 ++ [_]u8{1}), valid.output);
+    try testing.expectEqualSlices(u8, &(@as([31]u8, @splat(0)) ++ [_]u8{1}), valid.output);
 
     try testing.expectError(error.OutOfGas, execute(allocator, P256VERIFY_ADDRESS, &input, p256verify.GAS - 1, .OSAKA));
 
@@ -287,7 +287,7 @@ test "execute - EIP-2537 dispatches the seven final operations at 0x0b..0x11" {
         .{ .address = BLS12_MAP_FP_TO_G1_ADDRESS, .input_len = 64, .output_len = 128, .gas = 5500 },
         .{ .address = BLS12_MAP_FP2_TO_G2_ADDRESS, .input_len = 128, .output_len = 256, .gas = 23800 },
     };
-    const zeros = [_]u8{0} ** 512;
+    const zeros = @as([512]u8, @splat(0));
 
     for (cases, 0x0B..) |case, expected_address| {
         try testing.expectEqual(@as(u256, expected_address), case.address.toU256());
@@ -316,12 +316,12 @@ test "execute - EIP-2537 dispatches the seven final operations at 0x0b..0x11" {
 test "execute - EIP-2537 pairing and map outputs through the dispatcher" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    const zeros = [_]u8{0} ** 384;
+    const zeros = @as([384]u8, @splat(0));
 
     // e(infinity, infinity) = 1
     const pairing = try execute(allocator, BLS12_PAIRING_ADDRESS, &zeros, 70300, .PRAGUE);
     defer pairing.deinit(allocator);
-    try testing.expectEqualSlices(u8, &([_]u8{0} ** 31 ++ [_]u8{1}), pairing.output);
+    try testing.expectEqualSlices(u8, &(@as([31]u8, @splat(0)) ++ [_]u8{1}), pairing.output);
 
     // Mapping the zero field element gives a point, not infinity, with the
     // 16 padding bytes of each coordinate zero.
@@ -340,7 +340,7 @@ test "execute - EIP-2537 pairing and map outputs through the dispatcher" {
 test "execute - BN254 uses Byzantium pricing before Istanbul and EIP-1108 pricing after" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    const zeros = [_]u8{0} ** 192;
+    const zeros = @as([192]u8, @splat(0));
 
     const Case = struct { address: Address, input: []const u8, byzantium: u64, istanbul: u64 };
     const cases = [_]Case{
@@ -370,7 +370,7 @@ test "execute - ECRECOVER returns empty output for an invalid signature" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const zeros = [_]u8{0} ** 128;
+    const zeros = @as([128]u8, @splat(0));
     const result = try execute(allocator, ECRECOVER_ADDRESS, &zeros, 3000, .CANCUN);
     defer result.deinit(allocator);
     try testing.expectEqual(@as(u64, 3000), result.gas_used);

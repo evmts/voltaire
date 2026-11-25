@@ -15,7 +15,7 @@ pub fn main() !void {
 
     // 1. Aggregation Concept
     try stdout.print("1. Signature Aggregation Concept\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Same message signed by multiple validators:\n", .{});
     try stdout.print("  validator_1: sig_1 = privkey_1 * H(msg)\n", .{});
@@ -28,7 +28,7 @@ pub fn main() !void {
 
     // 2. Public Key Aggregation
     try stdout.print("2. Public Key Aggregation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Aggregate public keys (G2 points):\n", .{});
     try stdout.print("  pubkey_1 = privkey_1 * G2\n", .{});
@@ -39,7 +39,7 @@ pub fn main() !void {
 
     // 3. Verification
     try stdout.print("3. Aggregate Verification\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Single pairing check verifies all signatures:\n", .{});
     try stdout.print("  e(aggSig, G2) = e(H(msg), aggPubKey)\n", .{});
@@ -49,7 +49,7 @@ pub fn main() !void {
 
     // 4. Performance Benefits
     try stdout.print("4. Performance Benefits\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     const n = 100;
     try stdout.print("Example: {d} validators sign same message\n\n", .{n});
@@ -64,7 +64,7 @@ pub fn main() !void {
 
     // 5. Bandwidth Savings
     try stdout.print("5. Bandwidth Savings\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Individual signatures:\n", .{});
     try stdout.print("  - {d} signatures × 48 bytes = {d} bytes\n", .{ n, n * 48 });
@@ -74,7 +74,7 @@ pub fn main() !void {
 
     // 6. Ethereum Sync Committee
     try stdout.print("6. Ethereum Sync Committee Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     const sync_size = 512;
     const participation_rate = 0.9; // 90%
@@ -95,7 +95,7 @@ pub fn main() !void {
 
     // 7. Partial Aggregation
     try stdout.print("7. Partial Aggregation (Subset of Validators)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Only some validators participate:\n", .{});
     try stdout.print("  - Track participation with bitfield\n", .{});
@@ -106,7 +106,7 @@ pub fn main() !void {
 
     // 8. Incremental Aggregation
     try stdout.print("8. Incremental Aggregation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Signatures arrive over time:\n", .{});
     try stdout.print("  aggSig = identity\n", .{});
@@ -119,7 +119,7 @@ pub fn main() !void {
 
     // 9. Implementation with Precompiles
     try stdout.print("9. Implementation with Precompiles\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Step 1: Aggregate signatures (G1 addition)\n", .{});
     try stdout.print("  Input: 256 bytes (two G1 points)\n", .{});
@@ -139,7 +139,7 @@ pub fn main() !void {
 
     // 10. Security - Rogue Key Attacks
     try stdout.print("10. Security - Rogue Key Attack Prevention\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Rogue key attack:\n", .{});
     try stdout.print("  Attacker sets: pubkey_evil = pubkey_target - pubkey_honest\n", .{});

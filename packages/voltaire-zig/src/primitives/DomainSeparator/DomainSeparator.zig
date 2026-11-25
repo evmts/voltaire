@@ -27,7 +27,7 @@ pub const DomainSeparator = struct {
     bytes: [SIZE]u8,
 
     /// Zero domain separator constant
-    pub const ZERO: DomainSeparator = .{ .bytes = [_]u8{0} ** SIZE };
+    pub const ZERO: DomainSeparator = .{ .bytes = @as([SIZE]u8, @splat(0)) };
 
     /// Create DomainSeparator from bytes
     pub fn fromBytes(bytes: []const u8) !DomainSeparator {
@@ -86,31 +86,31 @@ pub const DomainSeparator = struct {
 // ============================================================================
 
 test "DomainSeparator: fromBytes creates from 32 bytes" {
-    const bytes = [_]u8{0xab} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xab));
     const sep = try DomainSeparator.fromBytes(&bytes);
     try std.testing.expectEqualSlices(u8, &bytes, &sep.bytes);
 }
 
 test "DomainSeparator: fromBytes rejects invalid length" {
-    const bytes = [_]u8{0xab} ** 16;
+    const bytes = @as([16]u8, @splat(0xab));
     try std.testing.expectError(error.InvalidDomainSeparatorLength, DomainSeparator.fromBytes(&bytes));
 }
 
 test "DomainSeparator: from creates from array" {
-    const bytes = [_]u8{0xcd} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xcd));
     const sep = DomainSeparator.from(bytes);
     try std.testing.expectEqualSlices(u8, &bytes, &sep.bytes);
 }
 
 test "DomainSeparator: fromHex with 0x prefix" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     const sep = try DomainSeparator.fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xab), sep.bytes[0]);
     try std.testing.expectEqual(@as(u8, 0xab), sep.bytes[31]);
 }
 
 test "DomainSeparator: fromHex without prefix" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     const sep = try DomainSeparator.fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xcd), sep.bytes[0]);
 }
@@ -120,12 +120,12 @@ test "DomainSeparator: fromHex invalid length" {
 }
 
 test "DomainSeparator: fromHex invalid chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expectError(error.InvalidHexString, DomainSeparator.fromHex(hex));
 }
 
 test "DomainSeparator: toHex returns correct format" {
-    const bytes = [_]u8{0xff} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xff));
     const sep = DomainSeparator.from(bytes);
     const hex = sep.toHex();
 
@@ -134,7 +134,7 @@ test "DomainSeparator: toHex returns correct format" {
 }
 
 test "DomainSeparator: toHex and fromHex roundtrip" {
-    const bytes = [_]u8{0xab} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xab));
     const sep = DomainSeparator.from(bytes);
     const hex = sep.toHex();
     const decoded = try DomainSeparator.fromHex(&hex);
@@ -142,7 +142,7 @@ test "DomainSeparator: toHex and fromHex roundtrip" {
 }
 
 test "DomainSeparator: toBytes returns correct slice" {
-    const bytes = [_]u8{0x12} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0x12));
     const sep = DomainSeparator.from(bytes);
     const slice = sep.toBytes();
     try std.testing.expectEqual(@as(usize, SIZE), slice.len);
@@ -150,19 +150,19 @@ test "DomainSeparator: toBytes returns correct slice" {
 }
 
 test "DomainSeparator: equals same" {
-    const sep = DomainSeparator.from([_]u8{0xaa} ** SIZE);
+    const sep = DomainSeparator.from(@as([SIZE]u8, @splat(0xaa)));
     try std.testing.expect(sep.equals(sep));
 }
 
 test "DomainSeparator: equals identical" {
-    const a = DomainSeparator.from([_]u8{0xaa} ** SIZE);
-    const b = DomainSeparator.from([_]u8{0xaa} ** SIZE);
+    const a = DomainSeparator.from(@as([SIZE]u8, @splat(0xaa)));
+    const b = DomainSeparator.from(@as([SIZE]u8, @splat(0xaa)));
     try std.testing.expect(a.equals(b));
 }
 
 test "DomainSeparator: equals different" {
-    const a = DomainSeparator.from([_]u8{0xaa} ** SIZE);
-    const b = DomainSeparator.from([_]u8{0xbb} ** SIZE);
+    const a = DomainSeparator.from(@as([SIZE]u8, @splat(0xaa)));
+    const b = DomainSeparator.from(@as([SIZE]u8, @splat(0xbb)));
     try std.testing.expect(!a.equals(b));
 }
 
@@ -172,7 +172,7 @@ test "DomainSeparator: isZero true" {
 }
 
 test "DomainSeparator: isZero false" {
-    var bytes = [_]u8{0} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(0));
     bytes[0] = 1;
     const sep = DomainSeparator.from(bytes);
     try std.testing.expect(!sep.isZero());

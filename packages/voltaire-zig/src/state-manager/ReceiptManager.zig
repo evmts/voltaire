@@ -30,8 +30,8 @@ pub const StoredLog = struct {
     address: [20]u8,
     topics: []const [32]u8 = &.{},
     data: []const u8 = &.{},
-    block_hash: [32]u8 = [_]u8{0} ** 32,
-    tx_hash: [32]u8 = [_]u8{0} ** 32,
+    block_hash: [32]u8 = @as([32]u8, @splat(0)),
+    tx_hash: [32]u8 = @as([32]u8, @splat(0)),
     tx_index: u32 = 0,
     log_index: u32 = 0,
 };
@@ -40,7 +40,7 @@ pub const StoredLog = struct {
 pub const StoredReceipt = struct {
     tx_hash: [32]u8,
     block_number: u64 = 0,
-    from: [20]u8 = [_]u8{0} ** 20,
+    from: [20]u8 = @as([20]u8, @splat(0)),
     to: ?[20]u8 = null,
     contract_address: ?[20]u8 = null,
     /// true = success (post-Byzantium status 1)
@@ -49,7 +49,7 @@ pub const StoredReceipt = struct {
     gas_used: u64 = 0,
     effective_gas_price: u256 = 0,
     tx_type: u8 = 0,
-    logs_bloom: [256]u8 = [_]u8{0} ** 256,
+    logs_bloom: [256]u8 = @as([256]u8, @splat(0)),
     logs: []const StoredLog = &.{},
 };
 
@@ -246,7 +246,7 @@ pub const ReceiptManager = struct {
 
     /// Logs matching `filter`, block order then log order. Caller frees the slice.
     pub fn getLogs(self: *const ReceiptManager, allocator: std.mem.Allocator, filter: LogFilter) ![]StoredLog {
-        var out = std.ArrayList(StoredLog){};
+        var out = std.ArrayList(StoredLog).empty;
         errdefer out.deinit(allocator);
 
         if (filter.block_hashes) |hashes| {
@@ -351,11 +351,11 @@ pub const ReceiptManager = struct {
 const testing = std.testing;
 
 fn h(n: u8) [32]u8 {
-    return [_]u8{n} ** 32;
+    return @as([32]u8, @splat(n));
 }
 
 fn ad(n: u8) [20]u8 {
-    return [_]u8{n} ** 20;
+    return @as([20]u8, @splat(n));
 }
 
 const t0 = h(0x40);

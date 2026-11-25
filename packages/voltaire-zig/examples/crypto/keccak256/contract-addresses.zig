@@ -9,7 +9,7 @@ const primitives = @import("primitives");
 /// - CREATE2: Deterministic address from deployer, salt, and bytecode
 /// - Real-world examples and comparisons
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -19,7 +19,7 @@ pub fn main() !void {
 
     // 1. CREATE: Nonce-based Contract Addresses
     try stdout.print("1. CREATE: Nonce-Based Addresses\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Formula: keccak256(rlp([sender, nonce]))[12:]\n\n", .{});
 
     // Parse deployer address
@@ -45,7 +45,7 @@ pub fn main() !void {
 
     // 2. CREATE2: Deterministic Contract Addresses
     try stdout.print("2. CREATE2: Deterministic Addresses\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Formula: keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:]\n\n", .{});
 
     // Simple bytecode example
@@ -68,7 +68,7 @@ pub fn main() !void {
     // Calculate CREATE2 addresses with different salts
     const salts = [_]u64{ 0, 1, 42, 12345 };
     for (salts) |salt_val| {
-        var salt: [32]u8 = [_]u8{0} ** 32;
+        var salt: [32]u8 = @as([32]u8, @splat(0));
         var i: usize = 31;
         var temp_salt = salt_val;
         while (temp_salt > 0) : ({
@@ -89,14 +89,14 @@ pub fn main() !void {
 
     // 3. CREATE vs CREATE2 Comparison
     try stdout.print("3. CREATE vs CREATE2 Comparison\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const deployer2_hex = "A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
     var deployer2: [20]u8 = undefined;
     _ = try std.fmt.hexToBytes(&deployer2, deployer2_hex);
 
     const create_addr = try calculateCreateAddress(&deployer2, 1, allocator);
-    var salt_zero: [32]u8 = [_]u8{0} ** 32;
+    var salt_zero: [32]u8 = @as([32]u8, @splat(0));
     const create2_addr = try calculateCreate2Address(&deployer2, &salt_zero, &init_code);
 
     try stdout.print("Same deployer, different methods:\n\n", .{});
@@ -111,7 +111,7 @@ pub fn main() !void {
 
     // 4. Bytecode Hash Importance
     try stdout.print("4. Bytecode Hash in CREATE2\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const bytecode1 = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
     const bytecode2 = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x53 }; // Last byte different

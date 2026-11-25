@@ -46,7 +46,7 @@ pub fn main() !void {
 
     // 1. Setup - Verification Key (Public Parameters)
     try stdout.print("1. Verification Key Setup\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // In real Groth16, these come from trusted setup ceremony
     const alpha_scalar = Fr.init(12345);
@@ -69,7 +69,7 @@ pub fn main() !void {
 
     // 2. Public Inputs
     try stdout.print("2. Public Inputs\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // In a real zkSNARK, these are the public values
     const public_input1 = Fr.init(42);
@@ -97,7 +97,7 @@ pub fn main() !void {
 
     // 3. Proof Elements
     try stdout.print("3. Proof Generation (Simulated)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // In real Groth16, prover generates these based on witness
     const r_scalar = Fr.init(777);
@@ -115,7 +115,7 @@ pub fn main() !void {
 
     // 4. Verification Equation
     try stdout.print("4. Verification Equation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Checking: e(A, B) = e(α, β) × e(L, γ) × e(C, δ)\n", .{});
     try stdout.print("Using pairing computation in Fp12\n\n", .{});
@@ -148,7 +148,7 @@ pub fn main() !void {
 
     // 5. Breaking Down the Verification
     try stdout.print("5. Understanding the Verification\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Each pairing term has a purpose:\n", .{});
     try stdout.print("- e(A, B): Main proof commitment\n", .{});
@@ -163,7 +163,7 @@ pub fn main() !void {
 
     // 6. Security Properties
     try stdout.print("6. Groth16 Security Properties\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Completeness: Valid proofs always verify\n", .{});
     try stdout.print("Soundness: Invalid proofs fail (with high probability)\n", .{});
@@ -171,7 +171,7 @@ pub fn main() !void {
 
     // 7. Real-world Usage Pattern
     try stdout.print("7. Real-world Usage Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Tornado Cash example:\n", .{});
     try stdout.print("Public inputs:\n", .{});
@@ -190,7 +190,7 @@ pub fn main() !void {
 
     // 8. Gas Cost Analysis
     try stdout.print("8. Gas Cost (EIP-1108 Istanbul)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const pairing_base_gas = 45000;
     const pairing_per_pair_gas = 34000;
@@ -205,7 +205,7 @@ pub fn main() !void {
 
     // 9. Verification Key Structure
     try stdout.print("9. Verification Key Structure\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("On-chain verification key contains:\n", .{});
     try stdout.print("- α (G1): 64 bytes\n", .{});

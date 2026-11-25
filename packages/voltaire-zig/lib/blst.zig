@@ -28,7 +28,14 @@ pub fn createBlstLibrary(
     // concurrent `zig build` processes race on those files (truncated archives,
     // SIGBUS in ar).
     if (!is_wasm) {
-        lib.root_module.addAssemblyFile(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/build/assembly.S"));
+        const asm_flags: []const []const u8 = if (target.result.os.tag == .windows)
+            &.{"-D__BLST_PORTABLE__"}
+        else
+            &.{ "-fPIC", "-D__BLST_PORTABLE__" };
+        lib.root_module.addCSourceFile(.{
+            .file = b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/build/assembly.S"),
+            .flags = asm_flags,
+        });
     }
 
     // Add blst source files with portable flag

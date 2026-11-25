@@ -20,7 +20,7 @@ pub fn main() !void {
 
     // 1. Sync Committee Overview
     try stdout.print("1. Sync Committee Overview\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Purpose: Enable light clients to track beacon chain\n", .{});
     try stdout.print("Size: {d} validators (randomly selected)\n", .{sync_size});
@@ -29,7 +29,7 @@ pub fn main() !void {
 
     // 2. Data Structure
     try stdout.print("2. SyncAggregate Data Structure\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("struct SyncAggregate {{\n", .{});
     try stdout.print("  sync_committee_bits: BitVector[{d}];  // 64 bytes\n", .{sync_size});
@@ -41,7 +41,7 @@ pub fn main() !void {
 
     // 3. Participation Tracking
     try stdout.print("3. Participation Tracking\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Bitfield encoding:\n", .{});
     try stdout.print("  - Each bit represents one validator\n", .{});
@@ -52,7 +52,7 @@ pub fn main() !void {
 
     // 4. Signature Aggregation Process
     try stdout.print("4. Signature Aggregation Process\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Step 1: Each participating validator signs block root\n", .{});
     try stdout.print("  sig_i = privkey_i * H(block_root)\n", .{});
@@ -69,7 +69,7 @@ pub fn main() !void {
 
     // 5. Light Client Verification
     try stdout.print("5. Light Client Verification\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Light client has:\n", .{});
     try stdout.print("  - Current sync committee public keys ({d} G2 points)\n", .{sync_size});
@@ -84,7 +84,7 @@ pub fn main() !void {
 
     // 6. Performance Analysis
     try stdout.print("6. Performance Analysis\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Bandwidth:\n", .{});
     try stdout.print("  - Individual: {d} bytes\n", .{participants * 48});
@@ -100,7 +100,7 @@ pub fn main() !void {
 
     // 7. Supermajority Threshold
     try stdout.print("7. Supermajority Threshold\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     const threshold = sync_size * 2 / 3;
     const has_supermajority = participants >= threshold;
@@ -112,7 +112,7 @@ pub fn main() !void {
 
     // 8. Sync Committee Rotation
     try stdout.print("8. Sync Committee Rotation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     const epochs_per_period = 256;
     const slots_per_epoch = 32;
@@ -130,7 +130,7 @@ pub fn main() !void {
 
     // 9. Security Properties
     try stdout.print("9. Security Properties\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     try stdout.print("Rogue key protection:\n", .{});
     try stdout.print("  - All validators must submit proof-of-possession\n", .{});
@@ -144,7 +144,7 @@ pub fn main() !void {
 
     // 10. Real-World Impact
     try stdout.print("10. Real-World Impact\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 60});
+    try stdout.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     const blocks_per_day = 24 * 60 * 60 / seconds_per_slot;
     const bandwidth_mb = @as(f64, @floatFromInt(blocks_per_day * 112)) / 1024.0 / 1024.0;

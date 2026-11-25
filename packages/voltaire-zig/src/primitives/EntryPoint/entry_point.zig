@@ -155,7 +155,7 @@ test "fromHex - invalid hex" {
     // Wrong length is rejected before character validation
     try std.testing.expectError(error.InvalidHexFormat, fromHex("0xinvalid"));
     // Correct length with non-hex characters
-    try std.testing.expectError(error.InvalidHexString, fromHex("0xzz" ++ "00" ** 19));
+    try std.testing.expectError(error.InvalidHexString, fromHex("0xzz" ++ @as(*const [(19) * 2]u8, @ptrCast(&@as([19][2]u8, @splat("00".*))))));
 }
 
 test "fromHex - wrong length" {

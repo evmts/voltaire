@@ -64,8 +64,8 @@ pub const Bundle = struct {
     /// Initialize a new empty bundle
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
-            .transactions = std.ArrayList([]const u8){},
-            .reverting_tx_hashes = std.ArrayList([32]u8){},
+            .transactions = std.ArrayList([]const u8).empty,
+            .reverting_tx_hashes = std.ArrayList([32]u8).empty,
             .allocator = allocator,
         };
     }
@@ -173,7 +173,7 @@ test "addRevertingTxHash - adds to list" {
     var bundle = init(std.testing.allocator);
     defer bundle.deinit();
 
-    const hash = [_]u8{0xaa} ** 32;
+    const hash = @as([32]u8, @splat(0xaa));
     try addRevertingTxHash(&bundle, hash);
 
     try std.testing.expectEqual(@as(usize, 1), bundle.reverting_tx_hashes.items.len);

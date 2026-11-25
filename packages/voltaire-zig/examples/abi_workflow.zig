@@ -20,17 +20,17 @@ const Address = primitives.Address.Address;
 const hash_mod = crypto_pkg.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    std.debug.print("\n" ++ "=" ** 80 ++ "\n", .{});
+    std.debug.print("\n" ++ &@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Comprehensive ABI Encoding/Decoding Workflow\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     // Example 1: ERC20 Transfer Function Call
     std.debug.print("1. ERC20 Transfer Function Call\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Function: transfer(address to, uint256 amount)
     const transfer_signature = "transfer(address,uint256)";
@@ -63,7 +63,7 @@ pub fn main() !void {
 
     // Example 2: Decoding Transfer Function Call
     std.debug.print("2. Decoding Transfer Function Call\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const param_types = [_]abi.AbiType{ .address, .uint256 };
     const decoded = try abi.decodeFunctionData(allocator, transfer_calldata, &param_types);
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     // Example 3: ERC20 BalanceOf Function Call
     std.debug.print("3. ERC20 BalanceOf Function Call\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const balanceof_signature = "balanceOf(address)";
     const balanceof_selector = abi.computeSelector(balanceof_signature);
@@ -112,7 +112,7 @@ pub fn main() !void {
 
     // Example 4: Decoding Function Return Value
     std.debug.print("4. Decoding Function Return Value\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Simulate balanceOf return value: uint256 balance
     const balance_value: u256 = 5_000_000_000_000_000_000_000; // 5000 tokens
@@ -149,7 +149,7 @@ pub fn main() !void {
 
     // Example 5: Event Log Encoding - Transfer Event
     std.debug.print("5. Event Log Encoding - Transfer Event\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Event: Transfer(address indexed from, address indexed to, uint256 value)
     const transfer_event_signature = "Transfer(address,address,uint256)";
@@ -164,12 +164,12 @@ pub fn main() !void {
     const to_address = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
 
     // Topic1: keccak256(from_address padded to 32 bytes)
-    var from_padded = [_]u8{0} ** 32;
+    var from_padded = @as([32]u8, @splat(0));
     @memcpy(from_padded[12..32], &from_address.bytes);
     const topic1 = hash_mod.keccak256(&from_padded);
 
     // Topic2: keccak256(to_address padded to 32 bytes)
-    var to_padded = [_]u8{0} ** 32;
+    var to_padded = @as([32]u8, @splat(0));
     @memcpy(to_padded[12..32], &to_address.bytes);
     const topic2 = hash_mod.keccak256(&to_padded);
 
@@ -191,7 +191,7 @@ pub fn main() !void {
 
     // Example 6: Decoding Event Log Data
     std.debug.print("6. Decoding Event Log Data\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const event_data_types = [_]abi.AbiType{.uint256};
     const decoded_event_data = try abi.decodeAbiParameters(allocator, event_data, &event_data_types);
@@ -219,7 +219,7 @@ pub fn main() !void {
 
     // Example 7: Error Encoding - Custom Error
     std.debug.print("7. Error Encoding - Custom Error\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Error: InsufficientBalance(uint256 available, uint256 required)
     const error_signature = "InsufficientBalance(uint256,uint256)";
@@ -246,7 +246,7 @@ pub fn main() !void {
 
     // Example 8: Decoding Error Data
     std.debug.print("8. Decoding Error Data\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const error_param_types = [_]abi.AbiType{ .uint256, .uint256 };
     const decoded_error = try abi.decodeFunctionData(allocator, error_data, &error_param_types);
@@ -276,7 +276,7 @@ pub fn main() !void {
 
     // Example 9: Packed Encoding for Signatures
     std.debug.print("9. Packed Encoding for Signatures\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Packed encoding is used for signature generation (e.g., EIP-712)\n", .{});
     std.debug.print("  Unlike standard ABI encoding, packed encoding has no padding.\n", .{});
@@ -320,7 +320,7 @@ pub fn main() !void {
 
     // Example 10: Complex Function with Multiple Types
     std.debug.print("10. Complex Function with Multiple Types\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Function: swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut, address to)
     const swap_signature = "swap(address,address,uint256,uint256,address)";
@@ -354,9 +354,9 @@ pub fn main() !void {
     std.debug.print("  Encoded Calldata Length: {} bytes\n", .{swap_calldata.len});
     std.debug.print("\n", .{});
 
-    std.debug.print("=" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Example Complete!\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("Key Takeaways:\n", .{});
     std.debug.print("- Function selectors are first 4 bytes of keccak256(function_signature)\n", .{});

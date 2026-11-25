@@ -3,7 +3,7 @@ const precompiles = @import("precompiles");
 const crypto = @import("crypto");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -101,7 +101,7 @@ pub fn main() !void {
 
     // Example 7: Out of gas
     std.debug.print("\n=== Example 7: Out of Gas ===\n", .{});
-    const test_data = [_]u8{0} ** 100;
+    const test_data = @as([100]u8, @splat(0));
     const insufficient_gas: u64 = 10; // Need 15 + 3*4 = 27
 
     const oog_result = precompiles.identity.execute(allocator, &test_data, insufficient_gas);

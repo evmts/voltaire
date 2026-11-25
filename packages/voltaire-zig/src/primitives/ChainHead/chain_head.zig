@@ -149,7 +149,7 @@ pub fn equals(a: ChainHead, b: ChainHead) bool {
 
 /// Encode ChainHead to JSON
 pub fn toJson(head: ChainHead, allocator: Allocator) ![]u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     defer buf.deinit(allocator);
 
     try buf.appendSlice(allocator, "{\"number\":\"0x");
@@ -328,7 +328,7 @@ pub fn beaconEquals(a: BeaconChainHead, b: BeaconChainHead) bool {
 
 /// Encode BeaconChainHead to JSON
 pub fn beaconToJson(head: BeaconChainHead, allocator: Allocator) ![]u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     defer buf.deinit(allocator);
 
     try buf.appendSlice(allocator, "{\"slot\":\"");
@@ -384,7 +384,7 @@ pub fn beaconFromJson(allocator: Allocator, json_str: []const u8) !BeaconChainHe
 // ============================================================================
 
 test "ChainHead.from creates chain head" {
-    const hash: BlockHash.BlockHash = [_]u8{0xab} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0xab));
     const head = from(.{
         .number = 18000000,
         .hash = hash,
@@ -396,7 +396,7 @@ test "ChainHead.from creates chain head" {
 }
 
 test "ChainHead.fromFields creates chain head" {
-    const hash: BlockHash.BlockHash = [_]u8{0xcd} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0xcd));
     const head = fromFields(18000000, hash, 1699000000);
 
     try std.testing.expectEqual(@as(BlockNumber.BlockNumber, 18000000), head.number);
@@ -404,7 +404,7 @@ test "ChainHead.fromFields creates chain head" {
 }
 
 test "ChainHead.fromFieldsWithDifficulty creates chain head" {
-    const hash: BlockHash.BlockHash = [_]u8{0xef} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0xef));
     const head = fromFieldsWithDifficulty(
         15000000,
         hash,
@@ -419,7 +419,7 @@ test "ChainHead.fromFieldsWithDifficulty creates chain head" {
 }
 
 test "ChainHead.isPostMerge detects post-merge blocks" {
-    const hash: BlockHash.BlockHash = [_]u8{0x11} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0x11));
 
     // Post-merge (difficulty = 0)
     const post_merge = from(.{
@@ -449,8 +449,8 @@ test "ChainHead.isPostMerge detects post-merge blocks" {
 }
 
 test "ChainHead.equals compares chain heads" {
-    const hash1: BlockHash.BlockHash = [_]u8{0x22} ** 32;
-    const hash2: BlockHash.BlockHash = [_]u8{0x33} ** 32;
+    const hash1: BlockHash.BlockHash = @as([32]u8, @splat(0x22));
+    const hash2: BlockHash.BlockHash = @as([32]u8, @splat(0x33));
 
     const head1 = from(.{
         .number = 18000000,
@@ -475,7 +475,7 @@ test "ChainHead.equals compares chain heads" {
 }
 
 test "ChainHead accessors work correctly" {
-    const hash: BlockHash.BlockHash = [_]u8{0x44} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0x44));
     const head = from(.{
         .number = 18000000,
         .hash = hash,
@@ -493,7 +493,7 @@ test "ChainHead accessors work correctly" {
 
 test "ChainHead.toJson encodes correctly" {
     const allocator = std.testing.allocator;
-    const hash: BlockHash.BlockHash = [_]u8{0xab} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0xab));
     const head = from(.{
         .number = 18000000,
         .hash = hash,
@@ -523,7 +523,7 @@ test "ChainHead.fromJson decodes correctly" {
 
 test "ChainHead JSON roundtrip" {
     const allocator = std.testing.allocator;
-    const hash: BlockHash.BlockHash = [_]u8{0xcd} ** 32;
+    const hash: BlockHash.BlockHash = @as([32]u8, @splat(0xcd));
     const original = from(.{
         .number = 15000000,
         .hash = hash,
@@ -546,8 +546,8 @@ test "ChainHead JSON roundtrip" {
 // ============================================================================
 
 test "BeaconChainHead.beaconFrom creates beacon head" {
-    const block: [32]u8 = [_]u8{0xaa} ** 32;
-    const state: [32]u8 = [_]u8{0xbb} ** 32;
+    const block: [32]u8 = @as([32]u8, @splat(0xaa));
+    const state: [32]u8 = @as([32]u8, @splat(0xbb));
     const head = beaconFrom(.{
         .slot = 7000000,
         .block = block,
@@ -560,18 +560,18 @@ test "BeaconChainHead.beaconFrom creates beacon head" {
 }
 
 test "BeaconChainHead.beaconFromFields creates beacon head" {
-    const block: [32]u8 = [_]u8{0xcc} ** 32;
-    const state: [32]u8 = [_]u8{0xdd} ** 32;
+    const block: [32]u8 = @as([32]u8, @splat(0xcc));
+    const state: [32]u8 = @as([32]u8, @splat(0xdd));
     const head = beaconFromFields(8000000, block, state);
 
     try std.testing.expectEqual(@as(u64, 8000000), head.slot);
 }
 
 test "BeaconChainHead.beaconEquals compares beacon heads" {
-    const block1: [32]u8 = [_]u8{0x11} ** 32;
-    const state1: [32]u8 = [_]u8{0x22} ** 32;
-    const block2: [32]u8 = [_]u8{0x33} ** 32;
-    const state2: [32]u8 = [_]u8{0x44} ** 32;
+    const block1: [32]u8 = @as([32]u8, @splat(0x11));
+    const state1: [32]u8 = @as([32]u8, @splat(0x22));
+    const block2: [32]u8 = @as([32]u8, @splat(0x33));
+    const state2: [32]u8 = @as([32]u8, @splat(0x44));
 
     const head1 = beaconFrom(.{ .slot = 7000000, .block = block1, .state = state1 });
     const head2 = beaconFrom(.{ .slot = 7000000, .block = block1, .state = state1 });
@@ -583,8 +583,8 @@ test "BeaconChainHead.beaconEquals compares beacon heads" {
 
 test "BeaconChainHead.beaconToJson encodes correctly" {
     const allocator = std.testing.allocator;
-    const block: [32]u8 = [_]u8{0xab} ** 32;
-    const state: [32]u8 = [_]u8{0xcd} ** 32;
+    const block: [32]u8 = @as([32]u8, @splat(0xab));
+    const state: [32]u8 = @as([32]u8, @splat(0xcd));
     const head = beaconFrom(.{
         .slot = 7000000,
         .block = block,
@@ -614,8 +614,8 @@ test "BeaconChainHead.beaconFromJson decodes correctly" {
 
 test "BeaconChainHead JSON roundtrip" {
     const allocator = std.testing.allocator;
-    const block: [32]u8 = [_]u8{0xef} ** 32;
-    const state: [32]u8 = [_]u8{0x12} ** 32;
+    const block: [32]u8 = @as([32]u8, @splat(0xef));
+    const state: [32]u8 = @as([32]u8, @splat(0x12));
     const original = beaconFrom(.{
         .slot = 9000000,
         .block = block,

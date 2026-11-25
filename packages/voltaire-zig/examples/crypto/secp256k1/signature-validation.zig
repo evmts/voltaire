@@ -11,7 +11,7 @@ const crypto = @import("crypto");
 const primitives = @import("primitives");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -46,7 +46,7 @@ pub fn main() !void {
     // 2. Invalid r component (all zeros)
     std.debug.print("\n2. Invalid r Component (r = 0)\n", .{});
     var invalid_r = valid_signature;
-    invalid_r.r = [_]u8{0} ** 32;
+    invalid_r.r = @as([32]u8, @splat(0));
 
     const r_is_valid = crypto.secp256k1.isValidSignature(invalid_r);
     std.debug.print("   Valid structure: {s}\n", .{if (!r_is_valid) "✗ No (expected)" else "✓ Yes"});
@@ -54,7 +54,7 @@ pub fn main() !void {
     // 3. Invalid s component (too large)
     std.debug.print("\n3. Invalid s Component (s >= n)\n", .{});
     var invalid_s = valid_signature;
-    invalid_s.s = [_]u8{0xff} ** 32;
+    invalid_s.s = @as([32]u8, @splat(0xff));
 
     const s_is_valid = crypto.secp256k1.isValidSignature(invalid_s);
     std.debug.print("   Valid structure: {s}\n", .{if (!s_is_valid) "✗ No (expected)" else "✓ Yes"});
@@ -68,12 +68,12 @@ pub fn main() !void {
     std.debug.print("\n5. Private Key Validation\n", .{});
 
     // Valid key
-    var valid_key: [32]u8 = [_]u8{0} ** 32;
+    var valid_key: [32]u8 = @as([32]u8, @splat(0));
     valid_key[31] = 42;
     std.debug.print("   Valid key (42): {s}\n", .{if (crypto.secp256k1.isValidPrivateKey(valid_key)) "✓ Yes" else "✗ No"});
 
     // Zero key (invalid)
-    const zero_key: [32]u8 = [_]u8{0} ** 32;
+    const zero_key: [32]u8 = @as([32]u8, @splat(0));
     std.debug.print("   Zero key: {s}\n", .{if (!crypto.secp256k1.isValidPrivateKey(zero_key)) "✗ No (expected)" else "✓ Yes"});
 
     // Key >= n (invalid)

@@ -437,11 +437,11 @@ test "Int256: fromWord and toWord (two's complement)" {
 }
 
 test "Int256: fromBytes" {
-    try testing.expectEqual(@as(Int256, 0), fromBytes([_]u8{0} ** 32));
+    try testing.expectEqual(@as(Int256, 0), fromBytes(@as([32]u8, @splat(0))));
     try testing.expectEqual(@as(Int256, 1), fromBytes(hexToBytes("0000000000000000000000000000000000000000000000000000000000000001")));
     try testing.expectEqual(MAX, fromBytes(hexToBytes("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")));
     try testing.expectEqual(MIN, fromBytes(hexToBytes("8000000000000000000000000000000000000000000000000000000000000000")));
-    try testing.expectEqual(@as(Int256, -1), fromBytes([_]u8{0xff} ** 32));
+    try testing.expectEqual(@as(Int256, -1), fromBytes(@as([32]u8, @splat(0xff))));
     try testing.expectEqual(@as(Int256, -2), fromBytes(hexToBytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
 }
 
@@ -471,10 +471,10 @@ test "Int256: toI64 and toI128" {
 }
 
 test "Int256: toBytes" {
-    try testing.expectEqual([_]u8{0} ** 32, toBytes(0));
+    try testing.expectEqual(@as([32]u8, @splat(0)), toBytes(0));
     try testing.expectEqual(hexToBytes("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), toBytes(MAX));
     try testing.expectEqual(hexToBytes("8000000000000000000000000000000000000000000000000000000000000000"), toBytes(MIN));
-    try testing.expectEqual([_]u8{0xff} ** 32, toBytes(-1));
+    try testing.expectEqual(@as([32]u8, @splat(0xff)), toBytes(-1));
     try testing.expectEqual(hexToBytes("0000000000000000000000000000000000000000000000000000000000000100"), toBytes(256));
 }
 

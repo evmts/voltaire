@@ -219,9 +219,9 @@ fn appendUintChanges(
     changes: anytype,
     comptime field: []const u8,
 ) !void {
-    var items = std.ArrayList(u8){};
+    var items = std.ArrayList(u8).empty;
     defer items.deinit(allocator);
-    var pair = std.ArrayList(u8){};
+    var pair = std.ArrayList(u8).empty;
     defer pair.deinit(allocator);
     for (changes) |change| {
         pair.clearRetainingCapacity();
@@ -240,13 +240,13 @@ fn appendUintChanges(
 pub fn rlpEncode(list: *const BlockAccessList, allocator: std.mem.Allocator) ![]u8 {
     try validate(list);
 
-    var accounts = std.ArrayList(u8){};
+    var accounts = std.ArrayList(u8).empty;
     defer accounts.deinit(allocator);
-    var fields = std.ArrayList(u8){};
+    var fields = std.ArrayList(u8).empty;
     defer fields.deinit(allocator);
-    var items = std.ArrayList(u8){};
+    var items = std.ArrayList(u8).empty;
     defer items.deinit(allocator);
-    var pair = std.ArrayList(u8){};
+    var pair = std.ArrayList(u8).empty;
     defer pair.deinit(allocator);
 
     for (list.accounts) |account| {
@@ -286,7 +286,7 @@ pub fn rlpEncode(list: *const BlockAccessList, allocator: std.mem.Allocator) ![]
         try appendList(&accounts, allocator, fields.items);
     }
 
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     errdefer result.deinit(allocator);
     try appendList(&result, allocator, accounts.items);
     return result.toOwnedSlice(allocator);
@@ -437,7 +437,7 @@ const full_hash_hex = "7a6e55bde06c036cc607ef0262a5c3f46eba0d9a8a4a991334d72295a
 
 const full_list = BlockAccessList{ .accounts = &.{
     .{
-        .address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0xaa} },
+        .address = .{ .bytes = @as([19]u8, @splat(0)) ++ [_]u8{0xaa} },
         .storage_changes = &.{
             .{ .slot = 1, .changes = &.{
                 .{ .block_access_index = 1, .new_value = 42 },
@@ -452,7 +452,7 @@ const full_list = BlockAccessList{ .accounts = &.{
         .nonce_changes = &.{.{ .block_access_index = 1, .new_nonce = 1 }},
         .code_changes = &.{.{ .block_access_index = 2, .new_code = &.{ 0x60, 0x00 } }},
     },
-    .{ .address = .{ .bytes = [_]u8{0} ** 19 ++ [_]u8{0xbb} } },
+    .{ .address = .{ .bytes = @as([19]u8, @splat(0)) ++ [_]u8{0xbb} } },
 } };
 
 test "rlpEncode - empty list is 0xc0 and hashes to the empty commitment" {

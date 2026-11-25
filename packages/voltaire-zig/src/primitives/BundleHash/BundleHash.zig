@@ -31,7 +31,7 @@ pub const SIZE = 32;
 pub const BundleHash = [SIZE]u8;
 
 /// Zero hash constant
-pub const ZERO: BundleHash = [_]u8{0} ** SIZE;
+pub const ZERO: BundleHash = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -46,7 +46,7 @@ pub fn fromBytes(bytes: []const u8) BundleHash {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{0xab} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xab));
     const hash = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, hash.len);
     try std.testing.expectEqual(@as(u8, 0xab), hash[0]);
@@ -54,7 +54,7 @@ test "fromBytes - valid 32 bytes" {
 }
 
 test "fromBytes - creates independent copy" {
-    var bytes = [_]u8{42} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(42));
     const hash = fromBytes(&bytes);
     bytes[0] = 99;
     try std.testing.expectEqual(@as(u8, 42), hash[0]);
@@ -78,14 +78,14 @@ pub fn fromHex(hex: []const u8) !BundleHash {
 }
 
 test "fromHex - with 0x prefix" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     const hash = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xab), hash[0]);
     try std.testing.expectEqual(@as(u8, 0xab), hash[31]);
 }
 
 test "fromHex - without 0x prefix" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     const hash = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xcd), hash[0]);
 }
@@ -96,7 +96,7 @@ test "fromHex - invalid length" {
 }
 
 test "fromHex - invalid hex chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expectError(error.InvalidHexCharacter, fromHex(hex));
 }
 
@@ -115,7 +115,7 @@ pub fn fromTransactionHashes(tx_hashes: []const [32]u8) BundleHash {
 }
 
 test "fromTransactionHashes - single tx" {
-    const tx_hash = [_]u8{0xaa} ** 32;
+    const tx_hash = @as([32]u8, @splat(0xaa));
     const hashes = [_][32]u8{tx_hash};
     const bundle_hash = fromTransactionHashes(&hashes);
     try std.testing.expectEqual(SIZE, bundle_hash.len);
@@ -124,16 +124,16 @@ test "fromTransactionHashes - single tx" {
 }
 
 test "fromTransactionHashes - multiple txs" {
-    const tx1 = [_]u8{0xaa} ** 32;
-    const tx2 = [_]u8{0xbb} ** 32;
+    const tx1 = @as([32]u8, @splat(0xaa));
+    const tx2 = @as([32]u8, @splat(0xbb));
     const hashes = [_][32]u8{ tx1, tx2 };
     const bundle_hash = fromTransactionHashes(&hashes);
     try std.testing.expect(!isZero(&bundle_hash));
 }
 
 test "fromTransactionHashes - deterministic" {
-    const tx1 = [_]u8{0xaa} ** 32;
-    const tx2 = [_]u8{0xbb} ** 32;
+    const tx1 = @as([32]u8, @splat(0xaa));
+    const tx2 = @as([32]u8, @splat(0xbb));
     const hashes = [_][32]u8{ tx1, tx2 };
     const hash1 = fromTransactionHashes(&hashes);
     const hash2 = fromTransactionHashes(&hashes);
@@ -141,8 +141,8 @@ test "fromTransactionHashes - deterministic" {
 }
 
 test "fromTransactionHashes - order matters" {
-    const tx1 = [_]u8{0xaa} ** 32;
-    const tx2 = [_]u8{0xbb} ** 32;
+    const tx1 = @as([32]u8, @splat(0xaa));
+    const tx2 = @as([32]u8, @splat(0xbb));
     const hashes1 = [_][32]u8{ tx1, tx2 };
     const hashes2 = [_][32]u8{ tx2, tx1 };
     const hash1 = fromTransactionHashes(&hashes1);
@@ -187,19 +187,19 @@ test "from - BundleHash passthrough" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(42));
     const hash = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 42), hash[0]);
 }
 
 test "from - hex with 0x" {
-    const hex = "0x" ++ ("ef" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ef".*)))));
     const hash = try from(hex);
     try std.testing.expectEqual(@as(u8, 0xef), hash[0]);
 }
 
 test "from - hex without 0x" {
-    const hex = "12" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("12".*))));
     const hash = try from(hex);
     try std.testing.expectEqual(@as(u8, 0x12), hash[0]);
 }
@@ -235,7 +235,7 @@ test "toHex - with 0x prefix" {
 
     try std.testing.expectEqual(2 + SIZE * 2, hex.len);
     try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
-    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ ("ff" ** SIZE)));
+    try std.testing.expect(std.mem.eql(u8, hex, "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ff".*)))))));
 }
 
 /// Alias for toHex
@@ -262,19 +262,19 @@ pub fn equals(a: *const BundleHash, b: *const BundleHash) bool {
 }
 
 test "equals - same hash" {
-    const hash: BundleHash = [_]u8{42} ** SIZE;
+    const hash: BundleHash = @as([SIZE]u8, @splat(42));
     try std.testing.expect(equals(&hash, &hash));
 }
 
 test "equals - identical hashes" {
-    const hash1: BundleHash = [_]u8{99} ** SIZE;
-    const hash2: BundleHash = [_]u8{99} ** SIZE;
+    const hash1: BundleHash = @as([SIZE]u8, @splat(99));
+    const hash2: BundleHash = @as([SIZE]u8, @splat(99));
     try std.testing.expect(equals(&hash1, &hash2));
 }
 
 test "equals - different hashes" {
-    const hash1: BundleHash = [_]u8{1} ** SIZE;
-    const hash2: BundleHash = [_]u8{2} ** SIZE;
+    const hash1: BundleHash = @as([SIZE]u8, @splat(1));
+    const hash2: BundleHash = @as([SIZE]u8, @splat(2));
     try std.testing.expect(!equals(&hash1, &hash2));
 }
 
@@ -316,12 +316,12 @@ pub fn isValidHex(hex: []const u8) bool {
 }
 
 test "isValidHex - valid with 0x" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     try std.testing.expect(isValidHex(hex));
 }
 
 test "isValidHex - valid without 0x" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     try std.testing.expect(isValidHex(hex));
 }
 
@@ -330,7 +330,7 @@ test "isValidHex - invalid length" {
 }
 
 test "isValidHex - invalid chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expect(!isValidHex(hex));
 }
 
@@ -346,7 +346,7 @@ pub fn clone(hash: *const BundleHash) BundleHash {
 }
 
 test "clone - creates independent copy" {
-    var original: BundleHash = [_]u8{42} ** SIZE;
+    var original: BundleHash = @as([SIZE]u8, @splat(42));
     var copy = clone(&original);
     try std.testing.expect(equals(&original, &copy));
 
@@ -373,20 +373,20 @@ test "slice - partial slice" {
 }
 
 /// Generate random bundle hash (for testing)
-pub fn random() BundleHash {
+pub fn random(io: std.Io) BundleHash {
     var hash: BundleHash = undefined;
-    std.crypto.random.bytes(&hash);
+    io.random(&hash);
     return hash;
 }
 
 test "random - generates different hashes" {
-    const hash1 = random();
-    const hash2 = random();
+    const hash1 = random(std.testing.io);
+    const hash2 = random(std.testing.io);
     // Astronomically unlikely to be equal
     try std.testing.expect(!equals(&hash1, &hash2));
 }
 
 test "random - correct size" {
-    const hash = random();
+    const hash = random(std.testing.io);
     try std.testing.expectEqual(SIZE, hash.len);
 }

@@ -16,7 +16,7 @@ const Address = primitives.Address.Address;
 const TransactionType = Transaction.TransactionType;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -24,7 +24,7 @@ pub fn main() !void {
 
     // Example 1: Serialize Legacy transaction
     std.debug.print("1. Legacy Transaction Serialization\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x3535353535353535353535353535353535353535");
 
@@ -73,7 +73,7 @@ pub fn main() !void {
 
     // Example 2: Serialize EIP-1559 transaction
     std.debug.print("2. EIP-1559 Transaction Serialization\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const eip1559_tx = Eip1559Transaction{
         .chain_id = 1,
@@ -119,10 +119,10 @@ pub fn main() !void {
 
     // Example 3: Type detection
     std.debug.print("3. Transaction Type Detection\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Legacy transaction (no type prefix)
-    const legacy_data = [_]u8{0xf8} ++ [_]u8{0} ** 10;
+    const legacy_data = [_]u8{0xf8} ++ @as([10]u8, @splat(0));
     const legacy_type = Transaction.detectTransactionType(&legacy_data);
     std.debug.print("Legacy transaction:\n", .{});
     std.debug.print("  First Byte: 0x{x:0>2}\n", .{legacy_data[0]});
@@ -131,7 +131,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     // EIP-1559 transaction (0x02 prefix)
-    const eip1559_data = [_]u8{0x02} ++ [_]u8{0} ** 10;
+    const eip1559_data = [_]u8{0x02} ++ @as([10]u8, @splat(0));
     const eip1559_type = Transaction.detectTransactionType(&eip1559_data);
     std.debug.print("EIP-1559 transaction:\n", .{});
     std.debug.print("  First Byte: 0x{x:0>2}\n", .{eip1559_data[0]});
@@ -140,7 +140,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     // EIP-4844 blob transaction (0x03 prefix)
-    const eip4844_data = [_]u8{0x03} ++ [_]u8{0} ** 10;
+    const eip4844_data = [_]u8{0x03} ++ @as([10]u8, @splat(0));
     const eip4844_type = Transaction.detectTransactionType(&eip4844_data);
     std.debug.print("EIP-4844 blob transaction:\n", .{});
     std.debug.print("  First Byte: 0x{x:0>2}\n", .{eip4844_data[0]});
@@ -150,7 +150,7 @@ pub fn main() !void {
 
     // Example 4: Network transmission format
     std.debug.print("4. Network Transmission Format\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const tx_hash = try Transaction.computeLegacyTransactionHash(allocator, legacy_tx);
 
@@ -165,7 +165,7 @@ pub fn main() !void {
 
     // Example 5: RLP encoding structure
     std.debug.print("5. RLP Encoding Structure\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Legacy Transaction RLP:\n", .{});
     std.debug.print("  rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])\n", .{});
@@ -180,7 +180,7 @@ pub fn main() !void {
 
     // Example 6: Size comparison
     std.debug.print("6. Serialization Size Comparison\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Legacy Transaction:\n", .{});
     std.debug.print("  Size: {} bytes\n", .{legacy_serialized.len});

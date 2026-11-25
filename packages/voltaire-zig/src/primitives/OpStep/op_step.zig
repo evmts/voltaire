@@ -132,7 +132,7 @@ pub const OpStep = struct {
 
     /// Get opcode byte value
     pub fn opByte(self: Self) u8 {
-        return @intFromEnum(self.op);
+        return @backingInt(self.op);
     }
 
     /// Check if this is a PUSH operation
@@ -162,7 +162,7 @@ pub const OpStep = struct {
 
     /// Encode to JSON
     pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.appendSlice(allocator, "{\"pc\":");
@@ -230,7 +230,7 @@ pub const OpStep = struct {
 
         const pc: u64 = @intCast(obj.get("pc").?.integer);
         const op_byte: u8 = @intCast(obj.get("op").?.integer);
-        const op: Opcode = @enumFromInt(op_byte);
+        const op: Opcode = @fromBackingInt(@intCast(op_byte));
         const gas: u64 = @intCast(obj.get("gas").?.integer);
         const gas_cost: u64 = @intCast(obj.get("gasCost").?.integer);
         const depth: u32 = @intCast(obj.get("depth").?.integer);

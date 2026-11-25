@@ -177,7 +177,7 @@ pub const Opcode = enum(u8) {
 
     /// Check if opcode is a PUSH operation
     pub fn isPush(self: Opcode) bool {
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value >= 0x5f and value <= 0x7f; // PUSH0 through PUSH32
     }
 
@@ -185,47 +185,47 @@ pub const Opcode = enum(u8) {
     pub fn pushSize(self: Opcode) u8 {
         if (!self.isPush()) return 0;
 
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         if (value == 0x5f) return 0; // PUSH0
         return value - 0x5f; // PUSH1=1, PUSH2=2, ..., PUSH32=32
     }
 
     /// Check if opcode is a DUP operation
     pub fn isDup(self: Opcode) bool {
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value >= 0x80 and value <= 0x8f; // DUP1 through DUP16
     }
 
     /// Get the DUP position (1-16)
     pub fn dupPosition(self: Opcode) u8 {
         if (!self.isDup()) return 0;
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value - 0x7f; // DUP1=1, DUP2=2, ..., DUP16=16
     }
 
     /// Check if opcode is a SWAP operation
     pub fn isSwap(self: Opcode) bool {
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value >= 0x90 and value <= 0x9f; // SWAP1 through SWAP16
     }
 
     /// Get the SWAP position (1-16)
     pub fn swapPosition(self: Opcode) u8 {
         if (!self.isSwap()) return 0;
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value - 0x8f; // SWAP1=1, SWAP2=2, ..., SWAP16=16
     }
 
     /// Check if opcode is a LOG operation
     pub fn isLog(self: Opcode) bool {
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value >= 0xa0 and value <= 0xa4; // LOG0 through LOG4
     }
 
     /// Get the number of topics for LOG operations (0-4)
     pub fn logTopics(self: Opcode) u8 {
         if (!self.isLog()) return 0;
-        const value = @intFromEnum(self);
+        const value = @backingInt(self);
         return value - 0xa0; // LOG0=0, LOG1=1, ..., LOG4=4
     }
 
@@ -312,7 +312,7 @@ pub const Opcode = enum(u8) {
     pub fn pushOpcode(bytes: u8) !Opcode {
         if (bytes > 32) return error.InvalidPushSize;
         if (bytes == 0) return .PUSH0;
-        return @enumFromInt(0x5f + bytes);
+        return @fromBackingInt(@intCast(0x5f + bytes));
     }
 
     /// Get opcode name as string
@@ -475,12 +475,12 @@ pub const Opcode = enum(u8) {
 };
 
 test "opcode enum values" {
-    try std.testing.expectEqual(@as(u8, 0x00), @intFromEnum(Opcode.STOP));
-    try std.testing.expectEqual(@as(u8, 0x01), @intFromEnum(Opcode.ADD));
-    try std.testing.expectEqual(@as(u8, 0x5f), @intFromEnum(Opcode.PUSH0));
-    try std.testing.expectEqual(@as(u8, 0x60), @intFromEnum(Opcode.PUSH1));
-    try std.testing.expectEqual(@as(u8, 0x7f), @intFromEnum(Opcode.PUSH32));
-    try std.testing.expectEqual(@as(u8, 0xff), @intFromEnum(Opcode.SELFDESTRUCT));
+    try std.testing.expectEqual(@as(u8, 0x00), @backingInt(Opcode.STOP));
+    try std.testing.expectEqual(@as(u8, 0x01), @backingInt(Opcode.ADD));
+    try std.testing.expectEqual(@as(u8, 0x5f), @backingInt(Opcode.PUSH0));
+    try std.testing.expectEqual(@as(u8, 0x60), @backingInt(Opcode.PUSH1));
+    try std.testing.expectEqual(@as(u8, 0x7f), @backingInt(Opcode.PUSH32));
+    try std.testing.expectEqual(@as(u8, 0xff), @backingInt(Opcode.SELFDESTRUCT));
 }
 
 test "opcode push detection" {
@@ -684,13 +684,13 @@ test "opcode pushOpcode function" {
 /// Parse bytecode into instructions
 /// Caller owns returned slice and must free it
 pub fn parse(allocator: std.mem.Allocator, bytecode: []const u8) ![]Instruction {
-    var instructions = std.ArrayList(Instruction){};
+    var instructions = std.ArrayList(Instruction).empty;
     defer instructions.deinit(allocator);
 
     var offset: usize = 0;
     while (offset < bytecode.len) {
         const byte = bytecode[offset];
-        const opcode: Opcode = @enumFromInt(byte);
+        const opcode: Opcode = @fromBackingInt(@intCast(byte));
         const push_size = opcode.pushSize();
 
         if (push_size > 0) {
@@ -720,7 +720,7 @@ pub fn jumpDests(allocator: std.mem.Allocator, bytecode: []const u8) ![]usize {
     const instructions = try parse(allocator, bytecode);
     defer allocator.free(instructions);
 
-    var dests = std.ArrayList(usize){};
+    var dests = std.ArrayList(usize).empty;
     defer dests.deinit(allocator);
 
     for (instructions) |inst| {
