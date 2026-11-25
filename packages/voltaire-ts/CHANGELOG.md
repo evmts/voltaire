@@ -5,7 +5,6 @@
 ### Minor Changes
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Add Amsterdam (Glamsterdam) primitives in TypeScript and Zig.
-
   - `BlockAccessList` implements EIP-7928 block-level access lists:
     `AccountChanges`, `SlotChanges`, `StorageChange`, `BalanceChange`,
     `NonceChange`, and `CodeChange`, with canonical RLP encoding, strict RLP
@@ -40,7 +39,6 @@
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Make Uint overflow behavior explicit across sizes and add a viem-compatible ABI parameter decoder.
 
   **Uint overflow (#67).** Every Uint size (`Uint8`, `Uint16`, `Uint32`, `Uint64`, `Uint128`, `Uint`/`Uint256`) now exports the same six functions:
-
   - `plusChecked`, `minusChecked`, `timesChecked`: throw a subclass of `IntegerOverflowError` or `IntegerUnderflowError` when the exact result does not fit.
   - `plusWrapping`, `minusWrapping`, `timesWrapping`: return the result modulo 2^bits and never throw.
 
@@ -67,7 +65,6 @@
   and reject oversized operands before empty-output shortcuts.
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Implement Fusaka/Osaka consensus core across TypeScript and Zig:
-
   - **EIP-7951 (`P256VERIFY` precompile at `0x0100`, Osaka+)**: 6900 fixed gas cost, strict 160-byte input (`h || r || s || qx || qy`), accepts high-s signatures (`n/2 < s < n`), raw 32-byte digest with `h mod n == 0` support, `R.x mod n == r` reduction, canonical field/curve/infinity validation, non-reverting empty output on invalid input/signature, Out-of-Gas halt when `gasLimit < 6900`, Osaka+ hardfork gating, and full 782-vector go-ethereum/Wycheproof conformance suite in both TS and Zig.
   - **EIP-7691 / EIP-7892 / EIP-7918 Blob Fee Market & BPO Schedules**: Added `BlobSchedule` presets (`cancun`, `prague`, `osaka`, `bpo1` at `1765290071`, `bpo2` at `1767747671`), hardfork and mainnet timestamp lookups, overflow-safe exact exponential blob base fee calculation (`u512` in Zig, early-exit threshold bound in TS and Zig), and EIP-7918 execution-bounded reserve-price `calculateExcessBlobGas` with 100% backwards compatibility for the 2-argument Cancun API.
 
@@ -75,7 +72,6 @@
   in TypeScript and Zig for shared admission and execution validation.
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Harden elliptic curve public key validation, audit and harden constant-time secret comparisons, and add the EIP-7594 PeerDAS KZG wrapper API across TypeScript and Zig:
-
   - **Weak Public Key Validation (#86)**: Full curve-membership, canonical-coordinate, and point-at-infinity validation for P-256 (64-byte raw, 65-byte uncompressed SEC1, and 33-byte compressed SEC1); constant-time RFC 7748 low-order point detection (`isWeakPublicKey`, covering all 14 weak byte encodings) and all-zero shared secret rejection for X25519; strict RFC 8032 canonical decoding (including negative-zero rejection), small-order rejection, and prime-order subgroup validation for Ed25519 in both TypeScript (Noble + WASM wrappers) and Zig.
   - **Constant-Time Audit & Hardening (#49)**: Added the `ConstantTime` module (`constantTimeEqual`, `constantTimeIsZero`, `constantTimeIsValidScalar`) in TypeScript and expanded `constant_time.zig` in Zig; replaced variable-time comparisons and scalar range checks across Keystore, EIP-712 (including `eip712.wasm.ts`), Secp256k1, P-256, BLS12-381, X25519, BIP-39, hash utilities, and signers, with volatile in-place secret zeroing in Zig keystore operations.
   - **EIP-7594 PeerDAS KZG API**: Exposed `computeCells`, `computeCellsAndKzgProofs`, `verifyCellKzgProofBatch`, and `recoverCellsAndKzgProofs` plus PeerDAS constants and input validation in both Zig (`peerdas.zig`, `c_kzg.zig`, and `c-kzg-4844/bindings/zig/root.zig`) and TypeScript (`KZG`). Zig calls c-kzg-4844 directly. TypeScript ships the API and input validation only: the built-in `KZG.computeCells`, `KZG.computeCellsAndKzgProofs`, `KZG.verifyCellKzgProofBatch`, and `KZG.recoverCellsAndKzgProofs` throw `KzgNotSupportedError` because the WASM loader does not export the C PeerDAS functions yet. Inject a backend (for example the `c-kzg` native package) through the `ComputeCells`, `ComputeCellsAndKzgProofs`, `VerifyCellKzgProofBatch`, and `RecoverCellsAndKzgProofs` factories until the C/WASM PeerDAS export ships.
@@ -83,7 +79,6 @@
 ### Patch Changes
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Ship complete npm metadata, a README and a LICENSE in every published package, and stop publishing test, benchmark and stale build files.
-
   - `@tevm/voltaire`: add `homepage` and `bugs`; add `typesVersions` fallbacks for the 17 subpaths that lacked them (`ContractCode`, `InitCode`, `LogFilter`, `PrivateKey`, `PublicKey`, `signers`, `block`, `contract`, `transaction`, `stream`, `AesGcm`, `Bls12381`, `BN254`, `HMAC`, `Keystore`, `ModExp`, `X25519`); block `@tevm/voltaire/evm/system/lib`, which had types but no runtime module; drop compiled test declarations and stray `.js` files from `types/`.
   - `voltaire-effect`: build the `voltaire-effect/jsonrpc` entry point, which the `exports` map declared but the build never emitted; correct `repository.directory` and `homepage`; stop publishing test and benchmark sources.
   - `@tevm/zig`: add `homepage` and `bugs`; remove `files` entries that matched nothing; stop publishing benchmark sources.
@@ -93,7 +88,6 @@
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Update Noble and Scure cryptography dependencies and refresh WhatsABI, ABIType, Biome, viem, and ethers. Remove the unused Smithers development dependency and the BIP39 patch now that the Traditional Chinese wordlist export is fixed upstream.
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Fix ABI decoding of fixed-size arrays and `BinaryTree` lookups below internal nodes.
-
   - `Abi.decodeParameters` now advances past static fixed-size arrays by their full static size, so parameters after `uint256[2][3]` or a static `tuple[N]` decode from the correct offset (#72).
   - `tuple[N]` whose tuple has a dynamic component (for example `(uint256,string)[2]`) is now treated as dynamic and decoded through its offset word (#72).
   - `BinaryTree` internal nodes now keep their child subtrees (`leftChild`/`rightChild`) next to the cached child hashes. `BinaryTree.get` walks internal nodes instead of returning `null`, and `BinaryTree.insert` adds keys below an existing internal node instead of throwing. A hash-only (pruned) child with a non-zero hash throws `InvalidTreeStateError`; root hashes are unchanged (#58).
@@ -108,12 +102,10 @@
   `Blockchain.BlockTag`.
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Harden keystore decryption and BIP-32 index parsing:
-
   - `Keystore.decrypt` throws `DecryptionError` unless `cipher` is `aes-128-ctr`, the IV is 16 bytes, the MAC is 32 bytes, and `dklen` is an integer >= 32. A forged keystore with `dklen: 16` previously produced an empty MAC key, so `mac = keccak256(ciphertext)` passed for any password.
   - `HDWallet.parseIndex` accepts only a whole decimal integer in `[0, 2^31 - 1]` with an optional `'`, `h`, or `H` suffix. It now throws `InvalidPathError` for `"1.5"`, `"1abc"`, `"0x10"`, and indices >= 2^31, which it previously truncated or passed through.
 
 - [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Fix `P256.sign` and `P256.verify` hashing `messageHash` a second time. Both now pass `prehash: false` to `@noble/curves`, so `P256.sign(sha256(msg), key)` produces the standard ECDSA signature over `sha256(msg)`. Signatures now verify under EIP-7951 `P256VERIFY`, WebAuthn, and the Zig implementation, and match RFC 6979 A.2.5 test vectors.
-
   - `P256.sign` rejects private keys outside `[1, n-1]` with `InvalidPrivateKeyError` (constant-time check). Callers cannot re-enable prehashing through `options`.
   - `P256.verify` accepts high-S signatures (`lowS: false`), matching EIP-7951 and WebAuthn. P-256 has no low-S rule.
 
