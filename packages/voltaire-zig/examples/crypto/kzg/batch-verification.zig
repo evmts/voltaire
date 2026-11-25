@@ -12,7 +12,7 @@ const crypto = @import("crypto");
 const c_kzg = crypto.c_kzg;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -25,7 +25,7 @@ pub fn main() !void {
 
     // Step 1: Create multiple blobs
     std.debug.print("1. Creating Multiple Blobs\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const NUM_BLOBS = 3;
     var blobs: [NUM_BLOBS]c_kzg.Blob = undefined;
@@ -46,7 +46,7 @@ pub fn main() !void {
 
     // Step 2: Generate proofs
     std.debug.print("2. Generating Proofs for All Blobs\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var z: c_kzg.Bytes32 = undefined;
     @memset(&z, 0x42);
@@ -73,7 +73,7 @@ pub fn main() !void {
 
     // Step 3: Individual verification
     std.debug.print("3. Individual Verification (Baseline)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Verifying each blob-proof pair separately...\n", .{});
 
@@ -86,7 +86,7 @@ pub fn main() !void {
 
     // Step 4: Batch verification (simulated)
     std.debug.print("4. Batch Verification Concept\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Verifying all blobs in batch...\n", .{});
 
@@ -104,7 +104,7 @@ pub fn main() !void {
 
     // Step 5: Testing with invalid proof
     std.debug.print("5. Testing Batch with Invalid Proof\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var corrupted_proofs = proofs;
     corrupted_proofs[1][5] ^= 1; // Corrupt one proof
@@ -126,7 +126,7 @@ pub fn main() !void {
 
     // Step 6: Maximum blob transaction
     std.debug.print("6. Maximum Blob Transaction (6 Blobs)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const MAX_BLOBS = 6;
     var max_blobs: [MAX_BLOBS]c_kzg.Blob = undefined;
@@ -157,7 +157,7 @@ pub fn main() !void {
 
     // Step 7: Understanding batch verification
     std.debug.print("7. EIP-4844 Batch Verification Context\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("In blob transactions:\n", .{});
     std.debug.print("  - Each transaction can have 1-6 blobs\n", .{});
@@ -173,7 +173,7 @@ pub fn main() !void {
 
     // Step 8: Gas costs
     std.debug.print("8. Gas Cost Analysis\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const BLOB_GAS_PER_BLOB = 131_072;
     const VERIFICATION_GAS = 50_000;
@@ -196,7 +196,7 @@ pub fn main() !void {
 
     // Step 9: Practical considerations
     std.debug.print("9. Practical Considerations\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Best practices:\n", .{});
     std.debug.print("  ✓ Use batch verification when possible\n", .{});

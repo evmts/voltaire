@@ -162,7 +162,7 @@ fn getSourceContext(allocator: std.mem.Allocator, file_path: []const u8, line_nu
 
     var lines = std.mem.tokenizeScalar(u8, content, '\n');
     var current_line: u32 = 1;
-    var context = std.ArrayList(u8){};
+    var context = std.ArrayList(u8).empty;
     defer context.deinit(allocator);
 
     // Get 3 lines before and after
@@ -276,11 +276,11 @@ pub fn main() !void {
     const stdout = &stdout_writer.interface;
     const stderr = &stderr_writer.interface;
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    var results = std.ArrayList(TestResult){};
+    var results = std.ArrayList(TestResult).empty;
     defer {
         for (results.items) |*result| {
             if (result.error_msg) |msg| {
@@ -343,13 +343,13 @@ pub fn main() !void {
     for (results.items) |result| {
         const entry = try suite_map.getOrPut(result.suite);
         if (!entry.found_existing) {
-            entry.value_ptr.* = std.ArrayList(TestResult){};
+            entry.value_ptr.* = std.ArrayList(TestResult).empty;
         }
         try entry.value_ptr.append(allocator, result);
     }
 
     // Sort suites
-    var suites = std.ArrayList([]const u8){};
+    var suites = std.ArrayList([]const u8).empty;
     defer suites.deinit(allocator);
     var suite_iter = suite_map.iterator();
     while (suite_iter.next()) |entry| {
@@ -362,7 +362,7 @@ pub fn main() !void {
     }.lessThan);
 
     // Display results with better formatting
-    var failed_tests = std.ArrayList(TestResult){};
+    var failed_tests = std.ArrayList(TestResult).empty;
     defer failed_tests.deinit(allocator);
 
     var passed_count: u32 = 0;

@@ -13,7 +13,7 @@ fn benchKeccak256Small(allocator: std.mem.Allocator) void {
 
 // Benchmark: Keccak256 - medium input (32 bytes)
 fn benchKeccak256Medium(allocator: std.mem.Allocator) void {
-    const data = [_]u8{0xab} ** 32;
+    const data = @as([32]u8, @splat(0xab));
     const hash = HashUtils.keccak256(&data);
     _ = hash;
     _ = allocator;
@@ -21,7 +21,7 @@ fn benchKeccak256Medium(allocator: std.mem.Allocator) void {
 
 // Benchmark: Keccak256 - large input (1KB)
 fn benchKeccak256Large(allocator: std.mem.Allocator) void {
-    const data = [_]u8{0xab} ** 1024;
+    const data = @as([1024]u8, @splat(0xab));
     const hash = HashUtils.keccak256(&data);
     _ = hash;
     _ = allocator;
@@ -29,7 +29,7 @@ fn benchKeccak256Large(allocator: std.mem.Allocator) void {
 
 // Benchmark: Keccak256 - very large input (64KB)
 fn benchKeccak256VeryLarge(allocator: std.mem.Allocator) void {
-    const data = [_]u8{0xab} ** 65536;
+    const data = @as([65536]u8, @splat(0xab));
     const hash = HashUtils.keccak256(&data);
     _ = hash;
     _ = allocator;
@@ -57,11 +57,8 @@ fn benchHashMessageBytes(allocator: std.mem.Allocator) void {
     _ = hash;
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -73,7 +70,6 @@ pub fn main() !void {
     try bench.add("hashMessage (EIP-191)", benchHashMessage, .{});
     try bench.add("hashMessageBytes", benchHashMessageBytes, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

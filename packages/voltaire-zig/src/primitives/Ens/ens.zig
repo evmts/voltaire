@@ -176,7 +176,7 @@ test "namehash empty name" {
     defer allocator.free(result);
 
     // Empty name should return 32 zero bytes
-    const expected = [_]u8{0} ** 32;
+    const expected = @as([32]u8, @splat(0));
     try std.testing.expectEqualSlices(u8, &expected, result);
 }
 

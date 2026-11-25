@@ -123,7 +123,7 @@ pub const BlockStore = struct {
 
     /// Resolve orphans that now have a known parent
     fn resolveOrphans(self: *BlockStore, parent_hash: Hash.Hash) !void {
-        var orphans_to_remove = std.ArrayList(Hash.Hash){};
+        var orphans_to_remove = std.ArrayList(Hash.Hash).empty;
         defer orphans_to_remove.deinit(self.allocator);
 
         var it = self.orphans.keyIterator();

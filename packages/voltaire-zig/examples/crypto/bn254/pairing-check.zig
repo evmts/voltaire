@@ -41,7 +41,7 @@ pub fn main() !void {
 
     // 1. Single Pairing
     try stdout.print("1. Single Pairing Computation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Convert to affine for pairing
     const g1_affine = try g1_gen.toAffine();
@@ -55,7 +55,7 @@ pub fn main() !void {
 
     // 2. Bilinearity Property: e(a*P, b*Q) = e(P, Q)^(a*b)
     try stdout.print("2. Bilinearity Property\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const a = Fr.init(5);
     const b = Fr.init(7);
@@ -79,7 +79,7 @@ pub fn main() !void {
 
     // 3. Pairing Check - Core zkSNARK Operation
     try stdout.print("3. Pairing Check (zkSNARK Core)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Pairing check verifies: e(P1, Q1) * e(P2, Q2) * ... = 1
     // Create test points
@@ -99,7 +99,7 @@ pub fn main() !void {
 
     // 4. Pairing Product Property
     try stdout.print("4. Pairing Product Property\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // e(2×G1, G2) * e(3×G1, G2) should equal e(5×G1, G2)
     const two = Fr.init(2);
@@ -127,7 +127,7 @@ pub fn main() !void {
 
     // 5. Pairing Product Equation (zkSNARK Pattern)
     try stdout.print("5. Pairing Product Equation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Classic pattern: Verify e(A, B) = e(C, D)
     const alpha = Fr.init(17);
@@ -154,7 +154,7 @@ pub fn main() !void {
 
     // 6. Invalid Pairing Check (Should Fail)
     try stdout.print("6. Invalid Pairing Check\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Try to verify e(3×G1, G2) = e(5×G1, G2) - this should fail!
     const pair_3 = try pairing(&threeG1_affine, &g2_affine);
@@ -166,7 +166,7 @@ pub fn main() !void {
 
     // 7. Complex Multi-Pairing Property
     try stdout.print("7. Complex Pairing Property\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const x = Fr.init(11);
     const y = Fr.init(13);

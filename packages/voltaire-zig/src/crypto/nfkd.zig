@@ -218,7 +218,7 @@ pub fn normalizedLength(input: []const u8) usize {
 // ============================================================================
 
 const TestSink = struct {
-    list: std.ArrayList(u8) = .{},
+    list: std.ArrayList(u8) = .empty,
     failed: bool = false,
     pub fn update(self: *TestSink, b: []const u8) void {
         self.list.appendSlice(std.testing.allocator, b) catch {

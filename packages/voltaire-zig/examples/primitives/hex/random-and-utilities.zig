@@ -12,7 +12,7 @@ const primitives = @import("primitives");
 const Hex = primitives.Hex;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -80,7 +80,7 @@ fn demonstrateEquality(allocator: std.mem.Allocator) !void {
     std.debug.print("  Equal to different address: {}\n", .{equal_1_3});
 
     // Check if zero address
-    const zero_address = [_]u8{0} ** 20;
+    const zero_address = @as([20]u8, @splat(0));
     const is_zero = std.mem.eql(u8, bytes3, &zero_address);
     std.debug.print("  Is addr3 zero address? {}\n", .{is_zero});
 
@@ -127,7 +127,7 @@ fn ethereumConstants() !void {
     std.debug.print("4. Common Ethereum constants:\n", .{});
 
     // Zero address (burn address)
-    const zero_address = [_]u8{0} ** 20;
+    const zero_address = @as([20]u8, @splat(0));
     std.debug.print("  Burn address: 0x", .{});
     for (zero_address) |byte| {
         std.debug.print("{x:0>2}", .{byte});
@@ -135,7 +135,7 @@ fn ethereumConstants() !void {
     std.debug.print("\n", .{});
 
     // Empty root hash
-    const empty_root = [_]u8{0} ** 32;
+    const empty_root = @as([32]u8, @splat(0));
     std.debug.print("  Empty root (first 8 bytes): 0x", .{});
     for (empty_root[0..8]) |byte| {
         std.debug.print("{x:0>2}", .{byte});
@@ -152,7 +152,7 @@ fn ethereumConstants() !void {
     std.debug.print("  Is 4 bytes? {}\n", .{transfer_selector.len == 4});
 
     // Storage slot (32 bytes)
-    const storage_slot = [_]u8{0} ** 32;
+    const storage_slot = @as([32]u8, @splat(0));
     std.debug.print("  Storage slot size: {} bytes\n", .{storage_slot.len});
 
     // Signature size (65 bytes: r + s + v)

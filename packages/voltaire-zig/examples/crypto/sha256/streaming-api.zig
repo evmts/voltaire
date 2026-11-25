@@ -3,7 +3,7 @@ const crypto = @import("crypto");
 const SHA256 = crypto.SHA256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -11,7 +11,7 @@ pub fn main() !void {
 
     // Example 1: Basic streaming vs one-shot
     std.debug.print("1. Streaming vs One-Shot Hashing\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 60});
+    std.debug.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     const data = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
@@ -30,7 +30,7 @@ pub fn main() !void {
 
     // Example 2: Chunk size independence
     std.debug.print("2. Chunk Size Independence\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 60});
+    std.debug.print("{s}\n", .{&@as([60]u8, @splat('-'))});
     std.debug.print("Different chunk sizes produce identical hashes\n\n", .{});
 
     var test_data: [100]u8 = undefined;
@@ -68,7 +68,7 @@ pub fn main() !void {
 
     // Example 3: Simulated file hashing with progress
     std.debug.print("3. File Hashing with Progress Tracking\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 60});
+    std.debug.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     const file_size = 1024 * 1024; // 1MB
     const chunk_size = 64 * 1024; // 64KB
@@ -103,7 +103,7 @@ pub fn main() !void {
 
     // Example 4: Optimal chunk sizes
     std.debug.print("4. Optimal Chunk Sizes\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 60});
+    std.debug.print("{s}\n", .{&@as([60]u8, @splat('-'))});
     std.debug.print("Block size: {} bytes (internal processing unit)\n", .{SHA256.block_size});
     std.debug.print("\nRecommended chunk sizes:\n", .{});
     std.debug.print("  Minimum:  64 bytes (1 block)\n", .{});
@@ -127,7 +127,7 @@ pub fn main() !void {
 
     // Example 5: Multi-part message hashing
     std.debug.print("5. Multi-Part Message Hashing\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 60});
+    std.debug.print("{s}\n", .{&@as([60]u8, @splat('-'))});
     std.debug.print("Hashing multi-part message:\n\n", .{});
 
     const parts = [_][]const u8{
@@ -148,7 +148,7 @@ pub fn main() !void {
 
     // Example 6: Hasher lifecycle
     std.debug.print("6. Hasher Lifecycle\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 60});
+    std.debug.print("{s}\n", .{&@as([60]u8, @splat('-'))});
 
     var h = SHA256.init();
     h.update(&[_]u8{ 1, 2, 3 });

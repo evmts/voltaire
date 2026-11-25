@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const a = gpa.allocator();
 
@@ -26,7 +26,7 @@ pub fn main() !void {
     std.debug.print("From fromHex(): 0x{s}...{s}\n", .{ hex2[2..8], hex2[hex2.len - 4 ..] });
 
     // From bytes
-    var bytes: [32]u8 = [_]u8{0} ** 32;
+    var bytes: [32]u8 = @as([32]u8, @splat(0));
     bytes[0] = 0x12;
     bytes[1] = 0x34;
     bytes[31] = 0xff;
@@ -113,7 +113,7 @@ pub fn main() !void {
     const hash_a = try Hash.keccak256String("hello");
     const hash_b = try Hash.keccak256String("hello");
     const hash_c = try Hash.keccak256String("world");
-    const zero_hash = Hash.fromBytes(&([_]u8{0} ** 32));
+    const zero_hash = Hash.fromBytes(&(@as([32]u8, @splat(0))));
 
     const hex_a = Hash.toHex(hash_a);
     const hex_b = Hash.toHex(hash_b);
@@ -197,7 +197,7 @@ pub fn main() !void {
     std.debug.print("\nBuffer size: {} (matches Hash.SIZE)\n", .{buffer.len});
 
     // Zero hash comparison
-    const test_hash = Hash.fromBytes(&([_]u8{0} ** 32));
+    const test_hash = Hash.fromBytes(&(@as([32]u8, @splat(0))));
     std.debug.print("Is zero: {}\n\n", .{Hash.equals(test_hash, Hash.ZERO)});
 
     std.debug.print("=== Example Complete ===\n\n", .{});

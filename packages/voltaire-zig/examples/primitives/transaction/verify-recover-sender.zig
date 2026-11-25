@@ -18,7 +18,7 @@ const Address = primitives.Address.Address;
 const Authorization = Transaction.Authorization;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -26,15 +26,15 @@ pub fn main() !void {
 
     // Example 1: Check if transaction is signed
     std.debug.print("1. Checking Transaction Signature Status\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
-    const unsigned_r = [_]u8{0} ** 32; // All zeros = unsigned
-    const unsigned_s = [_]u8{0} ** 32;
+    const unsigned_r = @as([32]u8, @splat(0)); // All zeros = unsigned
+    const unsigned_s = @as([32]u8, @splat(0));
 
-    var signed_r = [_]u8{0} ** 32;
-    var signed_s = [_]u8{0} ** 32;
+    var signed_r = @as([32]u8, @splat(0));
+    var signed_s = @as([32]u8, @splat(0));
     @memset(&signed_r, 0x12);
     @memset(&signed_s, 0xfe);
 
@@ -52,7 +52,7 @@ pub fn main() !void {
 
     // Example 2: Signature components for different transaction types
     std.debug.print("2. Signature Components by Transaction Type\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const legacy_tx = LegacyTransaction{
         .nonce = 0,
@@ -97,7 +97,7 @@ pub fn main() !void {
 
     // Example 3: Converting between v and yParity
     std.debug.print("3. Converting Between v and yParity\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const chain_id: u64 = 1;
     const y_parity: u8 = 0;
@@ -117,7 +117,7 @@ pub fn main() !void {
 
     // Example 4: Signature malleability protection
     std.debug.print("4. Signature Malleability Protection\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // secp256k1 curve order
     const SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
@@ -137,12 +137,12 @@ pub fn main() !void {
 
     // Example 5: EIP-7702 dual signatures
     std.debug.print("5. EIP-7702: Authorization vs Transaction Signature\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
-    var auth_r = [_]u8{0} ** 32;
-    var auth_s = [_]u8{0} ** 32;
-    var tx_r = [_]u8{0} ** 32;
-    var tx_s = [_]u8{0} ** 32;
+    var auth_r = @as([32]u8, @splat(0));
+    var auth_s = @as([32]u8, @splat(0));
+    var tx_r = @as([32]u8, @splat(0));
+    var tx_s = @as([32]u8, @splat(0));
 
     @memset(&auth_r, 0xaa);
     @memset(&auth_s, 0xbb);
@@ -179,7 +179,7 @@ pub fn main() !void {
 
     // Example 6: Sender recovery process
     std.debug.print("6. Sender Recovery Process\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Steps to recover sender address:\n", .{});
     std.debug.print("  1. Get signing hash (keccak256 of transaction data)\n", .{});
@@ -193,7 +193,7 @@ pub fn main() !void {
 
     // Example 7: Practical use cases
     std.debug.print("7. Practical Use Cases\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Transaction Pool Validation:\n", .{});
     std.debug.print("  1. Verify signature is valid\n", .{});

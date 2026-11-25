@@ -45,8 +45,8 @@ fn setFirstParticipants(bits: *[SYNC_COMMITTEE_BITS_SIZE]u8, count: usize) void 
 
 test "SyncAggregate: construction" {
     const aggregate = SyncAggregate{
-        .sync_committee_bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0)),
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
 
     try std.testing.expectEqual(@as(usize, SYNC_COMMITTEE_BITS_SIZE), aggregate.sync_committee_bits.len);
@@ -54,11 +54,11 @@ test "SyncAggregate: construction" {
 }
 
 test "SyncAggregate: equals returns true for equal aggregates" {
-    var bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE;
+    var bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0));
     bits[0] = 0b10101010;
     bits[10] = 0b11110000;
 
-    var signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE;
+    var signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0));
     signature[0] = 0x11;
     signature[SYNC_COMMITTEE_SIGNATURE_SIZE - 1] = 0x22;
 
@@ -76,16 +76,16 @@ test "SyncAggregate: equals returns true for equal aggregates" {
 
 test "SyncAggregate: equals returns false for different aggregates" {
     const a = SyncAggregate{
-        .sync_committee_bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0)),
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
 
-    var different_bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE;
+    var different_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0));
     different_bits[0] = 1;
 
     const b = SyncAggregate{
         .sync_committee_bits = different_bits,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
 
     try std.testing.expect(!a.equals(b));
@@ -93,57 +93,57 @@ test "SyncAggregate: equals returns false for different aggregates" {
 
 test "SyncAggregate: participantCount with known bitvectors" {
     const none = SyncAggregate{
-        .sync_committee_bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0)),
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expectEqual(@as(usize, 0), none.participantCount());
 
-    var first_byte = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE;
+    var first_byte = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0));
     first_byte[0] = 0xFF;
     const eight = SyncAggregate{
         .sync_committee_bits = first_byte,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expectEqual(@as(usize, 8), eight.participantCount());
 
-    var mixed = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE;
+    var mixed = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0));
     mixed[0] = 0b01010101; // 4
     mixed[1] = 0b11110000; // 4
     const mixed_aggregate = SyncAggregate{
         .sync_committee_bits = mixed,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expectEqual(@as(usize, 8), mixed_aggregate.participantCount());
 
     const full = SyncAggregate{
-        .sync_committee_bits = [_]u8{0xFF} ** SYNC_COMMITTEE_BITS_SIZE,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0xFF)),
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expectEqual(@as(usize, SYNC_COMMITTEE_SIZE), full.participantCount());
 }
 
 test "SyncAggregate: hasQuorum threshold checks" {
-    var below_quorum_bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE;
+    var below_quorum_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0));
     setFirstParticipants(&below_quorum_bits, SYNC_COMMITTEE_QUORUM - 1);
     const below = SyncAggregate{
         .sync_committee_bits = below_quorum_bits,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expect(!below.hasQuorum());
     try std.testing.expectEqual(@as(usize, SYNC_COMMITTEE_QUORUM - 1), below.participantCount());
 
-    var at_quorum_bits = [_]u8{0} ** SYNC_COMMITTEE_BITS_SIZE;
+    var at_quorum_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0));
     setFirstParticipants(&at_quorum_bits, SYNC_COMMITTEE_QUORUM);
     const at = SyncAggregate{
         .sync_committee_bits = at_quorum_bits,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expect(at.hasQuorum());
     try std.testing.expectEqual(@as(usize, SYNC_COMMITTEE_QUORUM), at.participantCount());
 
     const full = SyncAggregate{
-        .sync_committee_bits = [_]u8{0xFF} ** SYNC_COMMITTEE_BITS_SIZE,
-        .sync_committee_signature = [_]u8{0} ** SYNC_COMMITTEE_SIGNATURE_SIZE,
+        .sync_committee_bits = @as([SYNC_COMMITTEE_BITS_SIZE]u8, @splat(0xFF)),
+        .sync_committee_signature = @as([SYNC_COMMITTEE_SIGNATURE_SIZE]u8, @splat(0)),
     };
     try std.testing.expect(full.hasQuorum());
 }

@@ -28,7 +28,7 @@
 //! const keystore = @import("keystore");
 //!
 //! // Encrypt a private key
-//! var encrypted = keystore.encrypt(allocator, private_key, "password", .{}) catch |err| {
+//! var encrypted = keystore.encrypt(allocator, std.testing.io, private_key, "password", .{}) catch |err| {
 //!     // handle error
 //! };
 //! defer encrypted.deinit(allocator);
@@ -187,6 +187,7 @@ pub const KeystoreError = error{
     OutputTooLong,
     ThreadQuotaExceeded,
     SpawnFailed,
+    EntropyUnavailable,
 };
 
 /// Reject KDF parameters above the safe upper bounds.
@@ -236,6 +237,7 @@ fn checkDklen(dklen: i64) KeystoreError!u8 {
 /// The keystore can be serialized to JSON for storage.
 pub fn encrypt(
     allocator: Allocator,
+    io: std.Io,
     private_key: [32]u8,
     password: []const u8,
     options: EncryptOptions,
@@ -248,19 +250,19 @@ pub fn encrypt(
     if (options.salt) |s| {
         salt = s;
     } else {
-        crypto.random.bytes(&salt);
+        io.randomSecure(&salt) catch return KeystoreError.EntropyUnavailable;
     }
 
     if (options.iv) |i| {
         iv = i;
     } else {
-        crypto.random.bytes(&iv);
+        io.randomSecure(&iv) catch return KeystoreError.EntropyUnavailable;
     }
 
     if (options.uuid) |u| {
         uuid = u;
     } else {
-        generateUuid(&uuid);
+        generateUuid(io, &uuid);
     }
 
     // Derive key from password using selected KDF
@@ -455,9 +457,9 @@ fn computeLogN(n: u32) ?u6 {
 }
 
 /// Generate a UUID v4
-fn generateUuid(out: *[36]u8) void {
+fn generateUuid(io: std.Io, out: *[36]u8) void {
     var random_bytes: [16]u8 = undefined;
-    crypto.random.bytes(&random_bytes);
+    io.random(&random_bytes);
 
     // Set version (4) and variant bits
     random_bytes[6] = (random_bytes[6] & 0x0f) | 0x40;
@@ -520,10 +522,10 @@ pub const KeystoreJson = struct {
 /// Serialize keystore to JSON string (Web3 Secret Storage format)
 /// Caller owns returned memory and must free with allocator.free()
 pub fn toJson(allocator: Allocator, keystore: KeystoreV3) ![]u8 {
-    var output = std.ArrayList(u8){};
-    errdefer output.deinit(allocator);
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    errdefer aw.deinit();
 
-    const writer = output.writer(allocator);
+    const writer = &aw.writer;
 
     try writer.writeAll("{");
     try writer.writeAll("\"version\":");
@@ -579,7 +581,7 @@ pub fn toJson(allocator: Allocator, keystore: KeystoreV3) ![]u8 {
     try writer.writeAll("\"");
     try writer.writeAll("}}");
 
-    return output.toOwnedSlice(allocator);
+    return aw.toOwnedSlice();
 }
 
 /// Parse JSON string to keystore
@@ -721,7 +723,7 @@ test "encrypt and decrypt with scrypt" {
     const password = "test-password";
 
     // Use low scrypt parameters for fast tests
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -744,7 +746,7 @@ test "encrypt and decrypt with pbkdf2" {
     const password = "test-password";
 
     // Use low iteration count for fast tests
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .kdf = .pbkdf2,
         .pbkdf2_c = 1000,
     });
@@ -757,9 +759,9 @@ test "encrypt and decrypt with pbkdf2" {
 test "wrong password returns InvalidMac" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
 
-    var keystore = try encrypt(allocator, private_key, "correct-password", .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, "correct-password", .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -773,13 +775,13 @@ test "wrong password returns InvalidMac" {
 test "deterministic with fixed salt and IV" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0x01} ** 32;
+    const private_key = @as([32]u8, @splat(0x01));
     const password = "password";
-    const salt = [_]u8{0x01} ** 32;
-    const iv = [_]u8{0x02} ** 16;
+    const salt = @as([32]u8, @splat(0x01));
+    const iv = @as([16]u8, @splat(0x02));
     const uuid = "12345678-1234-1234-1234-123456789abc".*;
 
-    var keystore1 = try encrypt(allocator, private_key, password, .{
+    var keystore1 = try encrypt(allocator, std.testing.io, private_key, password, .{
         .salt = salt,
         .iv = iv,
         .uuid = uuid,
@@ -789,7 +791,7 @@ test "deterministic with fixed salt and IV" {
     });
     defer keystore1.deinit(allocator);
 
-    var keystore2 = try encrypt(allocator, private_key, password, .{
+    var keystore2 = try encrypt(allocator, std.testing.io, private_key, password, .{
         .salt = salt,
         .iv = iv,
         .uuid = uuid,
@@ -806,12 +808,12 @@ test "deterministic with fixed salt and IV" {
 test "different salts produce different ciphertexts" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0x01} ** 32;
+    const private_key = @as([32]u8, @splat(0x01));
     const password = "password";
-    const salt1 = [_]u8{0x01} ** 32;
-    const salt2 = [_]u8{0x02} ** 32;
+    const salt1 = @as([32]u8, @splat(0x01));
+    const salt2 = @as([32]u8, @splat(0x02));
 
-    var keystore1 = try encrypt(allocator, private_key, password, .{
+    var keystore1 = try encrypt(allocator, std.testing.io, private_key, password, .{
         .salt = salt1,
         .scrypt_n = 1024,
         .scrypt_r = 1,
@@ -819,7 +821,7 @@ test "different salts produce different ciphertexts" {
     });
     defer keystore1.deinit(allocator);
 
-    var keystore2 = try encrypt(allocator, private_key, password, .{
+    var keystore2 = try encrypt(allocator, std.testing.io, private_key, password, .{
         .salt = salt2,
         .scrypt_n = 1024,
         .scrypt_r = 1,
@@ -834,13 +836,13 @@ test "different salts produce different ciphertexts" {
 test "different IVs produce different ciphertexts" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0x01} ** 32;
+    const private_key = @as([32]u8, @splat(0x01));
     const password = "password";
-    const salt = [_]u8{0x01} ** 32;
-    const iv1 = [_]u8{0x01} ** 16;
-    const iv2 = [_]u8{0x02} ** 16;
+    const salt = @as([32]u8, @splat(0x01));
+    const iv1 = @as([16]u8, @splat(0x01));
+    const iv2 = @as([16]u8, @splat(0x02));
 
-    var keystore1 = try encrypt(allocator, private_key, password, .{
+    var keystore1 = try encrypt(allocator, std.testing.io, private_key, password, .{
         .salt = salt,
         .iv = iv1,
         .scrypt_n = 1024,
@@ -849,7 +851,7 @@ test "different IVs produce different ciphertexts" {
     });
     defer keystore1.deinit(allocator);
 
-    var keystore2 = try encrypt(allocator, private_key, password, .{
+    var keystore2 = try encrypt(allocator, std.testing.io, private_key, password, .{
         .salt = salt,
         .iv = iv2,
         .scrypt_n = 1024,
@@ -871,10 +873,10 @@ test "different IVs produce different ciphertexts" {
 test "empty password" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
     const password = "";
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -888,10 +890,10 @@ test "empty password" {
 test "special characters in password" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
     const password = "paesewoerd!@#$%^&*()[]{}|<>?/~`";
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -905,10 +907,10 @@ test "special characters in password" {
 test "unicode password" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
     const password = "\xc3\xa4\xc3\xb6\xc3\xbc"; // UTF-8 encoded aou with umlauts
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -922,9 +924,9 @@ test "unicode password" {
 test "version must be 3" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
 
-    var keystore = try encrypt(allocator, private_key, "password", .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, "password", .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -941,9 +943,9 @@ test "version must be 3" {
 test "corrupted ciphertext fails MAC verification" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
 
-    var keystore = try encrypt(allocator, private_key, "password", .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, "password", .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -960,9 +962,9 @@ test "corrupted ciphertext fails MAC verification" {
 test "corrupted MAC fails verification" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
 
-    var keystore = try encrypt(allocator, private_key, "password", .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, "password", .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -977,9 +979,9 @@ test "corrupted MAC fails verification" {
 }
 
 test "AES-128-CTR is symmetric" {
-    var plaintext = [_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 } ++ [_]u8{0} ** 24;
-    const key = [_]u8{0x01} ** 16;
-    const iv = [_]u8{0x02} ** 16;
+    var plaintext = [_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 } ++ @as([24]u8, @splat(0));
+    const key = @as([16]u8, @splat(0x01));
+    const iv = @as([16]u8, @splat(0x02));
 
     var ciphertext: [32]u8 = undefined;
     aes128CtrEncrypt(&ciphertext, &plaintext, &key, &iv);
@@ -992,9 +994,9 @@ test "AES-128-CTR is symmetric" {
 }
 
 test "constant time comparison" {
-    const a = [_]u8{0x01} ** 32;
-    const b = [_]u8{0x01} ** 32;
-    const c = [_]u8{0x02} ** 32;
+    const a = @as([32]u8, @splat(0x01));
+    const b = @as([32]u8, @splat(0x01));
+    const c = @as([32]u8, @splat(0x02));
 
     try std.testing.expect(constant_time.eql(&a, &b));
     try std.testing.expect(!constant_time.eql(&a, &c));
@@ -1025,7 +1027,7 @@ test "computeLogN" {
 
 test "generateUuid format" {
     var uuid: [36]u8 = undefined;
-    generateUuid(&uuid);
+    generateUuid(std.testing.io, &uuid);
 
     // Check format: 8-4-4-4-12
     try std.testing.expectEqual(@as(u8, '-'), uuid[8]);
@@ -1057,10 +1059,10 @@ test "hexToBytes" {
 test "pbkdf2 round trip" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{ 0xde, 0xad, 0xbe, 0xef } ++ [_]u8{0} ** 28;
+    const private_key = [_]u8{ 0xde, 0xad, 0xbe, 0xef } ++ @as([28]u8, @splat(0));
     const password = "secure-password-123";
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .kdf = .pbkdf2,
         .pbkdf2_c = 1000,
     });
@@ -1076,10 +1078,10 @@ test "pbkdf2 round trip" {
 test "scrypt custom parameters" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{ 0xca, 0xfe } ** 16;
+    const private_key = @as(*const [(16) * 2]u8, @ptrCast(&@as([16][2]u8, @splat(.{ 0xca, 0xfe })))).*;
     const password = "password";
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .kdf = .scrypt,
         .scrypt_n = 2048,
         .scrypt_r = 4,
@@ -1098,10 +1100,10 @@ test "scrypt custom parameters" {
 test "all zero private key" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0} ** 32;
+    const private_key = @as([32]u8, @splat(0));
     const password = "password";
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -1115,10 +1117,10 @@ test "all zero private key" {
 test "all 0xff private key" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xff} ** 32;
+    const private_key = @as([32]u8, @splat(0xff));
     const password = "password";
 
-    var keystore = try encrypt(allocator, private_key, password, .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -1136,12 +1138,12 @@ test "all 0xff private key" {
 test "toJson scrypt format" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0x01} ** 32;
-    const salt = [_]u8{0x02} ** 32;
-    const iv = [_]u8{0x03} ** 16;
+    const private_key = @as([32]u8, @splat(0x01));
+    const salt = @as([32]u8, @splat(0x02));
+    const iv = @as([16]u8, @splat(0x03));
     const uuid = "12345678-1234-4234-8234-123456789abc".*;
 
-    var keystore = try encrypt(allocator, private_key, "password", .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, "password", .{
         .salt = salt,
         .iv = iv,
         .uuid = uuid,
@@ -1168,12 +1170,12 @@ test "toJson scrypt format" {
 test "toJson pbkdf2 format" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0x01} ** 32;
-    const salt = [_]u8{0x02} ** 32;
-    const iv = [_]u8{0x03} ** 16;
+    const private_key = @as([32]u8, @splat(0x01));
+    const salt = @as([32]u8, @splat(0x02));
+    const iv = @as([16]u8, @splat(0x03));
     const uuid = "12345678-1234-4234-8234-123456789abc".*;
 
-    var keystore = try encrypt(allocator, private_key, "password", .{
+    var keystore = try encrypt(allocator, std.testing.io, private_key, "password", .{
         .kdf = .pbkdf2,
         .salt = salt,
         .iv = iv,
@@ -1195,10 +1197,10 @@ test "toJson pbkdf2 format" {
 test "fromJson scrypt round trip" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xab} ** 32;
+    const private_key = @as([32]u8, @splat(0xab));
     const password = "test-password";
 
-    var original = try encrypt(allocator, private_key, password, .{
+    var original = try encrypt(allocator, std.testing.io, private_key, password, .{
         .scrypt_n = 1024,
         .scrypt_r = 1,
         .scrypt_p = 1,
@@ -1221,10 +1223,10 @@ test "fromJson scrypt round trip" {
 test "fromJson pbkdf2 round trip" {
     const allocator = std.testing.allocator;
 
-    const private_key = [_]u8{0xcd} ** 32;
+    const private_key = @as([32]u8, @splat(0xcd));
     const password = "another-password";
 
-    var original = try encrypt(allocator, private_key, password, .{
+    var original = try encrypt(allocator, std.testing.io, private_key, password, .{
         .kdf = .pbkdf2,
         .pbkdf2_c = 1000,
     });
@@ -1299,7 +1301,7 @@ test "fromJson unsupported kdf" {
 
 test "kdfparams is tagged by its kdf" {
     const allocator = std.testing.allocator;
-    var keystore = try encrypt(allocator, [_]u8{1} ** 32, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = 1000 });
+    var keystore = try encrypt(allocator, std.testing.io, @as([32]u8, @splat(1)), "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = 1000 });
     defer keystore.deinit(allocator);
     try std.testing.expectEqual(Kdf.pbkdf2, std.meta.activeTag(keystore.crypto_section.kdfparams));
 
@@ -1311,16 +1313,16 @@ test "kdfparams is tagged by its kdf" {
 
 test "encrypt rejects excessive KDF parameters" {
     const allocator = std.testing.allocator;
-    const key = [_]u8{2} ** 32;
-    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .scrypt_n = MAX_SCRYPT_N << 1 }));
-    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .scrypt_n = 1024, .scrypt_r = MAX_SCRYPT_R + 1 }));
-    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .scrypt_n = 1024, .scrypt_r = 1, .scrypt_p = MAX_SCRYPT_P + 1 }));
-    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, key, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = MAX_PBKDF2_C + 1 }));
+    const key = @as([32]u8, @splat(2));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, std.testing.io, key, "pw", .{ .scrypt_n = MAX_SCRYPT_N << 1 }));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, std.testing.io, key, "pw", .{ .scrypt_n = 1024, .scrypt_r = MAX_SCRYPT_R + 1 }));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, std.testing.io, key, "pw", .{ .scrypt_n = 1024, .scrypt_r = 1, .scrypt_p = MAX_SCRYPT_P + 1 }));
+    try std.testing.expectError(KeystoreError.ExcessiveParams, encrypt(allocator, std.testing.io, key, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = MAX_PBKDF2_C + 1 }));
 }
 
 test "decrypt rejects excessive KDF parameters before running the KDF" {
     const allocator = std.testing.allocator;
-    var keystore = try encrypt(allocator, [_]u8{3} ** 32, "pw", .{ .scrypt_n = 1024, .scrypt_r = 1, .scrypt_p = 1 });
+    var keystore = try encrypt(allocator, std.testing.io, @as([32]u8, @splat(3)), "pw", .{ .scrypt_n = 1024, .scrypt_r = 1, .scrypt_p = 1 });
     defer keystore.deinit(allocator);
 
     var big_n = keystore;
@@ -1335,7 +1337,7 @@ test "decrypt rejects excessive KDF parameters before running the KDF" {
     big_p.crypto_section.kdfparams.scrypt.p = 255;
     try std.testing.expectError(KeystoreError.ExcessiveParams, decrypt(allocator, big_p, "pw"));
 
-    var pbkdf = try encrypt(allocator, [_]u8{3} ** 32, "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = 1000 });
+    var pbkdf = try encrypt(allocator, std.testing.io, @as([32]u8, @splat(3)), "pw", .{ .kdf = .pbkdf2, .pbkdf2_c = 1000 });
     defer pbkdf.deinit(allocator);
     pbkdf.crypto_section.kdfparams.pbkdf2.c = std.math.maxInt(u32);
     try std.testing.expectError(KeystoreError.ExcessiveParams, decrypt(allocator, pbkdf, "pw"));
@@ -1343,8 +1345,8 @@ test "decrypt rejects excessive KDF parameters before running the KDF" {
 
 test "fromJson rejects excessive or out-of-range KDF parameters" {
     const allocator = std.testing.allocator;
-    const salt = "ab" ** 32;
-    const head = "{\"version\":3,\"id\":\"3198bc9c-6672-5ab3-d995-4942343ae5b6\",\"crypto\":{\"cipher\":\"aes-128-ctr\",\"ciphertext\":\"" ++ ("00" ** 32) ++ "\",\"cipherparams\":{\"iv\":\"" ++ ("00" ** 16) ++ "\"},\"mac\":\"" ++ ("00" ** 32) ++ "\",";
+    const salt = @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("ab".*))));
+    const head = "{\"version\":3,\"id\":\"3198bc9c-6672-5ab3-d995-4942343ae5b6\",\"crypto\":{\"cipher\":\"aes-128-ctr\",\"ciphertext\":\"" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*))))) ++ "\",\"cipherparams\":{\"iv\":\"" ++ (@as(*const [(16) * 2]u8, @ptrCast(&@as([16][2]u8, @splat("00".*))))) ++ "\"},\"mac\":\"" ++ (@as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*))))) ++ "\",";
     const cases = [_]struct { json: []const u8, err: anyerror }{
         .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":2097152,\"p\":1,\"r\":8,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.ExcessiveParams },
         .{ .json = head ++ "\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":1024,\"p\":1,\"r\":17,\"salt\":\"" ++ salt ++ "\"}}}", .err = KeystoreError.ExcessiveParams },
@@ -1359,9 +1361,9 @@ test "fromJson rejects excessive or out-of-range KDF parameters" {
 
 test "fromJson rejects malformed kdfparams and unsupported algorithms without panicking" {
     const allocator = std.testing.allocator;
-    const salt = "ab" ** 32;
-    const iv = "00" ** 16;
-    const ct = "00" ** 32;
+    const salt = @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("ab".*))));
+    const iv = @as(*const [(16) * 2]u8, @ptrCast(&@as([16][2]u8, @splat("00".*))));
+    const ct = @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*))));
     const pre = "{\"version\":3,\"id\":\"3198bc9c-6672-5ab3-d995-4942343ae5b6\",\"crypto\":{\"cipher\":";
     const mid = ",\"ciphertext\":\"" ++ ct ++ "\",\"cipherparams\":{\"iv\":\"" ++ iv ++ "\"},\"mac\":\"" ++ ct ++ "\",";
     const head = pre ++ "\"aes-128-ctr\"" ++ mid;

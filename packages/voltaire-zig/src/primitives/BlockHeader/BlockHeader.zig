@@ -78,7 +78,7 @@ pub const BlockHeader = struct {
     receipts_root: Hash.Hash = Hash.ZERO,
 
     /// Bloom filter for logs (256 bytes)
-    logs_bloom: [BLOOM_SIZE]u8 = [_]u8{0} ** BLOOM_SIZE,
+    logs_bloom: [BLOOM_SIZE]u8 = @as([BLOOM_SIZE]u8, @splat(0)),
 
     /// Proof-of-work difficulty (0 post-merge)
     difficulty: u256 = 0,
@@ -102,7 +102,7 @@ pub const BlockHeader = struct {
     mix_hash: Hash.Hash = Hash.ZERO,
 
     /// PoW nonce (8 bytes, 0 post-merge)
-    nonce: [NONCE_SIZE]u8 = [_]u8{0} ** NONCE_SIZE,
+    nonce: [NONCE_SIZE]u8 = @as([NONCE_SIZE]u8, @splat(0)),
 
     /// EIP-1559: Base fee per gas (post-London)
     base_fee_per_gas: ?u256 = null,
@@ -239,7 +239,7 @@ pub fn rlpEncode(header: *const BlockHeader, allocator: std.mem.Allocator) ![]u8
         return error.InvalidBlockHeader;
     }
 
-    var fields = std.ArrayList([]u8){};
+    var fields = std.ArrayList([]u8).empty;
     defer {
         for (fields.items) |item| {
             allocator.free(item);
@@ -337,7 +337,7 @@ pub fn rlpEncode(header: *const BlockHeader, allocator: std.mem.Allocator) ![]u8
     }
 
     // Build result with list header
-    var result = std.ArrayList(u8){};
+    var result = std.ArrayList(u8).empty;
     defer result.deinit(allocator);
 
     if (total_len < 56) {
@@ -577,14 +577,14 @@ test "isValidExtraData - empty" {
 
 test "isValidExtraData - max size" {
     var header = init();
-    const data = [_]u8{0} ** MAX_EXTRA_DATA_SIZE;
+    const data = @as([MAX_EXTRA_DATA_SIZE]u8, @splat(0));
     header.extra_data = &data;
     try std.testing.expect(isValidExtraData(&header));
 }
 
 test "isValidExtraData - too large" {
     var header = init();
-    const data = [_]u8{0} ** (MAX_EXTRA_DATA_SIZE + 1);
+    const data = @as([MAX_EXTRA_DATA_SIZE + 1]u8, @splat(0));
     header.extra_data = &data;
     try std.testing.expect(!isValidExtraData(&header));
 }
@@ -598,7 +598,7 @@ test "isValidExtraData - too large" {
 pub fn sealHash(header: *const BlockHeader, allocator: std.mem.Allocator) !Hash.Hash {
     // Create a copy with zeroed nonce and mix hash
     var seal_header = header.*;
-    seal_header.nonce = [_]u8{0} ** NONCE_SIZE;
+    seal_header.nonce = @as([NONCE_SIZE]u8, @splat(0));
     seal_header.mix_hash = Hash.ZERO;
 
     return try hash(&seal_header, allocator);
@@ -608,8 +608,8 @@ test "sealHash - different from regular hash" {
     const allocator = std.testing.allocator;
 
     var header = init();
-    header.nonce = [_]u8{1} ** NONCE_SIZE;
-    header.mix_hash = [_]u8{2} ** 32;
+    header.nonce = @as([NONCE_SIZE]u8, @splat(1));
+    header.mix_hash = @as([32]u8, @splat(2));
 
     const regular = try hash(&header, allocator);
     const seal = try sealHash(&header, allocator);
@@ -934,7 +934,7 @@ test "real block - mainnet block 1" {
         // Empty receipts root
         .receipts_root = EMPTY_RECEIPTS_ROOT,
         // Empty logs bloom
-        .logs_bloom = [_]u8{0} ** 256,
+        .logs_bloom = @as([256]u8, @splat(0)),
         // Difficulty
         .difficulty = 0x3ff800000,
         // Block number

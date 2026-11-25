@@ -123,7 +123,7 @@ pub const Hardfork = enum {
 
     /// Convert hardfork to its numeric representation for version comparisons
     pub fn toInt(self: Hardfork) u32 {
-        return @intFromEnum(self);
+        return @backingInt(self);
     }
 
     /// Check if this hardfork is at least the specified version
@@ -221,7 +221,7 @@ pub const Hardfork = enum {
             const result = try allocator.alloc(Hardfork, count);
             var i: u32 = 0;
             while (i < count) : (i += 1) {
-                result[i] = @enumFromInt(start_idx + i);
+                result[i] = @fromBackingInt(@intCast(start_idx + i));
             }
             return result;
         } else {
@@ -230,7 +230,7 @@ pub const Hardfork = enum {
             const result = try allocator.alloc(Hardfork, count);
             var i: u32 = 0;
             while (i < count) : (i += 1) {
-                result[i] = @enumFromInt(start_idx - i);
+                result[i] = @fromBackingInt(@intCast(start_idx - i));
             }
             return result;
         }
@@ -474,14 +474,14 @@ pub const ForkTransition = struct {
     /// Parse a case-insensitive transition name such as "ShanghaiToCancunAtTime15k".
     pub fn fromString(name: []const u8) ?ForkTransition {
         // Look for "To" pattern
-        const to_index = std.ascii.indexOfIgnoreCase(name, "To") orelse return null;
+        const to_index = std.ascii.findIgnoreCase(name, "To") orelse return null;
 
         // Extract "from" fork
         const from_str = name[0..to_index];
         const from_fork = Hardfork.fromString(from_str) orelse return null;
 
         // Find "At" pattern
-        const at_index = std.ascii.indexOfIgnoreCase(name[to_index..], "At") orelse return null;
+        const at_index = std.ascii.findIgnoreCase(name[to_index..], "At") orelse return null;
         const at_pos = to_index + at_index;
 
         // Extract "to" fork
@@ -492,9 +492,9 @@ pub const ForkTransition = struct {
         const transition_str = name[at_pos + 2 ..];
 
         // Check if it's a timestamp (contains "Time") or block number
-        if (std.ascii.indexOfIgnoreCase(transition_str, "Time") != null) {
+        if (std.ascii.findIgnoreCase(transition_str, "Time") != null) {
             // Extract number from "Time15k" -> "15k"
-            const time_index = std.ascii.indexOfIgnoreCase(transition_str, "Time") orelse return null;
+            const time_index = std.ascii.findIgnoreCase(transition_str, "Time") orelse return null;
             const num_str = transition_str[time_index + 4 ..];
             const timestamp = parseNumber(num_str) catch return null;
             return ForkTransition{

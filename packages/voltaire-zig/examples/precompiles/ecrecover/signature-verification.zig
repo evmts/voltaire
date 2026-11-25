@@ -6,7 +6,7 @@ const Secp256k1 = crypto.Secp256k1;
 const Keccak256 = crypto.Keccak256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -28,7 +28,7 @@ pub fn main() !void {
     const auth_sig = try Secp256k1.sign(&auth_hash, &signer_key);
 
     // Prepare ECRECOVER input
-    var auth_input: [128]u8 = [_]u8{0} ** 128;
+    var auth_input: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(auth_input[0..32], &auth_hash);
     auth_input[63] = auth_sig.v;
     @memcpy(auth_input[64..96], &auth_sig.r);
@@ -58,7 +58,7 @@ pub fn main() !void {
         const msg_hash = Keccak256.hash(msg);
         const sig = try Secp256k1.sign(&msg_hash, &signer_key);
 
-        var input: [128]u8 = [_]u8{0} ** 128;
+        var input: [128]u8 = @as([128]u8, @splat(0));
         @memcpy(input[0..32], &msg_hash);
         input[63] = sig.v;
         @memcpy(input[64..96], &sig.r);
@@ -89,7 +89,7 @@ pub fn main() !void {
     // s value in signature should be ≤ n/2
     std.debug.print("Signature created with EIP-2 compliant s value\n", .{});
 
-    var valid_input: [128]u8 = [_]u8{0} ** 128;
+    var valid_input: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(valid_input[0..32], &test_hash);
     valid_input[63] = valid_sig.v;
     @memcpy(valid_input[64..96], &valid_sig.r);
@@ -113,7 +113,7 @@ pub fn main() !void {
     // Sign message with wrong key
     const wrong_sig = try Secp256k1.sign(&test_hash, &wrong_key);
 
-    var wrong_input: [128]u8 = [_]u8{0} ** 128;
+    var wrong_input: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(wrong_input[0..32], &test_hash);
     wrong_input[63] = wrong_sig.v;
     @memcpy(wrong_input[64..96], &wrong_sig.r);

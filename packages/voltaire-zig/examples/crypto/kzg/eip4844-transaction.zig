@@ -13,7 +13,7 @@ const c_kzg = crypto.c_kzg;
 const Sha256 = crypto.sha256.Sha256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -26,7 +26,7 @@ pub fn main() !void {
 
     // Step 1: L2 rollup data
     std.debug.print("1. L2 Rollup Data Preparation\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("L2 Sequencer:\n", .{});
     std.debug.print("  Batched transactions: 2000\n", .{});
     std.debug.print("  Compressed data: ~256 KB\n", .{});
@@ -34,7 +34,7 @@ pub fn main() !void {
 
     // Step 2: Encode into blobs
     std.debug.print("2. Encoding Data into Blobs\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var blob1 = getRandomBlob(1111);
     var blob2 = getRandomBlob(2222);
@@ -45,7 +45,7 @@ pub fn main() !void {
 
     // Step 3: Generate commitments
     std.debug.print("3. Generating KZG Commitments\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const commitment1 = try c_kzg.blobToKZGCommitment(&blob1);
     const commitment2 = try c_kzg.blobToKZGCommitment(&blob2);
@@ -64,7 +64,7 @@ pub fn main() !void {
 
     // Step 4: Compute versioned hashes
     std.debug.print("4. Computing Versioned Hashes\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var versioned_hash1: [32]u8 = undefined;
     var versioned_hash2: [32]u8 = undefined;
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     // Step 5: Generate proofs
     std.debug.print("5. Generating KZG Proofs\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var z: c_kzg.Bytes32 = undefined;
     @memset(&z, 0x42);
@@ -127,7 +127,7 @@ pub fn main() !void {
 
     // Step 6: Transaction structure
     std.debug.print("6. Building Blob Transaction (Type 3)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Transaction fields:\n", .{});
     std.debug.print("  Type: 3 (EIP-4844)\n", .{});
@@ -143,7 +143,7 @@ pub fn main() !void {
 
     // Step 7: Size breakdown
     std.debug.print("7. Transaction Size Breakdown\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const tx_body_size = 200;
     const versioned_hashes_size = 32 * 2;
@@ -164,7 +164,7 @@ pub fn main() !void {
 
     // Step 8: Gas costs
     std.debug.print("8. Gas Cost Calculation\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const blob_base_fee: u64 = 1;
     const execution_base_fee: u64 = 15_000_000_000;
@@ -189,7 +189,7 @@ pub fn main() !void {
 
     // Step 9: Verification
     std.debug.print("9. Block Validator Verification\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Step 1: Validate transaction format\n", .{});
     std.debug.print("  ✓ Type = 3 (blob transaction)\n", .{});
@@ -213,7 +213,7 @@ pub fn main() !void {
 
     // Step 10: Cost comparison
     std.debug.print("10. Cost Comparison: Blobs vs Calldata\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const data_size: u64 = 262_144;
     const calldata_gas = data_size * 16;

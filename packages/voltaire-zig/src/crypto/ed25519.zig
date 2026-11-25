@@ -94,10 +94,23 @@ pub const PublicKeyError = error{
 /// small-order key makes signatures verify for attacker-chosen messages.
 ///
 /// Public keys are public: no constant-time requirement.
+/// True when `bytes` encodes `x = 0` with the sign bit set (`y = ±1`, RFC 8032 §5.1.3).
+/// Zig 0.17's `Edwards25519.fromBytes` rejects these with `error.InvalidEncoding`;
+/// checking them explicitly preserves our `error.NonCanonical` contract.
+fn isNegativeZeroEncoding(bytes: [PUBLIC_KEY_SIZE]u8) bool {
+    if ((bytes[31] & 0x80) == 0) return false;
+    var unsigned = bytes;
+    unsigned[31] &= 0x7f;
+    const plus_one = [_]u8{1} ++ @as([31]u8, @splat(0));
+    const minus_one = [_]u8{0xec} ++ @as([30]u8, @splat(0xff)) ++ [_]u8{0x7f};
+    return std.mem.eql(u8, &unsigned, &plus_one) or std.mem.eql(u8, &unsigned, &minus_one);
+}
+
 pub fn validatePublicKey(public_key: []const u8) PublicKeyError!void {
     if (public_key.len != PUBLIC_KEY_SIZE) return error.InvalidPublicKeyLength;
     const bytes = public_key[0..PUBLIC_KEY_SIZE].*;
     try Curve.rejectNonCanonical(bytes);
+    if (isNegativeZeroEncoding(bytes)) return error.NonCanonical;
     const point = try Curve.fromBytes(bytes);
     // Reject non-canonical negative-zero encodings (x == 0 with sign bit 1)
     if (!std.mem.eql(u8, &point.toBytes(), &bytes)) return error.NonCanonical;
@@ -176,6 +189,7 @@ pub fn verify(
     // Reject the identity, negative-zero, and the other small-order points: under
     // such a key a signature verifies for messages the "signer" never saw. An
     // off-curve key falls through to sig.verify, which reports it as an invalid signature.
+    if (isNegativeZeroEncoding(pub_key.bytes)) return error.NonCanonical;
     if (Curve.fromBytes(pub_key.bytes)) |point| {
         if (!std.mem.eql(u8, &point.toBytes(), &pub_key.bytes)) return error.NonCanonical;
         try point.rejectLowOrder();
@@ -213,7 +227,7 @@ pub fn publicKeyFromSecret(
 test "publicKeyFromSecret rejects a mismatched public half" {
     const allocator = std.testing.allocator;
 
-    const key_pair = try keypairFromSeed(&([_]u8{7} ** SEED_SIZE));
+    const key_pair = try keypairFromSeed(&(@as([SEED_SIZE]u8, @splat(7))));
     var secret = key_pair.secret_key.toBytes();
 
     const public_key = try publicKeyFromSecret(allocator, &secret);
@@ -225,7 +239,7 @@ test "publicKeyFromSecret rejects a mismatched public half" {
     try std.testing.expectError(error.KeyMismatch, publicKeyFromSecret(allocator, &secret));
 
     // Public half from a different seed.
-    const other = try keypairFromSeed(&([_]u8{8} ** SEED_SIZE));
+    const other = try keypairFromSeed(&(@as([SEED_SIZE]u8, @splat(8))));
     @memcpy(secret[SEED_SIZE..], &other.public_key.toBytes());
     try std.testing.expectError(error.KeyMismatch, publicKeyFromSecret(allocator, &secret));
 
@@ -236,7 +250,7 @@ test "ed25519 basic" {
     const allocator = std.testing.allocator;
 
     // Test key generation
-    const seed = [_]u8{1} ** SEED_SIZE;
+    const seed = @as([SEED_SIZE]u8, @splat(1));
     const key_pair = try keypairFromSeed(&seed);
 
     // Test signing
@@ -257,12 +271,12 @@ test "ed25519 basic" {
 
 test "ed25519 sign rejects a secret key whose public half does not match" {
     const allocator = std.testing.allocator;
-    const key_pair = try keypairFromSeed(&([_]u8{7} ** SEED_SIZE));
+    const key_pair = try keypairFromSeed(&(@as([SEED_SIZE]u8, @splat(7))));
     var secret = key_pair.secret_key.toBytes();
     secret[SEED_SIZE] ^= 0x01;
     try std.testing.expectError(error.KeyMismatch, sign(allocator, "msg", &secret));
 
-    const other = try keypairFromSeed(&([_]u8{8} ** SEED_SIZE));
+    const other = try keypairFromSeed(&(@as([SEED_SIZE]u8, @splat(8))));
     @memcpy(secret[SEED_SIZE..], &other.public_key.toBytes());
     try std.testing.expectError(error.KeyMismatch, sign(allocator, "msg", &secret));
 }
@@ -270,7 +284,7 @@ test "ed25519 sign rejects a secret key whose public half does not match" {
 test "ed25519 public key derivation" {
     const allocator = std.testing.allocator;
 
-    const seed = [_]u8{2} ** SEED_SIZE;
+    const seed = @as([SEED_SIZE]u8, @splat(2));
     const key_pair = try keypairFromSeed(&seed);
 
     const pub_key = try publicKeyFromSecret(allocator, &key_pair.secret_key.toBytes());
@@ -362,7 +376,7 @@ test "ed25519 validatePublicKey rejects every y in [p, 2^255 - 1]" {
     // p = 2^255 - 19: the 19 non-canonical values are 0xed..0xff in byte 0
     var low: u16 = 0xed;
     while (low <= 0xff) : (low += 1) {
-        var key = [_]u8{0xff} ** 32;
+        var key = @as([32]u8, @splat(0xff));
         key[0] = @intCast(low);
         key[31] = 0x7f;
         try std.testing.expectError(error.NonCanonical, validatePublicKey(&key));
@@ -370,7 +384,7 @@ test "ed25519 validatePublicKey rejects every y in [p, 2^255 - 1]" {
         try std.testing.expectError(error.NonCanonical, validatePublicKey(&key));
     }
     // The largest canonical y, p - 1, is (0, -1): canonical but small-order
-    var max = [_]u8{0xff} ** 32;
+    var max = @as([32]u8, @splat(0xff));
     max[0] = 0xec;
     max[31] = 0x7f;
     try std.testing.expectError(error.WeakPublicKey, validatePublicKey(&max));
@@ -380,7 +394,7 @@ test "ed25519 validatePublicKey rejects points not on the curve" {
     var found: usize = 0;
     var y: u8 = 2;
     while (found < 8) : (y += 1) {
-        var key = [_]u8{0} ** 32;
+        var key = @as([32]u8, @splat(0));
         key[0] = y;
         if (Curve.fromBytes(key)) |_| continue else |_| {}
         found += 1;
@@ -404,12 +418,12 @@ test "ed25519 validatePublicKey rejects mixed-order points" {
     }
 }
 
-test "ed25519 validatePublicKey catches the order-2 mix that std.crypto accepts" {
+test "ed25519 validatePublicKey catches the order-2 mix" {
     const valid = try Curve.fromBytes(rfc8032_public_keys[0]);
     const mixed = valid.add(try Curve.fromBytes(torsion_points[1].bytes));
     try std.testing.expectEqual(@as(u8, 2), torsion_points[1].order);
-    // std.crypto's subgroup check lets A + (0, -1) through
-    try mixed.rejectUnexpectedSubgroup();
+    // Zig 0.17 fixed std.crypto's subgroup check to reject A + (0, -1) as well.
+    try std.testing.expectError(error.UnexpectedSubgroup, mixed.rejectUnexpectedSubgroup());
     try std.testing.expectError(error.UnexpectedSubgroup, validatePublicKey(&mixed.toBytes()));
 }
 
@@ -422,13 +436,13 @@ test "ed25519 validatePublicKey accepts RFC 8032 keys, the base point and derive
 
     var i: u8 = 0;
     while (i < 32) : (i += 1) {
-        const key_pair = try keypairFromSeed(&([_]u8{i} ** SEED_SIZE));
+        const key_pair = try keypairFromSeed(&(@as([SEED_SIZE]u8, @splat(i))));
         try validatePublicKey(&key_pair.public_key.toBytes());
     }
 }
 
 test "ed25519 validatePublicKey rejects wrong lengths" {
-    const buffer = [_]u8{1} ** 64;
+    const buffer = @as([64]u8, @splat(1));
     for ([_]usize{ 0, 1, 31, 33, 64 }) |len| {
         try std.testing.expectError(error.InvalidPublicKeyLength, validatePublicKey(buffer[0..len]));
         try std.testing.expect(!isValidPublicKey(buffer[0..len]));
@@ -448,7 +462,7 @@ test "ed25519 RFC 8032 TEST 1 and TEST 2 signatures still verify" {
 
 test "ed25519 verify rejects small-order public keys" {
     // R = identity, S = 0: the universal forgery under a small-order key
-    var forged = [_]u8{0} ** 64;
+    var forged = @as([64]u8, @splat(0));
     forged[0] = 1;
     for (torsion_points) |torsion| {
         try std.testing.expectError(error.WeakPublicKey, verify(&forged, "any message", &torsion.bytes));

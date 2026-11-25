@@ -8,7 +8,7 @@ pub fn main() !void {
 
     // Example 1: Basic hash comparison
     std.debug.print("1. Basic Hash Comparison\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const data = "Hello, World!";
     const sha256_hash = SHA256.hash(data);
@@ -21,7 +21,7 @@ pub fn main() !void {
 
     // Example 2: Empty string hashes
     std.debug.print("2. Empty String Hash Constants\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const empty_sha256 = SHA256.hash("");
     const empty_keccak256 = Keccak256.hash("");
@@ -36,7 +36,7 @@ pub fn main() !void {
 
     // Example 3: Use case - Bitcoin vs Ethereum
     std.debug.print("3. Use Cases: Bitcoin vs Ethereum\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const block_data = "Block header data";
 
@@ -56,7 +56,7 @@ pub fn main() !void {
 
     // Example 4: Function selector comparison
     std.debug.print("4. Function Selectors (EVM)\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const function_sig = "transfer(address,uint256)";
 
@@ -79,7 +79,7 @@ pub fn main() !void {
 
     // Example 5: Address derivation
     std.debug.print("5. Address Derivation Differences\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     // Simulated public key
     var public_key: [64]u8 = undefined;
@@ -106,7 +106,7 @@ pub fn main() !void {
 
     // Example 6: Security properties
     std.debug.print("6. Security Properties\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     std.debug.print("SHA-256:\n", .{});
     std.debug.print("  Standard: NIST FIPS 180-4\n", .{});
@@ -124,7 +124,7 @@ pub fn main() !void {
 
     // Example 7: When to use each
     std.debug.print("7. When to Use Each Algorithm\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     std.debug.print("Use SHA-256 when:\n", .{});
     std.debug.print("  ✓ Bitcoin/blockchain applications\n", .{});
@@ -143,7 +143,7 @@ pub fn main() !void {
 
     // Example 8: Avalanche effect comparison
     std.debug.print("8. Avalanche Effect Comparison\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const input1 = [_]u8{ 1, 2, 3, 4, 5 };
     const input2 = [_]u8{ 1, 2, 3, 4, 6 }; // Last byte different

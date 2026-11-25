@@ -57,7 +57,7 @@ pub const RelayData = struct {
 };
 
 /// Empty BLS public key
-pub const EMPTY_PUBKEY: [BLS_PUBKEY_SIZE]u8 = [_]u8{0} ** BLS_PUBKEY_SIZE;
+pub const EMPTY_PUBKEY: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -191,9 +191,9 @@ pub fn equals(a: RelayData, b: RelayData) bool {
 // ============================================================================
 
 test "RelayData.from creates relay data" {
-    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0xaa} ** BLS_PUBKEY_SIZE;
-    const parent_hash: Hash.Hash = [_]u8{0xbb} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
+    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0xaa));
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0xbb));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
 
     const relay = from(.{
         .relay_url = RELAY_FLASHBOTS,
@@ -208,9 +208,9 @@ test "RelayData.from creates relay data" {
 }
 
 test "RelayData.fromFields creates relay data" {
-    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0xdd} ** BLS_PUBKEY_SIZE;
-    const parent_hash: Hash.Hash = [_]u8{0xee} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0xff} ** 20 };
+    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd));
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0xee));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xff)) };
 
     const relay = fromFields(
         RELAY_ULTRASOUND,
@@ -225,10 +225,10 @@ test "RelayData.fromFields creates relay data" {
 }
 
 test "RelayData.fromFieldsWithBuilder creates relay data with builder" {
-    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x11} ** BLS_PUBKEY_SIZE;
-    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x22} ** BLS_PUBKEY_SIZE;
-    const parent_hash: Hash.Hash = [_]u8{0x33} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0x44} ** 20 };
+    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x11));
+    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x22));
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x33));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x44)) };
 
     const relay = fromFieldsWithBuilder(
         RELAY_FLASHBOTS,
@@ -244,9 +244,9 @@ test "RelayData.fromFieldsWithBuilder creates relay data with builder" {
 }
 
 test "RelayData accessors work correctly" {
-    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x55} ** BLS_PUBKEY_SIZE;
-    const parent_hash: Hash.Hash = [_]u8{0x66} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0x77} ** 20 };
+    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x55));
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x66));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x77)) };
 
     const relay = from(.{
         .relay_url = RELAY_EDEN,
@@ -265,8 +265,8 @@ test "RelayData accessors work correctly" {
 
 test "RelayData.getStatusEndpoint" {
     const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const parent_hash: Hash.Hash = [_]u8{0} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0} ** 20 };
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0)) };
 
     const relay = from(.{
         .relay_url = "https://example.com",
@@ -283,8 +283,8 @@ test "RelayData.getStatusEndpoint" {
 
 test "RelayData.isFlashbots" {
     const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const parent_hash: Hash.Hash = [_]u8{0} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0} ** 20 };
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0)) };
 
     const flashbots_relay = from(.{
         .relay_url = RELAY_FLASHBOTS,
@@ -308,8 +308,8 @@ test "RelayData.isFlashbots" {
 
 test "RelayData.isBloxroute" {
     const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const parent_hash: Hash.Hash = [_]u8{0} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0} ** 20 };
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0)) };
 
     const bloxroute_relay = from(.{
         .relay_url = RELAY_BLOXROUTE_MAX_PROFIT,
@@ -332,9 +332,9 @@ test "RelayData.isBloxroute" {
 }
 
 test "RelayData.equals compares relay data" {
-    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x88} ** BLS_PUBKEY_SIZE;
-    const parent_hash: Hash.Hash = [_]u8{0x99} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x88));
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x99));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
 
     const relay1 = from(.{
         .relay_url = RELAY_FLASHBOTS,
@@ -366,9 +366,9 @@ test "RelayData.equals compares relay data" {
 
 test "RelayData.hasBuilderPubkey" {
     const relay_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0xbb} ** BLS_PUBKEY_SIZE;
-    const parent_hash: Hash.Hash = [_]u8{0} ** 32;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0} ** 20 };
+    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0xbb));
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0)) };
 
     const relay_with_builder = from(.{
         .relay_url = RELAY_FLASHBOTS,

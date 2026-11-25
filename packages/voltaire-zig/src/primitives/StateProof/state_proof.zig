@@ -410,7 +410,7 @@ pub const StateProof = struct {
 
 test "StateProof.init - creates non-owning proof" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -434,7 +434,7 @@ test "StateProof.from - creates owning copy" {
     const allocator = std.testing.allocator;
 
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -458,7 +458,7 @@ test "StateProof.forEOA - creates EOA proof" {
     const allocator = std.testing.allocator;
 
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
 
     const proof = try StateProof.forEOA(
@@ -478,7 +478,7 @@ test "StateProof.forEOA - creates EOA proof" {
 
 test "StateProof.equals - identical proofs" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -507,7 +507,7 @@ test "StateProof.equals - identical proofs" {
 test "StateProof.equals - different addresses" {
     const addr1 = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
     const addr2 = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -535,7 +535,7 @@ test "StateProof.equals - different addresses" {
 
 test "StateProof.equals - different balances" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -563,7 +563,7 @@ test "StateProof.equals - different balances" {
 
 test "StateProof.equals - different nonces" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -591,7 +591,7 @@ test "StateProof.equals - different nonces" {
 
 test "StateProof.isEmptyAccount - empty account" {
     const addr = try Address.fromHex("0x0000000000000000000000000000000000000000");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -610,7 +610,7 @@ test "StateProof.isEmptyAccount - empty account" {
 
 test "StateProof.isEmptyAccount - non-empty account" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -629,10 +629,10 @@ test "StateProof.isEmptyAccount - non-empty account" {
 
 test "StateProof.isContract - contract account" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
-    const contract_code_hash = [_]u8{0xab} ** 32; // Non-empty code hash
+    const contract_code_hash = @as([32]u8, @splat(0xab)); // Non-empty code hash
 
     const proof = StateProof.init(
         addr,
@@ -652,11 +652,11 @@ test "StateProof.storageProofCount - returns correct count" {
     const allocator = std.testing.allocator;
 
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
 
     // Create some storage proofs
-    const storage_addr = [_]u8{0x42} ** 20;
+    const storage_addr = @as([20]u8, @splat(0x42));
     const key1 = State.StorageKey{ .address = storage_addr, .slot = 0 };
     const key2 = State.StorageKey{ .address = storage_addr, .slot = 1 };
     const value = @import("../StorageValue/StorageValue.zig").ZERO;
@@ -683,10 +683,10 @@ test "StateProof.storageProofCount - returns correct count" {
 
 test "StateProof.getStorageProofForSlot - finds existing slot" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
 
-    const storage_addr = [_]u8{0x42} ** 20;
+    const storage_addr = @as([20]u8, @splat(0x42));
     const key1 = State.StorageKey{ .address = storage_addr, .slot = 42 };
     const key2 = State.StorageKey{ .address = storage_addr, .slot = 100 };
     const value = @import("../StorageValue/StorageValue.zig").ZERO;
@@ -716,7 +716,7 @@ test "StateProof.getStorageProofForSlot - finds existing slot" {
 
 test "StateProof.computeAddressHash - computes keccak256 of address" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -740,7 +740,7 @@ test "StateProof.clone - creates independent copy" {
     const allocator = std.testing.allocator;
 
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 
@@ -790,7 +790,7 @@ test "StateProof.from - rejects too deep proof" {
 
 test "StateProof.addressHex - returns hex string" {
     const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
-    const node1 = [_]u8{0xf8} ** 32;
+    const node1 = @as([32]u8, @splat(0xf8));
     const account_proof = [_][]const u8{&node1};
     const storage_proofs: []const StorageProof = &.{};
 

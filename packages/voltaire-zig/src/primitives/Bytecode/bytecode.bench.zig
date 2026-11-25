@@ -27,18 +27,14 @@ fn benchBytecodeIsValidJumpDest(allocator: std.mem.Allocator) void {
     std.mem.doNotOptimizeAway(ok1 and ok2 and !bad);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
     try bench.add("Bytecode.init (45B)", benchBytecodeInit, .{});
     try bench.add("Bytecode.isValidJumpDest", benchBytecodeIsValidJumpDest, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

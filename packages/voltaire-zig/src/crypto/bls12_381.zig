@@ -22,7 +22,7 @@
 //! const bls = @import("bls12_381.zig");
 //!
 //! // Key generation
-//! const sk = try bls.SecretKey.generate();
+//! const sk = try bls.SecretKey.generate(std.testing.io);
 //! const pk = sk.toPublicKey();
 //!
 //! // Signing
@@ -84,6 +84,8 @@ pub const Error = error{
     EmptyInput,
     /// Operation not supported on WASM
     NotSupported,
+    /// System CSPRNG failed to supply entropy
+    EntropyUnavailable,
 };
 
 /// Domain Separation Tags (DST) for Ethereum
@@ -117,11 +119,11 @@ pub const SecretKey = struct {
     data: blst.blst_scalar,
 
     /// Generate a new random secret key
-    pub fn generate() Error!SecretKey {
+    pub fn generate(io: std.Io) Error!SecretKey {
         if (builtin.target.cpu.arch == .wasm32) return Error.NotSupported;
 
         var ikm: [32]u8 = undefined;
-        std.crypto.random.bytes(&ikm);
+        io.randomSecure(&ikm) catch return Error.EntropyUnavailable;
 
         var sk: blst.blst_scalar = undefined;
         blst.blst_keygen(&sk, &ikm, ikm.len, null, 0);
@@ -793,7 +795,7 @@ pub fn pairingCheck(
 test "secret key generation" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const bytes = sk.toBytes();
 
     // Should not be all zeros
@@ -810,7 +812,7 @@ test "secret key generation" {
 test "secret key from bytes roundtrip" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const bytes = sk.toBytes();
     const sk2 = try SecretKey.fromBytes(&bytes);
     const bytes2 = sk2.toBytes();
@@ -821,7 +823,7 @@ test "secret key from bytes roundtrip" {
 test "public key derivation" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const pk = sk.toPublicKey();
 
     // Public key should not be infinity
@@ -834,7 +836,7 @@ test "public key derivation" {
 test "public key serialization roundtrip" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const pk = sk.toPublicKey();
 
     // Compressed roundtrip
@@ -851,7 +853,7 @@ test "public key serialization roundtrip" {
 test "sign and verify" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const pk = sk.toPublicKey();
 
     const message = "Hello, BLS12-381!";
@@ -866,7 +868,7 @@ test "sign and verify" {
 test "verify wrong message fails" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const pk = sk.toPublicKey();
 
     const message = "Hello, BLS12-381!";
@@ -882,8 +884,8 @@ test "verify wrong message fails" {
 test "verify wrong public key fails" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk1 = try SecretKey.generate();
-    const sk2 = try SecretKey.generate();
+    const sk1 = try SecretKey.generate(std.testing.io);
+    const sk2 = try SecretKey.generate(std.testing.io);
     const pk2 = sk2.toPublicKey();
 
     const message = "Hello, BLS12-381!";
@@ -898,7 +900,7 @@ test "verify wrong public key fails" {
 test "signature serialization roundtrip" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk = try SecretKey.generate();
+    const sk = try SecretKey.generate(std.testing.io);
     const message = "Test message";
     const dst = DST.ETH2_SIGNATURE;
 
@@ -922,9 +924,9 @@ test "aggregate signatures - same message" {
     const dst = DST.ETH2_SIGNATURE;
 
     // Generate 3 key pairs
-    const sk1 = try SecretKey.generate();
-    const sk2 = try SecretKey.generate();
-    const sk3 = try SecretKey.generate();
+    const sk1 = try SecretKey.generate(std.testing.io);
+    const sk2 = try SecretKey.generate(std.testing.io);
+    const sk3 = try SecretKey.generate(std.testing.io);
 
     const pk1 = sk1.toPublicKey();
     const pk2 = sk2.toPublicKey();
@@ -949,8 +951,8 @@ test "aggregate signatures - same message" {
 test "aggregate public keys" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
-    const sk1 = try SecretKey.generate();
-    const sk2 = try SecretKey.generate();
+    const sk1 = try SecretKey.generate(std.testing.io);
+    const sk2 = try SecretKey.generate(std.testing.io);
 
     const pk1 = sk1.toPublicKey();
     const pk2 = sk2.toPublicKey();
@@ -1129,7 +1131,7 @@ test "pairing bilinearity" {
     // e(aG1, bG2) should equal e(G1, G2)^(a*b)
     // We test: e(2*G1, G2) == e(G1, 2*G2)
 
-    var scalar_2: [32]u8 = [_]u8{0} ** 32;
+    var scalar_2: [32]u8 = @as([32]u8, @splat(0));
     scalar_2[31] = 2;
 
     const g1_times_2 = g1.mul(&scalar_2);
@@ -1179,7 +1181,7 @@ test "BLS signature test vector - Ethereum style" {
 
     // Test vector: specific secret key
     // sk = 0x0000000000000000000000000000000000000000000000000000000000000001
-    var sk_bytes: [32]u8 = [_]u8{0} ** 32;
+    var sk_bytes: [32]u8 = @as([32]u8, @splat(0));
     sk_bytes[31] = 1;
 
     const sk = try SecretKey.fromBytes(&sk_bytes);
@@ -1207,9 +1209,9 @@ test "signature aggregation is commutative" {
     const dst = DST.ETH2_SIGNATURE;
 
     // Generate 3 key pairs and signatures
-    const sk1 = try SecretKey.generate();
-    const sk2 = try SecretKey.generate();
-    const sk3 = try SecretKey.generate();
+    const sk1 = try SecretKey.generate(std.testing.io);
+    const sk2 = try SecretKey.generate(std.testing.io);
+    const sk3 = try SecretKey.generate(std.testing.io);
 
     const sig1 = try sign(&sk1, message, dst);
     const sig2 = try sign(&sk2, message, dst);
@@ -1247,9 +1249,9 @@ test "public key aggregation is commutative" {
 
     // BLS public key aggregation uses elliptic curve point addition,
     // which is commutative: pk1 + pk2 + pk3 == pk3 + pk1 + pk2
-    const sk1 = try SecretKey.generate();
-    const sk2 = try SecretKey.generate();
-    const sk3 = try SecretKey.generate();
+    const sk1 = try SecretKey.generate(std.testing.io);
+    const sk2 = try SecretKey.generate(std.testing.io);
+    const sk3 = try SecretKey.generate(std.testing.io);
 
     const pk1 = sk1.toPublicKey();
     const pk2 = sk2.toPublicKey();

@@ -81,7 +81,7 @@ pub fn getChange(diff: *const StorageDiff, slot: [32]u8) ?StorageChange {
 
 /// Get all changed slots
 pub fn getKeys(diff: *const StorageDiff, allocator: std.mem.Allocator) ![][32]u8 {
-    var keys = std.ArrayList([32]u8){};
+    var keys = std.ArrayList([32]u8).empty;
     errdefer keys.deinit(allocator);
 
     var it = diff.changes.keyIterator();
@@ -256,7 +256,7 @@ pub fn fromJson(allocator: std.mem.Allocator, address: Address.Address, json_str
 
 /// Encode StorageDiff to JSON
 pub fn toJson(diff: *const StorageDiff, allocator: std.mem.Allocator) ![]u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     defer buf.deinit(allocator);
 
     try buf.appendSlice(allocator, "{\"address\":\"");
@@ -317,7 +317,7 @@ pub fn toJson(diff: *const StorageDiff, allocator: std.mem.Allocator) ![]u8 {
 // ============================================================================
 
 test "StorageDiff.init creates empty diff" {
-    const address = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
@@ -327,13 +327,13 @@ test "StorageDiff.init creates empty diff" {
 }
 
 test "StorageDiff.setChange adds change" {
-    const address = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const old_value: [32]u8 = [_]u8{0x11} ** 32;
-    const new_value: [32]u8 = [_]u8{0x22} ** 32;
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const old_value: [32]u8 = @as([32]u8, @splat(0x11));
+    const new_value: [32]u8 = @as([32]u8, @splat(0x22));
 
     try setChange(&diff, slot, old_value, new_value);
 
@@ -348,13 +348,13 @@ test "StorageDiff.setChange adds change" {
 }
 
 test "StorageDiff.getKeys returns all slots" {
-    const address = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot1: [32]u8 = [_]u8{0x01} ** 32;
-    const slot2: [32]u8 = [_]u8{0x02} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const slot1: [32]u8 = @as([32]u8, @splat(0x01));
+    const slot2: [32]u8 = @as([32]u8, @splat(0x02));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
 
     try setChange(&diff, slot1, null, value);
     try setChange(&diff, slot2, null, value);
@@ -366,12 +366,12 @@ test "StorageDiff.getKeys returns all slots" {
 }
 
 test "StorageDiff.isCreated detects slot creation" {
-    const address = Address.Address{ .bytes = [_]u8{0xdd} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xdd)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
 
     try setChange(&diff, slot, null, value);
 
@@ -381,12 +381,12 @@ test "StorageDiff.isCreated detects slot creation" {
 }
 
 test "StorageDiff.isDeleted detects slot deletion" {
-    const address = Address.Address{ .bytes = [_]u8{0xee} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
 
     try setChange(&diff, slot, value, null);
 
@@ -396,13 +396,13 @@ test "StorageDiff.isDeleted detects slot deletion" {
 }
 
 test "StorageDiff.isModified detects slot modification" {
-    const address = Address.Address{ .bytes = [_]u8{0xff} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xff)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const old_value: [32]u8 = [_]u8{0x11} ** 32;
-    const new_value: [32]u8 = [_]u8{0x22} ** 32;
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const old_value: [32]u8 = @as([32]u8, @splat(0x11));
+    const new_value: [32]u8 = @as([32]u8, @splat(0x22));
 
     try setChange(&diff, slot, old_value, new_value);
 
@@ -412,12 +412,12 @@ test "StorageDiff.isModified detects slot modification" {
 }
 
 test "StorageDiff.removeChange removes change" {
-    const address = Address.Address{ .bytes = [_]u8{0x11} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
 
     try setChange(&diff, slot, null, value);
     try std.testing.expect(hasSlot(&diff, slot));
@@ -427,13 +427,13 @@ test "StorageDiff.removeChange removes change" {
 }
 
 test "StorageDiff.clear removes all changes" {
-    const address = Address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    const slot1: [32]u8 = [_]u8{0x01} ** 32;
-    const slot2: [32]u8 = [_]u8{0x02} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const slot1: [32]u8 = @as([32]u8, @splat(0x01));
+    const slot2: [32]u8 = @as([32]u8, @splat(0x02));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
 
     try setChange(&diff, slot1, null, value);
     try setChange(&diff, slot2, null, value);
@@ -444,7 +444,7 @@ test "StorageDiff.clear removes all changes" {
 }
 
 test "StorageDiff.equals compares diffs" {
-    const address = Address.Address{ .bytes = [_]u8{0x33} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0x33)) };
 
     var diff1 = init(std.testing.allocator, address);
     defer diff1.deinit();
@@ -452,8 +452,8 @@ test "StorageDiff.equals compares diffs" {
     var diff2 = init(std.testing.allocator, address);
     defer diff2.deinit();
 
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
 
     try setChange(&diff1, slot, null, value);
     try setChange(&diff2, slot, null, value);
@@ -464,15 +464,15 @@ test "StorageDiff.equals compares diffs" {
     var diff3 = init(std.testing.allocator, address);
     defer diff3.deinit();
 
-    const other_value: [32]u8 = [_]u8{0xee} ** 32;
+    const other_value: [32]u8 = @as([32]u8, @splat(0xee));
     try setChange(&diff3, slot, null, other_value);
 
     try std.testing.expect(!equals(&diff1, &diff3));
 }
 
 test "StorageDiff.equals different addresses" {
-    const address1 = Address.Address{ .bytes = [_]u8{0x44} ** 20 };
-    const address2 = Address.Address{ .bytes = [_]u8{0x55} ** 20 };
+    const address1 = Address.Address{ .bytes = @as([20]u8, @splat(0x44)) };
+    const address2 = Address.Address{ .bytes = @as([20]u8, @splat(0x55)) };
 
     var diff1 = init(std.testing.allocator, address1);
     defer diff1.deinit();
@@ -488,25 +488,25 @@ test "StorageDiff.fromJson parses storage changes" {
         \\{"pre":{"storage":{"0x0000000000000000000000000000000000000000000000000000000000000001":"0x0000000000000000000000000000000000000000000000000000000000000064"}},"post":{"storage":{"0x0000000000000000000000000000000000000000000000000000000000000001":"0x00000000000000000000000000000000000000000000000000000000000000c8"}}}
     ;
 
-    const address = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     var diff = try fromJson(std.testing.allocator, address, json_input);
     defer diff.deinit();
 
     try std.testing.expect(!isEmpty(&diff));
     try std.testing.expectEqual(@as(usize, 1), size(&diff));
 
-    var slot: [32]u8 = [_]u8{0} ** 32;
+    var slot: [32]u8 = @as([32]u8, @splat(0));
     slot[31] = 0x01;
 
     const change = getChange(&diff, slot);
     try std.testing.expect(change != null);
 
     // 0x64 = 100 (from), 0xc8 = 200 (to)
-    var expected_from: [32]u8 = [_]u8{0} ** 32;
+    var expected_from: [32]u8 = @as([32]u8, @splat(0));
     expected_from[31] = 0x64;
     try std.testing.expectEqualSlices(u8, &expected_from, &change.?.from.?);
 
-    var expected_to: [32]u8 = [_]u8{0} ** 32;
+    var expected_to: [32]u8 = @as([32]u8, @splat(0));
     expected_to[31] = 0xc8;
     try std.testing.expectEqualSlices(u8, &expected_to, &change.?.to.?);
 }
@@ -516,11 +516,11 @@ test "StorageDiff.fromJson parses new slot" {
         \\{"pre":{},"post":{"storage":{"0x0000000000000000000000000000000000000000000000000000000000000002":"0x00000000000000000000000000000000000000000000000000000000000003e8"}}}
     ;
 
-    const address = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
     var diff = try fromJson(std.testing.allocator, address, json_input);
     defer diff.deinit();
 
-    var slot: [32]u8 = [_]u8{0} ** 32;
+    var slot: [32]u8 = @as([32]u8, @splat(0));
     slot[31] = 0x02;
 
     try std.testing.expect(isCreated(&diff, slot));
@@ -530,24 +530,24 @@ test "StorageDiff.fromJson parses new slot" {
     try std.testing.expect(change.?.from == null);
 
     // 0x3e8 = 1000
-    var expected_to: [32]u8 = [_]u8{0} ** 32;
+    var expected_to: [32]u8 = @as([32]u8, @splat(0));
     expected_to[30] = 0x03;
     expected_to[31] = 0xe8;
     try std.testing.expectEqualSlices(u8, &expected_to, &change.?.to.?);
 }
 
 test "StorageDiff.toJson produces valid output" {
-    const address = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
     var diff = init(std.testing.allocator, address);
     defer diff.deinit();
 
-    var slot: [32]u8 = [_]u8{0} ** 32;
+    var slot: [32]u8 = @as([32]u8, @splat(0));
     slot[31] = 0x05;
 
-    var old_val: [32]u8 = [_]u8{0} ** 32;
+    var old_val: [32]u8 = @as([32]u8, @splat(0));
     old_val[31] = 0x0a; // 10
 
-    var new_val: [32]u8 = [_]u8{0} ** 32;
+    var new_val: [32]u8 = @as([32]u8, @splat(0));
     new_val[31] = 0x14; // 20
 
     try setChange(&diff, slot, old_val, new_val);

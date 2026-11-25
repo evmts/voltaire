@@ -132,8 +132,8 @@ pub fn createAuthorization(
         .address = addr,
         .nonce = nonce,
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     const h = try auth.signingHash();
@@ -265,7 +265,7 @@ pub fn calculateAuthorizationGasCost(auth_list: AuthorizationList, empty_account
 test "authorization creation and recovery" {
     const allocator = testing.allocator;
 
-    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const private_key: crypto.PrivateKey = @as([32]u8, @splat(0x42));
 
     const signer_address = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(private_key));
     const target_address = try Address.fromHex("0x1111111111111111111111111111111111111111");
@@ -292,8 +292,8 @@ test "authorization validation" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     // Valid
@@ -322,7 +322,7 @@ test "authorization validation" {
 test "createAuthorization yields y_parity 0 or 1 and round-trips wildcard chain and zero address" {
     const allocator = testing.allocator;
 
-    const keys = [_]crypto.PrivateKey{ [_]u8{0x01} ** 32, [_]u8{0x02} ** 32, [_]u8{0x42} ** 32, [_]u8{0x99} ** 32 };
+    const keys = [_]crypto.PrivateKey{ @as([32]u8, @splat(0x01)), @as([32]u8, @splat(0x02)), @as([32]u8, @splat(0x42)), @as([32]u8, @splat(0x99)) };
     var seen = [_]bool{ false, false };
     for (keys) |key| {
         const signer = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(key));
@@ -342,7 +342,7 @@ test "createAuthorization yields y_parity 0 or 1 and round-trips wildcard chain 
 
 test "processAuthorizations accepts wildcard chain and clears delegation for zero address" {
     const allocator = testing.allocator;
-    const key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const key: crypto.PrivateKey = @as([32]u8, @splat(0x42));
     const signer = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(key));
 
     const auth_list = [_]Authorization{try createAuthorization(allocator, 0, Address.ZERO, 0, key)};
@@ -362,8 +362,8 @@ test "encodeAuthorizationList encodes y_parity as 0/1 and rejects 27/28" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 1,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const encoded = try encodeAuthorizationList(allocator, &[_]Authorization{auth});
@@ -391,7 +391,7 @@ test "encodeAuthorizationList encodes y_parity as 0/1 and rejects 27/28" {
 test "authorization list encoding" {
     const allocator = testing.allocator;
 
-    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const private_key: crypto.PrivateKey = @as([32]u8, @splat(0x42));
 
     const auth1 = try createAuthorization(
         allocator,
@@ -437,8 +437,8 @@ test "delegation designation" {
 test "batch authorization processing" {
     const allocator = testing.allocator;
 
-    const private_key1: crypto.PrivateKey = [_]u8{0x01} ** 32;
-    const private_key2: crypto.PrivateKey = [_]u8{0x02} ** 32;
+    const private_key1: crypto.PrivateKey = @as([32]u8, @splat(0x01));
+    const private_key2: crypto.PrivateKey = @as([32]u8, @splat(0x02));
 
     const auth1 = try createAuthorization(
         allocator,
@@ -473,16 +473,16 @@ test "authorization gas cost calculation" {
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
             .nonce = 0,
             .v = 0,
-            .r = [_]u8{0x12} ** 32,
-            .s = [_]u8{0x34} ** 32,
+            .r = @as([32]u8, @splat(0x12)),
+            .s = @as([32]u8, @splat(0x34)),
         },
         .{
             .chain_id = 1,
             .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
             .nonce = 0,
             .v = 0,
-            .r = [_]u8{0x56} ** 32,
-            .s = [_]u8{0x78} ** 32,
+            .r = @as([32]u8, @splat(0x56)),
+            .s = @as([32]u8, @splat(0x78)),
         },
     };
 
@@ -496,7 +496,7 @@ test "authorization gas cost calculation" {
 test "authority() recovers correct signer address" {
     const allocator = testing.allocator;
 
-    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const private_key: crypto.PrivateKey = @as([32]u8, @splat(0x42));
     const expected_signer = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(private_key));
     const target = try Address.fromHex("0x1111111111111111111111111111111111111111");
 
@@ -515,7 +515,7 @@ test "authority() recovers correct signer address" {
 test "authority() recovers correct signer with different nonces" {
     const allocator = testing.allocator;
 
-    const private_key: crypto.PrivateKey = [_]u8{0x99} ** 32;
+    const private_key: crypto.PrivateKey = @as([32]u8, @splat(0x99));
     const expected_signer = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(private_key));
     const target = try Address.fromHex("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
@@ -545,8 +545,8 @@ test "signingHash() produces consistent hashes" {
         .address = addr,
         .nonce = 42,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const auth2 = Authorization{
@@ -554,8 +554,8 @@ test "signingHash() produces consistent hashes" {
         .address = addr,
         .nonce = 42,
         .v = 1,
-        .r = [_]u8{0xff} ** 32,
-        .s = [_]u8{0xaa} ** 32,
+        .r = @as([32]u8, @splat(0xff)),
+        .s = @as([32]u8, @splat(0xaa)),
     };
 
     const hash1 = try auth1.signingHash();
@@ -574,8 +574,8 @@ test "signingHash() produces different hashes for different inputs" {
         .address = addr,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const auth2 = Authorization{
@@ -583,8 +583,8 @@ test "signingHash() produces different hashes for different inputs" {
         .address = addr,
         .nonce = 1,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const auth3 = Authorization{
@@ -592,8 +592,8 @@ test "signingHash() produces different hashes for different inputs" {
         .address = addr,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const hash1 = try auth1.signingHash();
@@ -616,8 +616,8 @@ test "signingHash() handles edge case nonce values" {
         .address = addr,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const auth_max = Authorization{
@@ -625,8 +625,8 @@ test "signingHash() handles edge case nonce values" {
         .address = addr,
         .nonce = std.math.maxInt(u64),
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     const hash_zero = try auth_zero.signingHash();
@@ -646,8 +646,8 @@ test "validate() accepts wildcard chain ID 0" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     try auth.validate();
@@ -662,8 +662,8 @@ test "validate() accepts zero delegation address" {
         .address = Address.ZERO,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     try auth.validate();
@@ -678,8 +678,8 @@ test "validate() rejects signature with r=0" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
@@ -694,8 +694,8 @@ test "validate() rejects signature with s=0" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
@@ -715,7 +715,7 @@ test "validate() rejects signature with r >= N" {
         .nonce = 0,
         .v = 0,
         .r = r_bytes,
-        .s = [_]u8{0x34} ** 32,
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
@@ -734,7 +734,7 @@ test "validate() rejects signature with s >= N" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
         .s = s_bytes,
     };
 
@@ -757,7 +757,7 @@ test "validate() rejects malleable signature (high S-value)" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
         .s = s_bytes,
     };
 
@@ -925,8 +925,8 @@ test "isItem() detects signed authorization" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     try testing.expect(isItem(&signed_auth));
@@ -937,8 +937,8 @@ test "isItem() detects signed authorization" {
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     try testing.expect(!isItem(&unsigned_auth));
@@ -973,8 +973,8 @@ test "equalsAuth() compares authorizations" {
         .address = addr1,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     var auth2 = Authorization{
@@ -982,8 +982,8 @@ test "equalsAuth() compares authorizations" {
         .address = addr1,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     var auth3 = Authorization{
@@ -991,8 +991,8 @@ test "equalsAuth() compares authorizations" {
         .address = addr2,
         .nonce = 0,
         .v = 0,
-        .r = [_]u8{0x12} ** 32,
-        .s = [_]u8{0x34} ** 32,
+        .r = @as([32]u8, @splat(0x12)),
+        .s = @as([32]u8, @splat(0x34)),
     };
 
     // Same authorizations
@@ -1065,8 +1065,8 @@ test "signingHash() encodes u256 chain_id canonically (0, 1, 2^64, max)" {
             .address = addr,
             .nonce = 7,
             .v = 0,
-            .r = [_]u8{0} ** 32,
-            .s = [_]u8{0} ** 32,
+            .r = @as([32]u8, @splat(0)),
+            .s = @as([32]u8, @splat(0)),
         };
 
         // keccak256(0x05 || rlp([chain_id, address, nonce]))
@@ -1103,8 +1103,8 @@ test "encodeAuthorizationList encodes u256 chain_id canonically (0, 1, 2^64, max
             .address = addr,
             .nonce = 0,
             .v = 1,
-            .r = [_]u8{0x12} ** 32,
-            .s = [_]u8{0x34} ** 32,
+            .r = @as([32]u8, @splat(0x12)),
+            .s = @as([32]u8, @splat(0x34)),
         };
 
         const encoded = try encodeAuthorizationList(allocator, &[_]Authorization{auth});
@@ -1127,7 +1127,7 @@ test "encodeAuthorizationList encodes u256 chain_id canonically (0, 1, 2^64, max
 
 test "u256 chain_id signs, validates, recovers, compares and formats (0, 1, 2^64, max)" {
     const allocator = testing.allocator;
-    const key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const key: crypto.PrivateKey = @as([32]u8, @splat(0x42));
     const signer = crypto.publicKeyToAddress(try crypto.unaudited_getPublicKey(key));
     const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
 

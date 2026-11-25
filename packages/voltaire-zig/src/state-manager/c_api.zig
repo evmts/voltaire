@@ -75,12 +75,12 @@ pub const CodeResultCallback = *const fn (
 // Global Allocator (Thread-local for now)
 // ============================================================================
 
-var gpa_instance: std.heap.GeneralPurposeAllocator(.{}) = undefined;
+var gpa_instance: std.heap.DebugAllocator(.{}) = undefined;
 var gpa_initialized = false;
 
 fn getAllocator() std.mem.Allocator {
     if (!gpa_initialized) {
-        gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+        gpa_instance = std.heap.DebugAllocator(.{}){};
         gpa_initialized = true;
     }
     return gpa_instance.allocator();
@@ -255,8 +255,8 @@ fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, 
                             const proof_array = allocator.alloc(RpcClient.EthProof.StorageProof, 1) catch return RpcClient.EthProof{
                                 .nonce = nonce,
                                 .balance = balance,
-                                .code_hash = [_]u8{0} ** 32,
-                                .storage_root = [_]u8{0} ** 32,
+                                .code_hash = @as([32]u8, @splat(0)),
+                                .storage_root = @as([32]u8, @splat(0)),
                                 .storage_proof = &.{},
                             };
                             proof_array[0] = .{
@@ -268,8 +268,8 @@ fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, 
                             return RpcClient.EthProof{
                                 .nonce = nonce,
                                 .balance = balance,
-                                .code_hash = [_]u8{0} ** 32,
-                                .storage_root = [_]u8{0} ** 32,
+                                .code_hash = @as([32]u8, @splat(0)),
+                                .storage_root = @as([32]u8, @splat(0)),
                                 .storage_proof = proof_array,
                             };
                         }
@@ -280,8 +280,8 @@ fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, 
                 return RpcClient.EthProof{
                     .nonce = nonce,
                     .balance = balance,
-                    .code_hash = [_]u8{0} ** 32,
-                    .storage_root = [_]u8{0} ** 32,
+                    .code_hash = @as([32]u8, @splat(0)),
+                    .storage_root = @as([32]u8, @splat(0)),
                     .storage_proof = &.{},
                 };
             }
@@ -295,8 +295,8 @@ fn mockGetProof(ptr: *anyopaque, address: Address.Address, slots: []const u256, 
     return RpcClient.EthProof{
         .nonce = 0,
         .balance = 0,
-        .code_hash = [_]u8{0} ** 32,
-        .storage_root = [_]u8{0} ** 32,
+        .code_hash = @as([32]u8, @splat(0)),
+        .storage_root = @as([32]u8, @splat(0)),
         .storage_proof = &.{},
     };
 }

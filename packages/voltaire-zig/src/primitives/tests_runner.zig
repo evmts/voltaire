@@ -27,9 +27,9 @@ test "Address checksum validation and roundtrips" {
 
 test "Address.fromBytes enforces 20 bytes" {
     // Too short
-    try std.testing.expectError(error.InvalidAddressLength, p.Address.fromBytes(&[_]u8{0x00} ** 19));
+    try std.testing.expectError(error.InvalidAddressLength, p.Address.fromBytes(&@as([19]u8, @splat(0x00))));
     // Too long
-    try std.testing.expectError(error.InvalidAddressLength, p.Address.fromBytes(&[_]u8{0x00} ** 21));
+    try std.testing.expectError(error.InvalidAddressLength, p.Address.fromBytes(&@as([21]u8, @splat(0x00))));
 }
 
 test "Address sort and deduplicate" {

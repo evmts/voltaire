@@ -3,7 +3,7 @@ const crypto = @import("crypto");
 const SHA256 = crypto.SHA256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -11,7 +11,7 @@ pub fn main() !void {
 
     // Example 1: Basic HMAC
     std.debug.print("1. Basic HMAC-SHA256\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const key1 = "secret-key";
     const message1 = "Hello, World!";
@@ -23,7 +23,7 @@ pub fn main() !void {
 
     // Example 2: HMAC with different keys produces different MACs
     std.debug.print("2. Key Sensitivity\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const key2a = "key-a";
     const key2b = "key-b";
@@ -41,7 +41,7 @@ pub fn main() !void {
 
     // Example 3: HMAC verification
     std.debug.print("3. HMAC Verification (Constant-Time Comparison)\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const auth_key = "authentication-key";
     const auth_message = "authenticated message";
@@ -63,7 +63,7 @@ pub fn main() !void {
 
     // Example 4: INSECURE vs SECURE message authentication
     std.debug.print("4. INSECURE vs SECURE Approaches\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const secret = "secret";
     const msg = "message";
@@ -86,7 +86,7 @@ pub fn main() !void {
 
     // Example 5: HMAC with long keys
     std.debug.print("5. Key Length Handling\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     // Short key
     const short_key = "short";
@@ -96,7 +96,7 @@ pub fn main() !void {
     std.debug.print("Key padded to 64 bytes internally\n\n", .{});
 
     // Long key
-    const long_key = "a" ** 100;
+    const long_key = &@as([100]u8, @splat('a'));
     const long_mac = try hmacSha256(long_key, message1, allocator);
     std.debug.print("Long key (100 bytes): {s}...\n", .{long_key[0..20]});
     std.debug.print("HMAC: 0x{s}\n", .{std.fmt.fmtSliceHexLower(&long_mac)});
@@ -104,9 +104,9 @@ pub fn main() !void {
 
     // Example 6: RFC 4231 Test Vector
     std.debug.print("6. RFC 4231 Test Vector\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
-    const rfc_key = [_]u8{0x0b} ** 20;
+    const rfc_key = @as([20]u8, @splat(0x0b));
     const rfc_data = "Hi There";
     const rfc_mac = try hmacSha256(&rfc_key, rfc_data, allocator);
 
@@ -134,12 +134,12 @@ fn hmacSha256(key: []const u8, message: []const u8, allocator: std.mem.Allocator
     } else key;
 
     // Pad key to block size
-    var padded_key: [64]u8 = [_]u8{0} ** 64;
+    var padded_key: [64]u8 = @as([64]u8, @splat(0));
     @memcpy(padded_key[0..derived_key.len], derived_key);
 
     // Step 2: Create inner and outer padding
-    var opad: [64]u8 = [_]u8{0x5c} ** 64;
-    var ipad: [64]u8 = [_]u8{0x36} ** 64;
+    var opad: [64]u8 = @as([64]u8, @splat(0x5c));
+    var ipad: [64]u8 = @as([64]u8, @splat(0x36));
 
     for (0..block_size) |i| {
         opad[i] ^= padded_key[i];

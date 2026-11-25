@@ -6,7 +6,7 @@
 //! ## Security Considerations
 //!
 //! - Private keys must be kept secret at all times
-//! - Memory should be cleared after use (use defer with std.crypto.utils.secureZero)
+//! - Memory should be cleared after use (use defer with std.crypto.secureZero)
 //! - Validate keys are in valid secp256k1 range (1 to n-1)
 //! - Never log or expose private keys
 //!
@@ -19,7 +19,7 @@
 //! // Create from hex string
 //! const pk = try PrivateKey.fromHex(allocator, "0x1234...");
 //! defer allocator.free(pk);
-//! defer std.crypto.utils.secureZero(u8, pk);
+//! defer std.crypto.secureZero(u8, pk);
 //!
 //! // Derive public key
 //! const pubkey = try PrivateKey.toPublicKey(pk);
@@ -132,7 +132,7 @@ pub fn fromBytes(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
 
 test "PrivateKey.fromBytes - valid bytes" {
     const allocator = std.testing.allocator;
-    const bytes = [_]u8{0x12} ** 32;
+    const bytes = @as([32]u8, @splat(0x12));
 
     const pk = try fromBytes(allocator, &bytes);
     defer allocator.free(pk);
@@ -143,7 +143,7 @@ test "PrivateKey.fromBytes - valid bytes" {
 
 test "PrivateKey.fromBytes - invalid length" {
     const allocator = std.testing.allocator;
-    const bytes = [_]u8{0x12} ** 16; // Only 16 bytes
+    const bytes = @as([16]u8, @splat(0x12)); // Only 16 bytes
 
     const result = fromBytes(allocator, &bytes);
     try std.testing.expectError(PrivateKeyError.InvalidLength, result);
@@ -180,12 +180,12 @@ pub fn toHex(allocator: std.mem.Allocator, private_key: []const u8) ![]u8 {
 
 test "PrivateKey.toHex - valid conversion" {
     const allocator = std.testing.allocator;
-    const pk = [_]u8{ 0x12, 0x34 } ++ [_]u8{0} ** 30;
+    const pk = [_]u8{ 0x12, 0x34 } ++ @as([30]u8, @splat(0));
 
     const hex = try toHex(allocator, &pk);
     defer allocator.free(hex);
 
-    try std.testing.expectEqualStrings("0x1234" ++ "00" ** 30, hex);
+    try std.testing.expectEqualStrings("0x1234" ++ @as(*const [(30) * 2]u8, @ptrCast(&@as([30][2]u8, @splat("00".*)))), hex);
 }
 
 test "PrivateKey.toHex - roundtrip" {
@@ -319,7 +319,7 @@ test "PrivateKey.sign - valid signature" {
     const pk = try fromHex(allocator, pk_hex);
     defer allocator.free(pk);
 
-    const hash = [_]u8{0xAB} ** 32;
+    const hash = @as([32]u8, @splat(0xAB));
 
     const sig = try sign(allocator, pk, &hash);
     defer allocator.free(sig);

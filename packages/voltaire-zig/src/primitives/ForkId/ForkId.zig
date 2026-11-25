@@ -124,7 +124,7 @@ pub const ForkId = struct {
         const next_slice = stripLeadingZeros(&next_bytes);
 
         // Build list: [hash, next]
-        var list = std.ArrayList([]const u8){};
+        var list = std.ArrayList([]const u8).empty;
         defer list.deinit(allocator);
 
         try list.append(allocator, &self.hash);

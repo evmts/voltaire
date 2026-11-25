@@ -47,9 +47,9 @@ pub fn wnaf(comptime w: comptime_int, comptime T: type, k: T) [@bitSizeOf(T) + 1
 
     const nbits = @bitSizeOf(T);
     // Wide type to allow +/- digit adjustments safely
-    const Wide = std.meta.Int(.unsigned, nbits + w + 1);
+    const Wide = @Int(.unsigned, nbits + w + 1);
 
-    var out: [nbits + 1]i8 = [_]i8{0} ** (nbits + 1);
+    var out: [nbits + 1]i8 = @as([nbits + 1]i8, @splat(0));
 
     const base: Wide = @as(Wide, 1) << w; // 2^w
     const mask: Wide = base - 1; // (1<<w) - 1
@@ -126,7 +126,7 @@ test "wnaf decomposition" {
     };
 
     // Big enough to hold reconstruction from i16 digits over 129 bits.
-    const Signed = std.meta.Int(.signed, 256);
+    const Signed = @Int(.signed, 256);
 
     inline for (widths) |w| {
         // Allowed absolute digit bound for wNAF(w): 2^{w-1} - 1

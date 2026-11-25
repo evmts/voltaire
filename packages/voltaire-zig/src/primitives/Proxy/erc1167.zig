@@ -172,7 +172,7 @@ pub fn isErc1167(bytecode: []const u8) bool {
 // ============================================================================
 
 test "generateErc1167 - generates valid 55-byte creation code" {
-    const test_address = [_]u8{0x11} ** 20;
+    const test_address = @as([20]u8, @splat(0x11));
     const bytecode = generateErc1167(test_address);
 
     try std.testing.expectEqual(@as(usize, 55), bytecode.len);
@@ -192,7 +192,7 @@ test "generateErc1167 - embeds implementation address at correct offset" {
 }
 
 test "generateErc1167 - has correct creation code prefix" {
-    const test_address = [_]u8{0x11} ** 20;
+    const test_address = @as([20]u8, @splat(0x11));
     const bytecode = generateErc1167(test_address);
 
     // 3d602d80600a3d3981f3
@@ -229,21 +229,21 @@ test "parseErc1167 - extracts implementation address from runtime code" {
 }
 
 test "parseErc1167 - returns null for invalid bytecode length" {
-    const invalid_bytecode = [_]u8{0xff} ** 30;
+    const invalid_bytecode = @as([30]u8, @splat(0xff));
     const extracted = parseErc1167(&invalid_bytecode);
 
     try std.testing.expect(extracted == null);
 }
 
 test "isErc1167 - validates creation code" {
-    const test_address = [_]u8{0x11} ** 20;
+    const test_address = @as([20]u8, @splat(0x11));
     const bytecode = generateErc1167(test_address);
 
     try std.testing.expect(isErc1167(&bytecode));
 }
 
 test "isErc1167 - validates runtime code" {
-    const test_address = [_]u8{0x11} ** 20;
+    const test_address = @as([20]u8, @splat(0x11));
     const bytecode = generateErc1167(test_address);
     const runtime_code = bytecode[10..];
 
@@ -251,13 +251,13 @@ test "isErc1167 - validates runtime code" {
 }
 
 test "isErc1167 - rejects invalid length" {
-    const invalid_bytecode = [_]u8{0xff} ** 30;
+    const invalid_bytecode = @as([30]u8, @splat(0xff));
 
     try std.testing.expect(!isErc1167(&invalid_bytecode));
 }
 
 test "isErc1167 - rejects corrupted creation code" {
-    const test_address = [_]u8{0x11} ** 20;
+    const test_address = @as([20]u8, @splat(0x11));
     var bytecode = generateErc1167(test_address);
     bytecode[0] = 0xff; // Corrupt first byte
 

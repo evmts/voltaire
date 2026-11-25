@@ -364,7 +364,7 @@ fn is_digits(s: []const u8) bool {
 
 // Encode individual value
 fn encode_value(allocator: Allocator, type_name: []const u8, value: MessageValue, types: *const TypeDefinitions) Eip712Error![]u8 {
-    var result: [32]u8 = [_]u8{0} ** 32;
+    var result: [32]u8 = @as([32]u8, @splat(0));
 
     // Arrays: keccak256 of the concatenated encodings of each element.
     if (type_name.len > 0 and type_name[type_name.len - 1] == ']') {
@@ -618,7 +618,7 @@ test "EIP-712 domain hashing" {
     const hash = try hash_domain(allocator, &domain);
 
     // Verify hash is not all zeros
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -666,7 +666,7 @@ test "EIP-712 signature roundtrip" {
     try typed_data.message.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 42 });
 
     // Generate key pair
-    const private_key = try Crypto.unaudited_randomPrivateKey();
+    const private_key = try Crypto.unaudited_randomPrivateKey(testing.io);
     const public_key = try Crypto.unaudited_getPublicKey(private_key);
     const expected_address = public_key.toAddress();
 
@@ -724,7 +724,7 @@ test "EIP-712 basic functionality" {
     // We expect this to potentially fail but not crash
     if (hash_result) |hash| {
         // If successful, verify hash is not all zeros
-        const zero_hash = [_]u8{0} ** 32;
+        const zero_hash = @as([32]u8, @splat(0));
         try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
     } else |_| {
         // If it fails, that's expected for incomplete type definitions
@@ -734,12 +734,12 @@ test "EIP-712 basic functionality" {
 
 test "EIP-712 crypto integration" {
     // Test that the crypto functions are available
-    const private_key = try Crypto.unaudited_randomPrivateKey();
+    const private_key = try Crypto.unaudited_randomPrivateKey(testing.io);
     const public_key = try Crypto.unaudited_getPublicKey(private_key);
     const address = public_key.toAddress();
 
     // Basic test that addresses work
-    const zero_address = [_]u8{0} ** 20;
+    const zero_address = @as([20]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &address.bytes, &zero_address));
 }
 
@@ -853,7 +853,7 @@ test "hash_struct - simple struct" {
     const hash = try hash_struct(allocator, "Message", &data, &types);
 
     // Verify hash is not all zeros
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -909,8 +909,8 @@ test "encode_data - multiple fields" {
         data.deinit();
     }
 
-    const addr1 = Address{ .bytes = [_]u8{1} ** 20 };
-    const addr2 = Address{ .bytes = [_]u8{2} ** 20 };
+    const addr1 = Address{ .bytes = @as([20]u8, @splat(1)) };
+    const addr2 = Address{ .bytes = @as([20]u8, @splat(2)) };
 
     try data.put(try allocator.dupe(u8, "from"), MessageValue{ .address = addr1 });
     try data.put(try allocator.dupe(u8, "to"), MessageValue{ .address = addr2 });
@@ -936,7 +936,7 @@ test "encode_value - uint256" {
     try testing.expectEqual(@as(usize, 32), encoded.len);
 
     // Verify big-endian encoding
-    var expected = [_]u8{0} ** 32;
+    var expected = @as([32]u8, @splat(0));
     expected[31] = 42;
     try testing.expectEqualSlices(u8, &expected, encoded);
 }
@@ -947,7 +947,7 @@ test "encode_value - address" {
     var types = TypeDefinitions.init(allocator);
     defer types.deinit(allocator);
 
-    const addr = Address{ .bytes = [_]u8{0xAB} ** 20 };
+    const addr = Address{ .bytes = @as([20]u8, @splat(0xAB)) };
     const value = MessageValue{ .address = addr };
     const encoded = try encode_value(allocator, "address", value, &types);
     defer allocator.free(encoded);
@@ -1032,7 +1032,7 @@ test "encode_value - fixed bytes" {
     var types = TypeDefinitions.init(allocator);
     defer types.deinit(allocator);
 
-    const bytes = try allocator.dupe(u8, &[_]u8{0xAB} ** 4);
+    const bytes = try allocator.dupe(u8, &@as([4]u8, @splat(0xAB)));
     defer allocator.free(bytes);
 
     const value = MessageValue{ .bytes = bytes };
@@ -1042,8 +1042,8 @@ test "encode_value - fixed bytes" {
     try testing.expectEqual(@as(usize, 32), encoded.len);
 
     // First 4 bytes should be the data, rest zeros
-    try testing.expectEqualSlices(u8, &[_]u8{0xAB} ** 4, encoded[0..4]);
-    try testing.expectEqualSlices(u8, &[_]u8{0} ** 28, encoded[4..32]);
+    try testing.expectEqualSlices(u8, &@as([4]u8, @splat(0xAB)), encoded[0..4]);
+    try testing.expectEqualSlices(u8, &@as([28]u8, @splat(0)), encoded[4..32]);
 }
 
 test "encode_value - custom type" {
@@ -1076,7 +1076,7 @@ test "encode_value - custom type" {
     try testing.expectEqual(@as(usize, 32), encoded.len);
 
     // Should be hash of the struct
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &zero_hash, encoded));
 }
 
@@ -1106,8 +1106,8 @@ test "encode_value - invalid type name" {
 test "hash_domain - all fields" {
     const allocator = testing.allocator;
 
-    const addr = Address{ .bytes = [_]u8{0xFF} ** 20 };
-    const salt_bytes = [_]u8{0xAB} ** 32;
+    const addr = Address{ .bytes = @as([20]u8, @splat(0xFF)) };
+    const salt_bytes = @as([32]u8, @splat(0xAB));
 
     const domain = Eip712Domain{
         .name = try allocator.dupe(u8, "TestDomain"),
@@ -1123,7 +1123,7 @@ test "hash_domain - all fields" {
 
     const hash = try hash_domain(allocator, &domain);
 
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -1144,7 +1144,7 @@ test "hash_domain - minimal fields" {
 
     const hash = try hash_domain(allocator, &domain);
 
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -1251,7 +1251,7 @@ test "deeply nested structures" {
 
     const hash = try hash_struct(allocator, "Level1", &level1_data, &types);
 
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -1345,7 +1345,7 @@ test "maximum field counts" {
 
     const hash = try hash_struct(allocator, "LargeType", &data, &types);
 
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -1424,7 +1424,7 @@ test "encode_value - fixed bytes wrong size" {
     defer types.deinit(allocator);
 
     // Provide wrong sized bytes for bytes4
-    const bytes = try allocator.dupe(u8, &[_]u8{0xAB} ** 8);
+    const bytes = try allocator.dupe(u8, &@as([8]u8, @splat(0xAB)));
     defer allocator.free(bytes);
 
     const value = MessageValue{ .bytes = bytes };
@@ -1480,12 +1480,12 @@ test "full typed data with nested types" {
     // Create from person
     var from_person = std.StringHashMap(MessageValue).init(allocator);
     try from_person.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Alice") });
-    try from_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = Address{ .bytes = [_]u8{0xAA} ** 20 } });
+    try from_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = Address{ .bytes = @as([20]u8, @splat(0xAA)) } });
 
     // Create to person
     var to_person = std.StringHashMap(MessageValue).init(allocator);
     try to_person.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Bob") });
-    try to_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = Address{ .bytes = [_]u8{0xBB} ** 20 } });
+    try to_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = Address{ .bytes = @as([20]u8, @splat(0xBB)) } });
 
     // Create mail message
     try typed_data.message.put(try allocator.dupe(u8, "from"), MessageValue{ .object = from_person });
@@ -1494,7 +1494,7 @@ test "full typed data with nested types" {
 
     const hash = try unaudited_hashTypedData(allocator, &typed_data);
 
-    const zero_hash = [_]u8{0} ** 32;
+    const zero_hash = @as([32]u8, @splat(0));
     try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
 }
 
@@ -1781,7 +1781,7 @@ test "encode_value - int widths use two's complement range" {
 
     const a = try encode_value(allocator, "int8", .{ .number = neg_one }, &types);
     defer allocator.free(a);
-    try testing.expectEqualSlices(u8, &([_]u8{0xFF} ** 32), a);
+    try testing.expectEqualSlices(u8, &(@as([32]u8, @splat(0xFF))), a);
     const b = try encode_value(allocator, "int8", .{ .number = neg_128 }, &types);
     allocator.free(b);
     const c = try encode_value(allocator, "int8", .{ .number = 127 }, &types);
@@ -1797,7 +1797,7 @@ test "encode_value - bytesN size bounds" {
     var types = TypeDefinitions.init(allocator);
     defer types.deinit(allocator);
 
-    const b = [_]u8{0} ** 33;
+    const b = @as([33]u8, @splat(0));
     try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "bytes33", .{ .bytes = &b }, &types));
     try testing.expectError(Eip712Error.InvalidTypes, encode_value(allocator, "bytes0", .{ .bytes = b[0..0] }, &types));
 }

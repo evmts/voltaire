@@ -124,7 +124,7 @@ pub const TraceConfig = struct {
 
     /// Encode to JSON
     pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.append(allocator, '{');

@@ -67,11 +67,8 @@ fn benchEcdh(allocator: std.mem.Allocator) void {
     defer allocator.free(shared);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
 
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{
         .time_budget_ns = 10_000_000_000, // 10 seconds for crypto operations
@@ -87,7 +84,6 @@ pub fn main() !void {
     try bench.add("derivePublicKey", benchDerivePublicKey, .{});
     try bench.add("ecdh", benchEcdh, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

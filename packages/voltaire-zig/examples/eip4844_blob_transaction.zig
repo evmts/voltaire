@@ -25,23 +25,23 @@ const Crypto = crypto_pkg.Crypto;
 const hash_mod = crypto_pkg.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    std.debug.print("\n" ++ "=" ** 80 ++ "\n", .{});
+    std.debug.print("\n" ++ &@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  EIP-4844 Blob Transaction Example\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     // Example 1: Understanding Blob Versioned Hashes
     std.debug.print("1. Creating Blob Versioned Hashes\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // In a real scenario, these commitments would come from KZG commitment
     // computation on the actual blob data. Here we use example commitments.
-    const commitment1: BlobCommitment = [_]u8{0x01} ** 48;
-    const commitment2: BlobCommitment = [_]u8{0x02} ** 48;
-    const commitment3: BlobCommitment = [_]u8{0x03} ** 48;
+    const commitment1: BlobCommitment = @as([48]u8, @splat(0x01));
+    const commitment2: BlobCommitment = @as([48]u8, @splat(0x02));
+    const commitment3: BlobCommitment = @as([48]u8, @splat(0x03));
 
     // Convert commitments to versioned hashes
     // versioned_hash = 0x01 || sha256(commitment)[1:]
@@ -57,7 +57,7 @@ pub fn main() !void {
 
     // Example 2: Understanding Blob Gas Economics
     std.debug.print("2. Blob Gas Economics and Pricing\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Calculate blob gas pricing based on network congestion
     const excess_blob_gas: u64 = 2 * Blob.BLOB_GAS_PER_BLOB; // 2 blobs worth of excess
@@ -80,7 +80,7 @@ pub fn main() !void {
 
     // Example 3: Creating an EIP-4844 Blob Transaction
     std.debug.print("3. Creating an EIP-4844 Blob Transaction\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
 
@@ -105,8 +105,8 @@ pub fn main() !void {
         .max_fee_per_blob_gas = max_fee_per_blob_gas,
         .blob_versioned_hashes = &blob_versioned_hashes,
         .v = 0, // Unsigned (will be set during signing)
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Transaction Fields:\n", .{});
@@ -122,7 +122,7 @@ pub fn main() !void {
 
     // Example 4: Calculate Blob Gas Costs
     std.debug.print("4. Calculating Blob Gas Costs\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const total_blob_gas = unsigned_blob_tx.blob_versioned_hashes.len * Blob.BLOB_GAS_PER_BLOB;
     const estimated_blob_cost = total_blob_gas * blob_base_fee;
@@ -139,7 +139,7 @@ pub fn main() !void {
 
     // Example 5: Encode Transaction for Signing
     std.debug.print("5. Encoding Transaction for Signing\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const encoded = try Transaction.encodeEip4844ForSigning(allocator, unsigned_blob_tx);
     defer allocator.free(encoded);
@@ -151,7 +151,7 @@ pub fn main() !void {
 
     // Example 6: Sign the Transaction
     std.debug.print("6. Signing the Blob Transaction\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Test private key (DO NOT use in production!)
     const private_key = Crypto.PrivateKey{
@@ -176,7 +176,7 @@ pub fn main() !void {
 
     // Example 7: Compute Transaction Hash
     std.debug.print("7. Computing Transaction Hash\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const tx_hash = try Transaction.computeEip4844TransactionHash(allocator, signed_blob_tx);
 
@@ -186,7 +186,7 @@ pub fn main() !void {
 
     // Example 8: Blob Transaction Validation
     std.debug.print("8. Validating Blob Transaction\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Create a BlobTransaction for validation
     const blob_tx_validator = Blob.BlobTransaction{
@@ -203,7 +203,7 @@ pub fn main() !void {
 
     // Example 9: Blob Gas Usage Statistics
     std.debug.print("9. Blob Gas Usage Statistics\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const blob_gas_used = blob_tx_validator.blobGasUsed();
     const blob_gas_cost = blob_tx_validator.blobGasCost(blob_base_fee);
@@ -215,7 +215,7 @@ pub fn main() !void {
 
     // Example 10: Understanding Excess Blob Gas
     std.debug.print("10. Understanding Excess Blob Gas Dynamics\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Simulating block progression:\n", .{});
     var current_excess: u64 = 0;
@@ -249,9 +249,9 @@ pub fn main() !void {
     std.debug.print("  Usage above target increases price, below target decreases price\n", .{});
     std.debug.print("\n", .{});
 
-    std.debug.print("=" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Example Complete!\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("Key Takeaways:\n", .{});
     std.debug.print("- EIP-4844 transactions use blob_versioned_hashes for KZG commitments\n", .{});

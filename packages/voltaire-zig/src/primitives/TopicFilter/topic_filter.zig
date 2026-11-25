@@ -46,7 +46,7 @@ pub const TopicEntry = struct {
     count: usize,
 
     pub const WILDCARD: TopicEntry = .{
-        .hashes = [_]Hash.Hash{Hash.ZERO} ** MAX_HASHES_PER_ENTRY,
+        .hashes = @as([MAX_HASHES_PER_ENTRY]Hash.Hash, @splat(Hash.ZERO)),
         .count = 0,
     };
 };
@@ -74,7 +74,7 @@ pub const TopicFilterError = error{
 /// Create a single-hash topic entry
 pub fn single(hash: Hash.Hash) TopicEntry {
     var entry = TopicEntry{
-        .hashes = [_]Hash.Hash{Hash.ZERO} ** MAX_HASHES_PER_ENTRY,
+        .hashes = @as([MAX_HASHES_PER_ENTRY]Hash.Hash, @splat(Hash.ZERO)),
         .count = 1,
     };
     entry.hashes[0] = hash;
@@ -82,7 +82,7 @@ pub fn single(hash: Hash.Hash) TopicEntry {
 }
 
 test "single - creates entry with one hash" {
-    const h = [_]u8{0xab} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0xab));
     const entry = single(h);
     try std.testing.expectEqual(@as(usize, 1), entry.count);
     try std.testing.expect(Hash.equals(&entry.hashes[0], &h));
@@ -98,7 +98,7 @@ pub fn multi(hashes: []const Hash.Hash) TopicFilterError!TopicEntry {
     }
 
     var entry = TopicEntry{
-        .hashes = [_]Hash.Hash{Hash.ZERO} ** MAX_HASHES_PER_ENTRY,
+        .hashes = @as([MAX_HASHES_PER_ENTRY]Hash.Hash, @splat(Hash.ZERO)),
         .count = hashes.len,
     };
     for (hashes, 0..) |h, i| {
@@ -108,8 +108,8 @@ pub fn multi(hashes: []const Hash.Hash) TopicFilterError!TopicEntry {
 }
 
 test "multi - creates entry with multiple hashes" {
-    const h1 = [_]u8{0xaa} ** Hash.SIZE;
-    const h2 = [_]u8{0xbb} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0xaa));
+    const h2 = @as([Hash.SIZE]u8, @splat(0xbb));
     const entry = try multi(&[_]Hash.Hash{ h1, h2 });
     try std.testing.expectEqual(@as(usize, 2), entry.count);
     try std.testing.expect(Hash.equals(&entry.hashes[0], &h1));
@@ -121,7 +121,7 @@ test "multi - empty returns error" {
 }
 
 test "multi - too many hashes returns error" {
-    const hashes = [_]Hash.Hash{Hash.ZERO} ** (MAX_HASHES_PER_ENTRY + 1);
+    const hashes = @as([MAX_HASHES_PER_ENTRY + 1]Hash.Hash, @splat(Hash.ZERO));
     try std.testing.expectError(TopicFilterError.TooManyHashes, multi(&hashes));
 }
 
@@ -147,7 +147,7 @@ pub fn from(entries: []const ?TopicEntry) TopicFilterError!TopicFilter {
     }
 
     var filter = TopicFilter{
-        .entries = [_]TopicEntry{TopicEntry.WILDCARD} ** MAX_TOPICS,
+        .entries = @as([MAX_TOPICS]TopicEntry, @splat(TopicEntry.WILDCARD)),
         .len = entries.len,
     };
 
@@ -168,15 +168,15 @@ test "from - empty filter" {
 }
 
 test "from - single topic" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter = try from(&[_]?TopicEntry{single(h)});
     try std.testing.expectEqual(@as(usize, 1), filter.len);
     try std.testing.expectEqual(@as(usize, 1), filter.entries[0].count);
 }
 
 test "from - with wildcards" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
     const filter = try from(&[_]?TopicEntry{ single(h1), null, single(h2) });
     try std.testing.expectEqual(@as(usize, 3), filter.len);
     try std.testing.expectEqual(@as(usize, 1), filter.entries[0].count);
@@ -185,8 +185,8 @@ test "from - with wildcards" {
 }
 
 test "from - with OR entry" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
     const entry = try multi(&[_]Hash.Hash{ h1, h2 });
     const filter = try from(&[_]?TopicEntry{entry});
     try std.testing.expectEqual(@as(usize, 1), filter.len);
@@ -194,13 +194,13 @@ test "from - with OR entry" {
 }
 
 test "from - all 4 positions" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter = try from(&[_]?TopicEntry{ single(h), single(h), single(h), null });
     try std.testing.expectEqual(@as(usize, 4), filter.len);
 }
 
 test "from - too many topics returns error" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const entries = [_]?TopicEntry{ single(h), single(h), single(h), single(h), single(h) };
     try std.testing.expectError(TopicFilterError.TooManyTopics, from(&entries));
 }
@@ -208,7 +208,7 @@ test "from - too many topics returns error" {
 /// Create empty filter (matches all logs)
 pub fn empty() TopicFilter {
     return TopicFilter{
-        .entries = [_]TopicEntry{TopicEntry.WILDCARD} ** MAX_TOPICS,
+        .entries = @as([MAX_TOPICS]TopicEntry, @splat(TopicEntry.WILDCARD)),
         .len = 0,
     };
 }
@@ -259,31 +259,31 @@ pub fn matches(filter: *const TopicFilter, log_topics: []const Hash.Hash) bool {
 
 test "matches - empty filter matches anything" {
     const filter = empty();
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{ h1, h2 }));
 }
 
 test "matches - all wildcards match anything" {
     const filter = try from(&[_]?TopicEntry{ null, null, null });
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
-    const h3 = [_]u8{0x33} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
+    const h3 = @as([Hash.SIZE]u8, @splat(0x33));
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{ h1, h2, h3 }));
 }
 
 test "matches - specific topic at position 0" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
     const filter = try from(&[_]?TopicEntry{single(h1)});
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{ h1, h2 }));
     try std.testing.expect(!matches(&filter, &[_]Hash.Hash{ h2, h1 }));
 }
 
 test "matches - with wildcard in middle" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
-    const h3 = [_]u8{0x33} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
+    const h3 = @as([Hash.SIZE]u8, @splat(0x33));
     const filter = try from(&[_]?TopicEntry{ single(h1), null, single(h3) });
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{ h1, h2, h3 }));
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{ h1, h1, h3 }));
@@ -292,9 +292,9 @@ test "matches - with wildcard in middle" {
 }
 
 test "matches - array entry (OR logic)" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
-    const h3 = [_]u8{0x33} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
+    const h3 = @as([Hash.SIZE]u8, @splat(0x33));
     const entry = try multi(&[_]Hash.Hash{ h1, h2 });
     const filter = try from(&[_]?TopicEntry{entry});
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{h1}));
@@ -303,16 +303,16 @@ test "matches - array entry (OR logic)" {
 }
 
 test "matches - log has fewer topics" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
     const filter = try from(&[_]?TopicEntry{ single(h1), single(h2) });
     try std.testing.expect(!matches(&filter, &[_]Hash.Hash{h1}));
 }
 
 test "matches - complex filter" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
-    const h3 = [_]u8{0x33} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
+    const h3 = @as([Hash.SIZE]u8, @splat(0x33));
     const entry = try multi(&[_]Hash.Hash{ h2, h3 });
     const filter = try from(&[_]?TopicEntry{ single(h1), entry, null });
     try std.testing.expect(matches(&filter, &[_]Hash.Hash{ h1, h2, h1 }));
@@ -347,13 +347,13 @@ test "isEmpty - all nulls" {
 }
 
 test "isEmpty - has topic" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter = try from(&[_]?TopicEntry{single(h)});
     try std.testing.expect(!isEmpty(&filter));
 }
 
 test "isEmpty - topic at any position" {
-    const h = [_]u8{0x22} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x22));
     const filter = try from(&[_]?TopicEntry{ null, single(h), null });
     try std.testing.expect(!isEmpty(&filter));
 }
@@ -364,7 +364,7 @@ test "isEmpty - topic at any position" {
 
 /// Serialize to JSON array
 pub fn toJson(filter: *const TopicFilter, allocator: std.mem.Allocator) ![]const u8 {
-    var list = std.ArrayList(u8){};
+    var list = std.ArrayList(u8).empty;
     errdefer list.deinit(allocator);
 
     try list.append(allocator, '[');
@@ -407,7 +407,7 @@ test "toJson - empty filter" {
 }
 
 test "toJson - single topic" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter = try from(&[_]?TopicEntry{single(h)});
     const json = try toJson(&filter, std.testing.allocator);
     defer std.testing.allocator.free(json);
@@ -416,7 +416,7 @@ test "toJson - single topic" {
 }
 
 test "toJson - with null" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter = try from(&[_]?TopicEntry{ single(h), null });
     const json = try toJson(&filter, std.testing.allocator);
     defer std.testing.allocator.free(json);
@@ -424,8 +424,8 @@ test "toJson - with null" {
 }
 
 test "toJson - with OR entry" {
-    const h1 = [_]u8{0x11} ** Hash.SIZE;
-    const h2 = [_]u8{0x22} ** Hash.SIZE;
+    const h1 = @as([Hash.SIZE]u8, @splat(0x11));
+    const h2 = @as([Hash.SIZE]u8, @splat(0x22));
     const entry = try multi(&[_]Hash.Hash{ h1, h2 });
     const filter = try from(&[_]?TopicEntry{entry});
     const json = try toJson(&filter, std.testing.allocator);
@@ -444,7 +444,7 @@ pub fn clone(filter: *const TopicFilter) TopicFilter {
 }
 
 test "clone - creates copy" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter1 = try from(&[_]?TopicEntry{single(h)});
     const filter2 = clone(&filter1);
     try std.testing.expectEqual(filter1.len, filter2.len);
@@ -457,7 +457,7 @@ pub fn length(filter: *const TopicFilter) usize {
 }
 
 test "length - returns filter length" {
-    const h = [_]u8{0x11} ** Hash.SIZE;
+    const h = @as([Hash.SIZE]u8, @splat(0x11));
     const filter = try from(&[_]?TopicEntry{ single(h), null, single(h) });
     try std.testing.expectEqual(@as(usize, 3), length(&filter));
 }

@@ -13,8 +13,8 @@ pub fn isFixedSize(comptime T: type) bool {
         .int, .bool => true,
         .array => |arr| isFixedSize(arr.child),
         .@"struct" => |s| {
-            inline for (s.fields) |field| {
-                if (!isFixedSize(field.type)) return false;
+            inline for (s.field_types) |FieldType| {
+                if (!isFixedSize(FieldType)) return false;
             }
             return true;
         },
@@ -35,7 +35,7 @@ pub fn fixedSize(comptime T: type) !usize {
         },
         .@"struct" => |s| {
             var total: usize = 0;
-            inline for (s.fields) |field| total += try fixedSize(field.type);
+            inline for (s.field_types) |FieldType| total += try fixedSize(FieldType);
             return total;
         },
         else => error.UnsupportedType,
@@ -52,9 +52,10 @@ pub fn encodeContainer(allocator: std.mem.Allocator, comptime T: type, value: T)
     var fixed_part_size: usize = 0;
     var variable_fields_count: usize = 0;
 
-    inline for (type_info.@"struct".fields) |field| {
-        if (isFixedSize(field.type)) {
-            fixed_part_size += try fixedSize(field.type);
+    const struct_info = type_info.@"struct";
+    inline for (struct_info.field_types) |FieldType| {
+        if (isFixedSize(FieldType)) {
+            fixed_part_size += try fixedSize(FieldType);
         } else {
             fixed_part_size += 4; // offset
             variable_fields_count += 1;
@@ -73,11 +74,11 @@ pub fn encodeContainer(allocator: std.mem.Allocator, comptime T: type, value: T)
 
     // Serialize fixed fields
     var offset: usize = 0;
-    inline for (type_info.@"struct".fields) |field| {
-        const field_value = @field(value, field.name);
-        const field_size = try fixedSize(field.type);
+    inline for (struct_info.field_names, struct_info.field_types) |field_name, FieldType| {
+        const field_value = @field(value, field_name);
+        const field_size = try fixedSize(FieldType);
 
-        switch (@typeInfo(field.type)) {
+        switch (@typeInfo(FieldType)) {
             .int => |int| {
                 if (int.bits == 8) {
                     result[offset] = field_value;

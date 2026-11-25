@@ -23,7 +23,7 @@ const Hash = hash_mod.Hash;
 const Crypto = crypto_pkg.Crypto;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -31,7 +31,7 @@ pub fn main() !void {
 
     // Example 1: Creating a legacy transaction
     std.debug.print("1. Creating a Legacy Transaction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Create a simple value transfer transaction
     const recipient = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
@@ -44,8 +44,8 @@ pub fn main() !void {
         .value = 1_000_000_000_000_000_000, // 1 ETH
         .data = &[_]u8{}, // No data for simple transfer
         .v = 0, // Unsigned (will be set during signing)
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Nonce: {}\n", .{unsigned_tx.nonce});
@@ -57,7 +57,7 @@ pub fn main() !void {
 
     // Example 2: Encoding transaction for signing (EIP-155)
     std.debug.print("2. Encoding Transaction for Signing (EIP-155)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const chain_id: u64 = 1; // Ethereum mainnet
     const encoded = try Transaction.encodeLegacyForSigning(allocator, unsigned_tx, chain_id);
@@ -70,7 +70,7 @@ pub fn main() !void {
 
     // Example 3: Signing a transaction
     std.debug.print("3. Signing a Transaction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Test private key (DO NOT use in production!)
     const private_key = Crypto.PrivateKey{
@@ -95,7 +95,7 @@ pub fn main() !void {
 
     // Example 4: Computing transaction hash
     std.debug.print("4. Computing Transaction Hash\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const tx_hash = try Transaction.computeLegacyTransactionHash(allocator, signed_tx);
 
@@ -105,27 +105,27 @@ pub fn main() !void {
 
     // Example 5: Detecting transaction type
     std.debug.print("5. Detecting Transaction Types\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Legacy transaction (no type prefix)
-    const legacy_data = [_]u8{0xf8} ++ [_]u8{0} ** 10;
+    const legacy_data = [_]u8{0xf8} ++ @as([10]u8, @splat(0));
     const legacy_type = Transaction.detectTransactionType(&legacy_data);
     std.debug.print("  Legacy transaction type: {s}\n", .{@tagName(legacy_type)});
 
     // EIP-1559 transaction (0x02 prefix)
-    const eip1559_data = [_]u8{0x02} ++ [_]u8{0} ** 10;
+    const eip1559_data = [_]u8{0x02} ++ @as([10]u8, @splat(0));
     const eip1559_type = Transaction.detectTransactionType(&eip1559_data);
     std.debug.print("  EIP-1559 transaction type: {s}\n", .{@tagName(eip1559_type)});
 
     // EIP-4844 blob transaction (0x03 prefix)
-    const eip4844_data = [_]u8{0x03} ++ [_]u8{0} ** 10;
+    const eip4844_data = [_]u8{0x03} ++ @as([10]u8, @splat(0));
     const eip4844_type = Transaction.detectTransactionType(&eip4844_data);
     std.debug.print("  EIP-4844 blob transaction type: {s}\n", .{@tagName(eip4844_type)});
     std.debug.print("\n", .{});
 
     // Example 6: Working with access lists
     std.debug.print("6. Working with Access Lists (EIP-2930 / EIP-1559)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Create storage keys
     const storage_key_1 = hash_mod.fromU256(0);
@@ -153,7 +153,7 @@ pub fn main() !void {
 
     // Example 7: Creating an EIP-1559 transaction
     std.debug.print("7. Creating an EIP-1559 Transaction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const eip1559_tx = Eip1559Transaction{
         .chain_id = 1,
@@ -166,8 +166,8 @@ pub fn main() !void {
         .data = &[_]u8{}, // No calldata
         .access_list = &access_list,
         .y_parity = 0, // Unsigned
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Chain ID: {}\n", .{eip1559_tx.chain_id});
@@ -188,7 +188,7 @@ pub fn main() !void {
 
     // Example 8: Contract creation transaction
     std.debug.print("8. Contract Creation Transaction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Simple contract creation bytecode (example)
     const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
@@ -201,8 +201,8 @@ pub fn main() !void {
         .value = 0, // No ETH sent
         .data = &init_code, // Contract bytecode
         .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  To: null (Contract Creation)\n", .{});

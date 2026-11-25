@@ -111,7 +111,7 @@ pub fn getAccount(diff: *StateDiff, address: Address.Address) ?*AccountDiff {
 
 /// Get all addresses with changes
 pub fn getAddresses(diff: *StateDiff, allocator: std.mem.Allocator) ![]Address.Address {
-    var addresses = std.ArrayList(Address.Address){};
+    var addresses = std.ArrayList(Address.Address).empty;
     errdefer addresses.deinit(allocator);
 
     var it = diff.accounts.keyIterator();
@@ -392,7 +392,7 @@ fn parseHexU256(hex: []const u8) !u256 {
 
 /// Encode StateDiff to prestateTracer diffMode JSON format
 pub fn toJson(diff: *StateDiff, allocator: std.mem.Allocator) ![]u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     defer buf.deinit(allocator);
 
     try buf.appendSlice(allocator, "{\"pre\":{");
@@ -681,7 +681,7 @@ test "StateDiff.setBalanceChange adds balance change" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     try setBalanceChange(&diff, address, 1000, 2000);
 
     try std.testing.expect(!isEmpty(&diff));
@@ -698,7 +698,7 @@ test "StateDiff.setNonceChange adds nonce change" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
     try setNonceChange(&diff, address, 0, 1);
 
     try std.testing.expect(hasNonceChange(&diff, address));
@@ -713,7 +713,7 @@ test "StateDiff.setCodeChange adds code change" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
     const new_code = [_]u8{ 0x60, 0x80, 0x60, 0x40 };
     try setCodeChange(&diff, address, null, &new_code);
 
@@ -729,9 +729,9 @@ test "StateDiff.setStorageChange adds storage change" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xdd} ** 20 };
-    const slot: [32]u8 = [_]u8{0x00} ** 32;
-    const value: [32]u8 = [_]u8{0xff} ** 32;
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xdd)) };
+    const slot: [32]u8 = @as([32]u8, @splat(0x00));
+    const value: [32]u8 = @as([32]u8, @splat(0xff));
     try setStorageChange(&diff, address, slot, null, value);
 
     try std.testing.expect(hasStorageChanges(&diff, address));
@@ -748,8 +748,8 @@ test "StateDiff.getAddresses returns all addresses" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address1 = Address.Address{ .bytes = [_]u8{0x11} ** 20 };
-    const address2 = Address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const address1 = Address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
+    const address2 = Address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
 
     try setBalanceChange(&diff, address1, 100, 200);
     try setNonceChange(&diff, address2, 0, 1);
@@ -764,7 +764,7 @@ test "StateDiff multiple changes for same account" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xee} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) };
 
     try setBalanceChange(&diff, address, 1000, 2000);
     try setNonceChange(&diff, address, 0, 1);
@@ -780,7 +780,7 @@ test "StateDiff.isEmpty" {
 
     try std.testing.expect(isEmpty(&diff));
 
-    const address = Address.Address{ .bytes = [_]u8{0xff} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xff)) };
     try setBalanceChange(&diff, address, 100, 200);
 
     try std.testing.expect(!isEmpty(&diff));
@@ -849,11 +849,11 @@ test "StateDiff.fromPrestateJson parses storage changes" {
     try std.testing.expect(change != null);
 
     // 0x64 = 100, 0xc8 = 200
-    var expected_from: [32]u8 = [_]u8{0} ** 32;
+    var expected_from: [32]u8 = @as([32]u8, @splat(0));
     expected_from[31] = 0x64;
     try std.testing.expectEqualSlices(u8, &expected_from, &change.?.from.?);
 
-    var expected_to: [32]u8 = [_]u8{0} ** 32;
+    var expected_to: [32]u8 = @as([32]u8, @splat(0));
     expected_to[31] = 0xc8;
     try std.testing.expectEqualSlices(u8, &expected_to, &change.?.to.?);
 }
@@ -887,7 +887,7 @@ test "StateDiff.toJson roundtrip" {
     var diff = init(std.testing.allocator);
     defer diff.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     try setBalanceChange(&diff, address, 1000, 2000);
     try setNonceChange(&diff, address, 5, 6);
 
@@ -906,7 +906,7 @@ test "StateDiff.equals compares diffs" {
     var diff2 = init(std.testing.allocator);
     defer diff2.deinit();
 
-    const address = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
 
     try setBalanceChange(&diff1, address, 100, 200);
     try setBalanceChange(&diff2, address, 100, 200);

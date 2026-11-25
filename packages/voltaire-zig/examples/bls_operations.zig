@@ -17,13 +17,13 @@ const bls12_381 = crypto_pkg.Crypto.bls12_381;
 const hash_mod = crypto_pkg.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    std.debug.print("\n" ++ "=" ** 80 ++ "\n", .{});
+    std.debug.print("\n" ++ &@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  BLS12-381 Elliptic Curve Operations\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("  BLS12-381 is a pairing-friendly elliptic curve used in:\n", .{});
     std.debug.print("  - Ethereum 2.0 (Beacon Chain) signatures\n", .{});
@@ -34,7 +34,7 @@ pub fn main() !void {
 
     // Example 1: Understanding G1 and G2 Groups
     std.debug.print("1. Understanding G1 and G2 Groups\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const g1_size = bls12_381.g1_output_size();
     const g2_size = bls12_381.g2_output_size();
@@ -60,7 +60,7 @@ pub fn main() !void {
 
     // Example 2: G1 Point Addition
     std.debug.print("2. G1 Point Addition\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Define two G1 points (in practice, these would be real curve points)
     // Point format: 128 bytes (64 bytes x-coordinate + 64 bytes y-coordinate)
@@ -92,7 +92,7 @@ pub fn main() !void {
 
     // Example 3: G1 Scalar Multiplication
     std.debug.print("3. G1 Scalar Multiplication\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Scalar multiplication: k * P = Q\n", .{});
     std.debug.print("  Where k is a scalar and P is a G1 point.\n", .{});
@@ -123,7 +123,7 @@ pub fn main() !void {
 
     // Example 4: G1 Multi-Scalar Multiplication
     std.debug.print("4. G1 Multi-Scalar Multiplication\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Multi-scalar multiplication (MSM):\n", .{});
     std.debug.print("    k1*P1 + k2*P2 + ... + kn*Pn\n", .{});
@@ -161,7 +161,7 @@ pub fn main() !void {
 
     // Example 5: G2 Operations
     std.debug.print("5. G2 Operations\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  G2 operations work similarly to G1, but on the twisted curve.\n", .{});
     std.debug.print("  G2 points are larger (256 bytes vs 128 bytes for G1).\n", .{});
@@ -189,7 +189,7 @@ pub fn main() !void {
 
     // Example 6: Pairing Check
     std.debug.print("6. Pairing Check for Signature Verification\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Pairing: e(P, Q) maps G1 x G2 -> GT\n", .{});
     std.debug.print("\n", .{});
@@ -225,7 +225,7 @@ pub fn main() !void {
 
     // Example 7: Hash-to-Curve (mapFpToG1)
     std.debug.print("7. Hash-to-Curve: mapFpToG1\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Hash-to-curve maps arbitrary messages to curve points.\n", .{});
     std.debug.print("  This is used in BLS signatures to hash messages onto G1.\n", .{});
@@ -264,7 +264,7 @@ pub fn main() !void {
 
     // Example 8: Hash-to-Curve (mapFp2ToG2)
     std.debug.print("8. Hash-to-Curve: mapFp2ToG2\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Similar to mapFpToG1, but maps to G2 curve.\n", .{});
     std.debug.print("  Used when signatures are on G2 instead of G1.\n", .{});
@@ -290,7 +290,7 @@ pub fn main() !void {
 
     // Example 9: Signature Aggregation Workflow
     std.debug.print("9. BLS Signature Aggregation Workflow\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Complete workflow for BLS signature aggregation:\n", .{});
     std.debug.print("\n", .{});
@@ -323,7 +323,7 @@ pub fn main() !void {
 
     // Example 10: Security Considerations
     std.debug.print("10. Security Considerations\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Point Validation:\n", .{});
     std.debug.print("  - Always validate points are on the curve\n", .{});
@@ -346,9 +346,9 @@ pub fn main() !void {
     std.debug.print("  - Validate deserialized points before use\n", .{});
     std.debug.print("\n", .{});
 
-    std.debug.print("=" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Example Complete!\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("Key Takeaways:\n", .{});
     std.debug.print("- BLS12-381 supports pairing-based cryptography\n", .{});

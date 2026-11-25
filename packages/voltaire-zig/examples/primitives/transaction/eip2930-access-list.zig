@@ -16,7 +16,7 @@ const AccessList = Transaction.AccessList;
 const AccessListItem = Transaction.AccessListItem;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -24,7 +24,7 @@ pub fn main() !void {
 
     // Example 1: Basic EIP-2930 transaction without access list
     std.debug.print("1. Basic EIP-2930 Transaction (no access list)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -38,8 +38,8 @@ pub fn main() !void {
         .data = &[_]u8{}, // Empty data
         .access_list = &[_]AccessListItem{}, // Empty access list
         .y_parity = 0, // Note: y_parity instead of v
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Type: EIP-2930 (0x01)\n", .{});
@@ -51,14 +51,14 @@ pub fn main() !void {
 
     // Example 2: EIP-2930 with access list for contract interaction
     std.debug.print("2. EIP-2930 with Access List (ERC20 transfer)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const token_contract = try Address.fromHex("0x6B175474E89094C44Da98b954EedeAC495271d0F"); // DAI
     const sender_addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
     // Storage slots for ERC20 balances
-    const sender_balance_slot = [_]u8{0} ** 31 ++ [_]u8{1};
-    const recipient_balance_slot = [_]u8{0} ** 31 ++ [_]u8{2};
+    const sender_balance_slot = @as([31]u8, @splat(0)) ++ [_]u8{1};
+    const recipient_balance_slot = @as([31]u8, @splat(0)) ++ [_]u8{2};
 
     // Build access list
     var storage_keys = try allocator.alloc([32]u8, 2);
@@ -103,8 +103,8 @@ pub fn main() !void {
         .data = &call_data,
         .access_list = access_list_items,
         .y_parity = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Contract: 0x{X}\n", .{token_contract.bytes});
@@ -119,7 +119,7 @@ pub fn main() !void {
 
     // Example 3: Gas savings calculation
     std.debug.print("3. Access List Gas Cost Analysis\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Gas costs (Berlin hard fork)
     const COLD_ACCOUNT_ACCESS: u64 = 2600;
@@ -168,7 +168,7 @@ pub fn main() !void {
 
     // Example 4: Complex access list with multiple contracts
     std.debug.print("4. Complex Multi-Contract Access List\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const uniswap_router = try Address.fromHex("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D");
     const weth_contract = try Address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
@@ -199,7 +199,7 @@ pub fn main() !void {
 
     // Example 5: When to use access lists
     std.debug.print("5. Access List Best Practices\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("✓ Use access lists when:\n", .{});
     std.debug.print("  • Accessing same storage multiple times\n", .{});
     std.debug.print("  • Complex contract interactions\n", .{});
@@ -213,7 +213,7 @@ pub fn main() !void {
 
     // Example 6: EIP-2930 vs Legacy comparison
     std.debug.print("6. EIP-2930 vs Legacy Comparison\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("Feature                  Legacy    EIP-2930\n", .{});
     std.debug.print("Type byte                None      0x01\n", .{});
     std.debug.print("Chain ID                 In v      Explicit\n", .{});
@@ -225,7 +225,7 @@ pub fn main() !void {
 
     // Example 7: Converting y_parity to v (and vice versa)
     std.debug.print("7. yParity vs v Conversion\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const chain_id: u64 = 1;
     const y_parity: u8 = 0;

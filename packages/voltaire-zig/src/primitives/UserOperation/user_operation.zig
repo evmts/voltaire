@@ -570,7 +570,7 @@ test "UserOperation.pack - includes sender correctly" {
     defer allocator.free(pack_data);
 
     // First 32 bytes should contain sender (left-padded)
-    try std.testing.expectEqualSlices(u8, &[_]u8{0} ** 12, pack_data[0..12]);
+    try std.testing.expectEqualSlices(u8, &@as([12]u8, @splat(0)), pack_data[0..12]);
     try std.testing.expectEqualSlices(u8, &sender.bytes, pack_data[12..32]);
 }
 

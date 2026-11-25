@@ -9,7 +9,7 @@ const crypto = @import("crypto");
 /// - Hash chains
 /// - Merkle proofs
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -19,7 +19,7 @@ pub fn main() !void {
 
     // 1. Basic Commit-Reveal
     try stdout.print("1. Basic Commit-Reveal Scheme\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Commit to a value without revealing it\n\n", .{});
 
     const alice_choice = "rock";
@@ -61,7 +61,7 @@ pub fn main() !void {
 
     // 2. Timestamped Document Commitment
     try stdout.print("2. Timestamped Document Commitment\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Prove document existed at specific time\n\n", .{});
 
     const document = "Important legal document content";
@@ -92,7 +92,7 @@ pub fn main() !void {
 
     // 3. Merkle Proof
     try stdout.print("3. Merkle Proof\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Prove inclusion in a set without revealing all items\n\n", .{});
 
     // Build Merkle tree
@@ -160,7 +160,7 @@ pub fn main() !void {
 
     // 4. Hash Chain for One-Time Passwords
     try stdout.print("4. Hash Chain for One-Time Passwords\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const chain_length = 5;
     var chain = try allocator.alloc([32]u8, chain_length);
@@ -207,7 +207,7 @@ pub fn main() !void {
 
     // 5. Blind Commitment
     try stdout.print("5. Blind Commitment (Sealed Bid)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const Bid = struct {
         bidder: []const u8,

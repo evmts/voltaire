@@ -570,7 +570,7 @@ pub fn matchesFilter(log: EventLog, filter: LogFilter) bool {
 
 // Filter logs by filter criteria
 pub fn filterLogs(allocator: Allocator, logs: []const EventLog, filter: LogFilter) ![]EventLog {
-    var result = std.ArrayList(EventLog){};
+    var result = std.ArrayList(EventLog).empty;
     errdefer result.deinit(allocator);
 
     for (logs) |log| {

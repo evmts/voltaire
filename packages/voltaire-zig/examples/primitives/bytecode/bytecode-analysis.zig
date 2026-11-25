@@ -14,7 +14,7 @@ const Opcode = primitives.opcode.Opcode;
 
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -61,7 +61,7 @@ pub fn main() !void {
         if (bytecode.getOpcodeEnum(pc)) |opcode| {
             try stdout.print("  [{:>2}] ", .{pc});
 
-            const opcode_byte = @intFromEnum(opcode);
+            const opcode_byte = @backingInt(opcode);
 
             // Check if PUSH instruction
             if (opcode_byte >= 0x60 and opcode_byte <= 0x7f) {
@@ -103,7 +103,7 @@ pub fn main() !void {
     pc = 0;
     while (pc < bytecode.len()) {
         if (bytecode.getOpcode(pc)) |opcode_byte| {
-            const opcode: Opcode = @enumFromInt(opcode_byte);
+            const opcode: Opcode = @fromBackingInt(@intCast(opcode_byte));
 
             if (opcode_byte >= 0x60 and opcode_byte <= 0x7f) {
                 // PUSH instruction
@@ -246,7 +246,7 @@ pub fn main() !void {
     pc = 0;
     while (pc < term_bytecode.len()) {
         if (term_bytecode.getOpcodeEnum(pc)) |opcode| {
-            const opcode_byte = @intFromEnum(opcode);
+            const opcode_byte = @backingInt(opcode);
 
             if (opcode == .STOP or opcode == .RETURN or opcode == .REVERT or opcode == .INVALID) {
                 try stdout.print("  Position {}: {}\n", .{ pc, opcode });
@@ -293,7 +293,7 @@ pub fn main() !void {
     pc = 0;
     while (pc < stats_bytecode.len()) {
         if (stats_bytecode.getOpcode(pc)) |opcode_byte| {
-            const opcode: Opcode = @enumFromInt(opcode_byte);
+            const opcode: Opcode = @fromBackingInt(@intCast(opcode_byte));
             stats_total += 1;
 
             if (opcode_byte >= 0x60 and opcode_byte <= 0x7f) {

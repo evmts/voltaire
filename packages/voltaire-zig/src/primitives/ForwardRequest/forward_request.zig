@@ -200,8 +200,8 @@ pub fn fromFields(
 // ============================================================================
 
 test "ForwardRequest: from creates request" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
     const data = "test data";
 
     const req = from(.{
@@ -224,8 +224,8 @@ test "ForwardRequest: from creates request" {
 }
 
 test "ForwardRequest: fromFields creates request" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0x11} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
 
     const req = fromFields(
         from_addr,
@@ -243,8 +243,8 @@ test "ForwardRequest: fromFields creates request" {
 }
 
 test "ForwardRequest: structHash produces consistent result" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -263,8 +263,8 @@ test "ForwardRequest: structHash produces consistent result" {
 }
 
 test "ForwardRequest: different requests produce different hashes" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req1 = from(.{
         .from = from_addr,
@@ -295,8 +295,8 @@ test "ForwardRequest: different requests produce different hashes" {
 test "ForwardRequest: hash with domain produces EIP-712 hash" {
     const allocator = std.testing.allocator;
 
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -325,8 +325,8 @@ test "ForwardRequest: hash with domain produces EIP-712 hash" {
 test "ForwardRequest: different domains produce different hashes" {
     const allocator = std.testing.allocator;
 
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -357,8 +357,8 @@ test "ForwardRequest: different domains produce different hashes" {
 }
 
 test "ForwardRequest: equals identical requests" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
     const data = "same data";
 
     const req1 = from(.{
@@ -385,9 +385,9 @@ test "ForwardRequest: equals identical requests" {
 }
 
 test "ForwardRequest: equals different from addresses" {
-    const from1 = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const from2 = Address.Address{ .bytes = [_]u8{0xcc} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from1 = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const from2 = Address.Address{ .bytes = @as([20]u8, @splat(0xcc)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req1 = from(.{
         .from = from1,
@@ -413,8 +413,8 @@ test "ForwardRequest: equals different from addresses" {
 }
 
 test "ForwardRequest: equals different values" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req1 = from(.{
         .from = from_addr,
@@ -440,8 +440,8 @@ test "ForwardRequest: equals different values" {
 }
 
 test "ForwardRequest: equals different data" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req1 = from(.{
         .from = from_addr,
@@ -467,8 +467,8 @@ test "ForwardRequest: equals different data" {
 }
 
 test "ForwardRequest: isExpired returns true when expired" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -486,8 +486,8 @@ test "ForwardRequest: isExpired returns true when expired" {
 }
 
 test "ForwardRequest: isExpired returns false when not expired" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -505,8 +505,8 @@ test "ForwardRequest: isExpired returns false when not expired" {
 }
 
 test "ForwardRequest: isExpired edge case at exact time" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -536,8 +536,8 @@ test "ForwardRequest: FORWARD_REQUEST_TYPEHASH is correct" {
 }
 
 test "ForwardRequest: structHash with empty data" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const req = from(.{
         .from = from_addr,
@@ -555,8 +555,8 @@ test "ForwardRequest: structHash with empty data" {
 }
 
 test "ForwardRequest: structHash with large value" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0xaa} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
 
     const large_value: u256 = std.math.maxInt(u256);
 
@@ -576,8 +576,8 @@ test "ForwardRequest: structHash with large value" {
 }
 
 test "ForwardRequest: zero value request" {
-    const from_addr = Address.Address{ .bytes = [_]u8{0} ** 20 };
-    const to_addr = Address.Address{ .bytes = [_]u8{0} ** 20 };
+    const from_addr = Address.Address{ .bytes = @as([20]u8, @splat(0)) };
+    const to_addr = Address.Address{ .bytes = @as([20]u8, @splat(0)) };
 
     const req = from(.{
         .from = from_addr,

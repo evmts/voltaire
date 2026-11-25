@@ -27,7 +27,7 @@ fn benchToBytesFixed20(allocator: std.mem.Allocator) void {
 
 // Benchmark: Hex.bytesToHexFixed (32 bytes - hash size)
 fn benchBytesToHexFixed32(allocator: std.mem.Allocator) void {
-    const bytes = [_]u8{0xab} ** 32;
+    const bytes = @as([32]u8, @splat(0xab));
     const hex_arr = Hex.bytesToHexFixed(32, bytes);
     _ = hex_arr;
     _ = allocator;
@@ -95,11 +95,8 @@ fn benchConcat(allocator: std.mem.Allocator) void {
     defer allocator.free(result);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -116,7 +113,6 @@ pub fn main() !void {
     try bench.add("Hex.trimLeftZeros", benchTrimLeftZeros, .{});
     try bench.add("Hex.concat (2 arrays)", benchConcat, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

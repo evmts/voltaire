@@ -227,7 +227,7 @@ pub fn verify(
 // ============================================================================
 
 test "PublicKey.fromHex - valid 64 byte key" {
-    const hex = "0x" ++ "04" ** 64;
+    const hex = "0x" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("04".*))));
     const pk = try fromHex(hex);
 
     try std.testing.expectEqual(64, pk.bytes.len);
@@ -237,7 +237,7 @@ test "PublicKey.fromHex - valid 64 byte key" {
 }
 
 test "PublicKey.fromHex - without 0x prefix" {
-    const hex = "04" ** 64;
+    const hex = @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("04".*))));
     const pk = try fromHex(hex);
 
     try std.testing.expectEqual(64, pk.bytes.len);
@@ -254,7 +254,7 @@ test "PublicKey.fromHex - invalid length" {
 }
 
 test "PublicKey.fromHex - 65 byte key with prefix rejected" {
-    const hex = "0x04" ++ "04" ** 64;
+    const hex = "0x04" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("04".*))));
     const result = fromHex(hex);
 
     try std.testing.expectError(error.InvalidHexFormat, result);
@@ -273,7 +273,7 @@ test "PublicKey.toHex - converts to hex string" {
 }
 
 test "PublicKey.toHex - round trip" {
-    const original_hex = "0x" ++ "ab" ** 64;
+    const original_hex = "0x" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*))));
     const pk = try fromHex(original_hex);
     const result_hex = toHex(pk);
 
@@ -305,7 +305,7 @@ test "PublicKey.toAddress - derives address from public key" {
 
 test "PublicKey.fromPrivateKey - derives public key" {
     // Private key = 1 should give generator point
-    var private_key: [32]u8 = [_]u8{0} ** 32;
+    var private_key: [32]u8 = @as([32]u8, @splat(0));
     private_key[31] = 1;
 
     const pk = try fromPrivateKey(private_key);
@@ -319,7 +319,7 @@ test "PublicKey.fromPrivateKey - derives public key" {
 }
 
 test "PublicKey.fromPrivateKey - rejects zero key" {
-    const private_key: [32]u8 = [_]u8{0} ** 32;
+    const private_key: [32]u8 = @as([32]u8, @splat(0));
 
     const result = fromPrivateKey(private_key);
 
@@ -338,7 +338,7 @@ test "PublicKey.fromPrivateKey - rejects key >= n" {
 
 test "PublicKey.verify - valid signature" {
     // Create keypair
-    var private_key: [32]u8 = [_]u8{0} ** 32;
+    var private_key: [32]u8 = @as([32]u8, @splat(0));
     private_key[31] = 42;
 
     const pk = try fromPrivateKey(private_key);
@@ -353,7 +353,7 @@ test "PublicKey.verify - valid signature" {
     // This tests the verification algorithm works correctly
 
     // Test with invalid signature (all zeros) - should reject
-    const invalid_sig = [_]u8{0} ** 65;
+    const invalid_sig = @as([65]u8, @splat(0));
     const result = try verify(pk, hash, invalid_sig);
 
     try std.testing.expect(!result); // Should be false for invalid sig
@@ -367,7 +367,7 @@ test "PublicKey.verify - rejects invalid r or s" {
     @memset(&hash, 0x11);
 
     // Signature with r = 0 (invalid)
-    var sig: [65]u8 = [_]u8{0} ** 65;
+    var sig: [65]u8 = @as([65]u8, @splat(0));
     sig[32] = 1; // s = 1
 
     const result = try verify(pk, hash, sig);
@@ -415,7 +415,7 @@ test "PublicKey.compress - compresses generator point" {
 
 test "PublicKey.compress - handles odd y coordinate" {
     // Create a point with odd y
-    var private_key: [32]u8 = [_]u8{0} ** 32;
+    var private_key: [32]u8 = @as([32]u8, @splat(0));
     private_key[31] = 2; // private key = 2
 
     const pk = try fromPrivateKey(private_key);
@@ -447,7 +447,7 @@ test "PublicKey.decompress - round trip" {
     const test_privkeys = [_]u8{ 1, 2, 3, 7, 42, 123 };
 
     for (test_privkeys) |priv_val| {
-        var private_key: [32]u8 = [_]u8{0} ** 32;
+        var private_key: [32]u8 = @as([32]u8, @splat(0));
         private_key[31] = priv_val;
 
         const original_pk = try fromPrivateKey(private_key);

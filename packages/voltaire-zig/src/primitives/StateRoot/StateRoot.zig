@@ -46,7 +46,7 @@ pub fn fromBytes(bytes: []const u8) StateRoot {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{0xd7} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xd7));
     const root = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, root.len);
     try std.testing.expectEqual(@as(u8, 0xd7), root[0]);
@@ -54,7 +54,7 @@ test "fromBytes - valid 32 bytes" {
 }
 
 test "fromBytes - creates independent copy" {
-    var bytes = [_]u8{0x44} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(0x44));
     const root = fromBytes(&bytes);
     bytes[0] = 0x99;
     try std.testing.expectEqual(@as(u8, 0x44), root[0]);
@@ -84,7 +84,7 @@ test "fromHex - invalid length" {
 }
 
 test "fromHex - invalid hex chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expectError(error.InvalidHexCharacter, fromHex(hex));
 }
 
@@ -100,7 +100,7 @@ test "from - StateRoot passthrough" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{0x42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0x42));
     const root = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 0x42), root[0]);
 }
@@ -159,19 +159,19 @@ pub fn equals(a: *const StateRoot, b: *const StateRoot) bool {
 }
 
 test "equals - same root" {
-    const root: StateRoot = [_]u8{0x42} ** SIZE;
+    const root: StateRoot = @as([SIZE]u8, @splat(0x42));
     try std.testing.expect(equals(&root, &root));
 }
 
 test "equals - identical roots" {
-    const root1: StateRoot = [_]u8{0x99} ** SIZE;
-    const root2: StateRoot = [_]u8{0x99} ** SIZE;
+    const root1: StateRoot = @as([SIZE]u8, @splat(0x99));
+    const root2: StateRoot = @as([SIZE]u8, @splat(0x99));
     try std.testing.expect(equals(&root1, &root2));
 }
 
 test "equals - different roots" {
-    const root1: StateRoot = [_]u8{0x11} ** SIZE;
-    const root2: StateRoot = [_]u8{0x22} ** SIZE;
+    const root1: StateRoot = @as([SIZE]u8, @splat(0x11));
+    const root2: StateRoot = @as([SIZE]u8, @splat(0x22));
     try std.testing.expect(!equals(&root1, &root2));
 }
 

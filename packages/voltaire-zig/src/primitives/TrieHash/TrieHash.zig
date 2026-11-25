@@ -194,7 +194,7 @@ fn patricialize(
     // Branch node: split into 16 buckets by nibble at current level.
     // Uses a two-pass approach with preallocated contiguous arrays to
     // minimize per-bucket allocation overhead.
-    var bucket_counts: [16]usize = [_]usize{0} ** 16;
+    var bucket_counts: [16]usize = @as([16]usize, @splat(0));
     // Python spec uses b"" (empty bytes) as the "no value" sentinel for
     // branch nodes, not None/null. This matches the spec's BranchNode
     // constructor default: `value: Extended = b""`.
@@ -228,7 +228,7 @@ fn patricialize(
     defer allocator.free(all_vals);
 
     // Fill bucket arrays using offsets into contiguous storage
-    var fill_counts: [16]usize = [_]usize{0} ** 16;
+    var fill_counts: [16]usize = @as([16]usize, @splat(0));
     for (nibble_keys, 0..) |key, idx| {
         if (key.len == level) continue;
         const nibble = key[level];

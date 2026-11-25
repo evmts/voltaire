@@ -54,9 +54,9 @@ test {
     const std = @import("std");
     inline for (comptime std.meta.declarations(@This())) |decl| {
         const skip = comptime for (untested_decls) |name| {
-            if (std.mem.eql(u8, name, decl.name)) break true;
+            if (std.mem.eql(u8, name, decl)) break true;
         } else false;
-        if (!skip) _ = &@field(@This(), decl.name);
+        if (!skip) _ = &@field(@This(), decl);
     }
 
     _ = modexp_module;

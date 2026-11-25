@@ -75,10 +75,10 @@ pub const BuilderBid = struct {
 };
 
 /// Empty BLS public key
-pub const EMPTY_PUBKEY: [BLS_PUBKEY_SIZE]u8 = [_]u8{0} ** BLS_PUBKEY_SIZE;
+pub const EMPTY_PUBKEY: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0));
 
 /// Empty BLS signature
-pub const EMPTY_SIGNATURE: [BLS_SIGNATURE_SIZE]u8 = [_]u8{0} ** BLS_SIGNATURE_SIZE;
+pub const EMPTY_SIGNATURE: [BLS_SIGNATURE_SIZE]u8 = @as([BLS_SIGNATURE_SIZE]u8, @splat(0));
 
 // ============================================================================
 // Constructors
@@ -366,12 +366,12 @@ pub fn signingRoot(bid: BuilderBid) [32]u8 {
 // ============================================================================
 
 test "BuilderBid.from creates builder bid" {
-    const parent_hash: Hash.Hash = [_]u8{0xaa} ** 32;
-    const block_hash: Hash.Hash = [_]u8{0xbb} ** 32;
-    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0xcc} ** BLS_PUBKEY_SIZE;
-    const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0xdd} ** BLS_PUBKEY_SIZE;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 };
-    const signature: [BLS_SIGNATURE_SIZE]u8 = [_]u8{0xff} ** BLS_SIGNATURE_SIZE;
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0xaa));
+    const block_hash: Hash.Hash = @as([32]u8, @splat(0xbb));
+    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc));
+    const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) };
+    const signature: [BLS_SIGNATURE_SIZE]u8 = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xff));
 
     const bid = from(.{
         .slot = 1000000,
@@ -391,12 +391,12 @@ test "BuilderBid.from creates builder bid" {
 }
 
 test "BuilderBid accessors work correctly" {
-    const parent_hash: Hash.Hash = [_]u8{0x11} ** 32;
-    const block_hash: Hash.Hash = [_]u8{0x22} ** 32;
-    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x33} ** BLS_PUBKEY_SIZE;
-    const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x44} ** BLS_PUBKEY_SIZE;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0x55} ** 20 };
-    const signature: [BLS_SIGNATURE_SIZE]u8 = [_]u8{0x66} ** BLS_SIGNATURE_SIZE;
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x11));
+    const block_hash: Hash.Hash = @as([32]u8, @splat(0x22));
+    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x33));
+    const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x44));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x55)) };
+    const signature: [BLS_SIGNATURE_SIZE]u8 = @as([BLS_SIGNATURE_SIZE]u8, @splat(0x66));
 
     const bid = from(.{
         .slot = 1000000,
@@ -420,12 +420,12 @@ test "BuilderBid accessors work correctly" {
 }
 
 test "BuilderBid.equals compares bids" {
-    const parent_hash: Hash.Hash = [_]u8{0x77} ** 32;
-    const block_hash: Hash.Hash = [_]u8{0x88} ** 32;
-    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0x99} ** BLS_PUBKEY_SIZE;
-    const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = [_]u8{0xaa} ** BLS_PUBKEY_SIZE;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0xbb} ** 20 };
-    const signature: [BLS_SIGNATURE_SIZE]u8 = [_]u8{0xcc} ** BLS_SIGNATURE_SIZE;
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x77));
+    const block_hash: Hash.Hash = @as([32]u8, @splat(0x88));
+    const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0x99));
+    const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = @as([BLS_PUBKEY_SIZE]u8, @splat(0xaa));
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xbb)) };
+    const signature: [BLS_SIGNATURE_SIZE]u8 = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xcc));
 
     const bid1 = from(.{
         .slot = 1000000,
@@ -453,7 +453,7 @@ test "BuilderBid.equals compares bids" {
         .signature = signature,
     });
 
-    const other_block_hash: Hash.Hash = [_]u8{0xdd} ** 32;
+    const other_block_hash: Hash.Hash = @as([32]u8, @splat(0xdd));
     const bid3 = from(.{
         .slot = 1000001,
         .parent_hash = parent_hash,
@@ -472,11 +472,11 @@ test "BuilderBid.equals compares bids" {
 }
 
 test "BuilderBid.compareByValue" {
-    const parent_hash: Hash.Hash = [_]u8{0xee} ** 32;
-    const block_hash: Hash.Hash = [_]u8{0xff} ** 32;
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0xee));
+    const block_hash: Hash.Hash = @as([32]u8, @splat(0xff));
     const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
     const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0x00} ** 20 };
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x00)) };
     const signature: [BLS_SIGNATURE_SIZE]u8 = EMPTY_SIGNATURE;
 
     const low_bid = from(.{
@@ -511,11 +511,11 @@ test "BuilderBid.compareByValue" {
 }
 
 test "BuilderBid.hasValue" {
-    const parent_hash: Hash.Hash = [_]u8{0x11} ** 32;
-    const block_hash: Hash.Hash = [_]u8{0x22} ** 32;
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x11));
+    const block_hash: Hash.Hash = @as([32]u8, @splat(0x22));
     const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
     const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0x00} ** 20 };
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x00)) };
     const signature: [BLS_SIGNATURE_SIZE]u8 = EMPTY_SIGNATURE;
 
     const bid_with_value = from(.{
@@ -549,11 +549,11 @@ test "BuilderBid.hasValue" {
 }
 
 test "BuilderBid.hasSignature" {
-    const parent_hash: Hash.Hash = [_]u8{0x33} ** 32;
-    const block_hash: Hash.Hash = [_]u8{0x44} ** 32;
+    const parent_hash: Hash.Hash = @as([32]u8, @splat(0x33));
+    const block_hash: Hash.Hash = @as([32]u8, @splat(0x44));
     const builder_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
     const proposer_pubkey: [BLS_PUBKEY_SIZE]u8 = EMPTY_PUBKEY;
-    const fee_recipient = Address.Address{ .bytes = [_]u8{0x00} ** 20 };
+    const fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x00)) };
 
     const signed_bid = from(.{
         .slot = 1000000,
@@ -565,7 +565,7 @@ test "BuilderBid.hasSignature" {
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
-        .signature = [_]u8{0xff} ** BLS_SIGNATURE_SIZE,
+        .signature = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xff)),
     });
 
     const unsigned_bid = from(.{
@@ -595,15 +595,15 @@ test "BuilderBid.SSZ_SIZE is correct" {
 test "BuilderBid.sszEncode produces correct size" {
     const bid = from(.{
         .slot = 1000000,
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
-        .signature = [_]u8{0xff} ** BLS_SIGNATURE_SIZE,
+        .signature = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xff)),
     });
 
     const encoded = sszEncode(bid);
@@ -613,11 +613,11 @@ test "BuilderBid.sszEncode produces correct size" {
 test "BuilderBid.sszEncode slot is little-endian" {
     const bid = from(.{
         .slot = 0x0102030405060708,
-        .parent_hash = [_]u8{0x00} ** 32,
-        .block_hash = [_]u8{0x00} ** 32,
+        .parent_hash = @as([32]u8, @splat(0x00)),
+        .block_hash = @as([32]u8, @splat(0x00)),
         .builder_pubkey = EMPTY_PUBKEY,
         .proposer_pubkey = EMPTY_PUBKEY,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0x00} ** 20 },
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0x00)) },
         .gas_limit = 0,
         .gas_used = 0,
         .value = 0,
@@ -639,15 +639,15 @@ test "BuilderBid.sszEncode slot is little-endian" {
 test "BuilderBid.sszDecode roundtrip" {
     const original = from(.{
         .slot = 1000000,
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
-        .signature = [_]u8{0xff} ** BLS_SIGNATURE_SIZE,
+        .signature = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xff)),
     });
 
     const encoded = sszEncode(original);
@@ -666,25 +666,25 @@ test "BuilderBid.sszDecode roundtrip" {
 }
 
 test "BuilderBid.sszDecode rejects invalid length" {
-    const short_data = [_]u8{0x00} ** 100;
+    const short_data = @as([100]u8, @splat(0x00));
     try std.testing.expectError(error.InvalidLength, sszDecode(&short_data));
 
-    const long_data = [_]u8{0x00} ** 400;
+    const long_data = @as([400]u8, @splat(0x00));
     try std.testing.expectError(error.InvalidLength, sszDecode(&long_data));
 }
 
 test "BuilderBid.signingRoot produces consistent hash" {
     const bid = from(.{
         .slot = 1000000,
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
-        .signature = [_]u8{0xff} ** BLS_SIGNATURE_SIZE,
+        .signature = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xff)),
     });
 
     const root1 = signingRoot(bid);
@@ -696,11 +696,11 @@ test "BuilderBid.signingRoot produces consistent hash" {
 test "BuilderBid.signingRoot differs for different bids" {
     const bid1 = from(.{
         .slot = 1000000,
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
@@ -709,11 +709,11 @@ test "BuilderBid.signingRoot differs for different bids" {
 
     const bid2 = from(.{
         .slot = 1000001, // Different slot
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
@@ -729,11 +729,11 @@ test "BuilderBid.signingRoot differs for different bids" {
 test "BuilderBid.signingRoot ignores signature field" {
     const bid1 = from(.{
         .slot = 1000000,
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
@@ -742,15 +742,15 @@ test "BuilderBid.signingRoot ignores signature field" {
 
     const bid2 = from(.{
         .slot = 1000000,
-        .parent_hash = [_]u8{0xaa} ** 32,
-        .block_hash = [_]u8{0xbb} ** 32,
-        .builder_pubkey = [_]u8{0xcc} ** BLS_PUBKEY_SIZE,
-        .proposer_pubkey = [_]u8{0xdd} ** BLS_PUBKEY_SIZE,
-        .proposer_fee_recipient = Address.Address{ .bytes = [_]u8{0xee} ** 20 },
+        .parent_hash = @as([32]u8, @splat(0xaa)),
+        .block_hash = @as([32]u8, @splat(0xbb)),
+        .builder_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xcc)),
+        .proposer_pubkey = @as([BLS_PUBKEY_SIZE]u8, @splat(0xdd)),
+        .proposer_fee_recipient = Address.Address{ .bytes = @as([20]u8, @splat(0xee)) },
         .gas_limit = 30000000,
         .gas_used = 15000000,
         .value = 100000000000000000,
-        .signature = [_]u8{0xff} ** BLS_SIGNATURE_SIZE, // Different signature
+        .signature = @as([BLS_SIGNATURE_SIZE]u8, @splat(0xff)), // Different signature
     });
 
     const root1 = signingRoot(bid1);

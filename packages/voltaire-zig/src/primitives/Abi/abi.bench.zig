@@ -11,7 +11,7 @@ fn benchComputeSelector(allocator: std.mem.Allocator) void {
 }
 
 fn benchEncodeErc20Transfer(allocator: std.mem.Allocator) void {
-    const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
+    const addr = Address{ .bytes = @as([20]u8, @splat(0x74)) };
     const values = [_]AbiEncoding.AbiValue{
         AbiEncoding.addressValue(addr),
         AbiEncoding.uint256_value(1_000_000_000_000_000_000),
@@ -22,7 +22,7 @@ fn benchEncodeErc20Transfer(allocator: std.mem.Allocator) void {
 }
 
 fn benchDecodeErc20Transfer(allocator: std.mem.Allocator) void {
-    var data = [_]u8{0} ** 64;
+    var data = @as([64]u8, @splat(0));
     @memset(data[12..32], 0x74);
     data[63] = 0x2a;
     const types = [_]AbiEncoding.AbiType{ .address, .uint256 };
@@ -32,7 +32,7 @@ fn benchDecodeErc20Transfer(allocator: std.mem.Allocator) void {
 }
 
 fn benchEncodePacked(allocator: std.mem.Allocator) void {
-    const addr = Address{ .bytes = [_]u8{0xab} ** 20 };
+    const addr = Address{ .bytes = @as([20]u8, @splat(0xab)) };
     const values = [_]AbiEncoding.AbiValue{
         AbiEncoding.addressValue(addr),
         AbiEncoding.uint256_value(42),
@@ -44,16 +44,13 @@ fn benchEncodePacked(allocator: std.mem.Allocator) void {
 
 fn benchEstimateGasForData(allocator: std.mem.Allocator) void {
     _ = allocator;
-    const data = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ ([_]u8{0} ** 28) ++ ([_]u8{0x74} ** 20) ++ ([_]u8{0} ** 12);
+    const data = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ (@as([28]u8, @splat(0))) ++ (@as([20]u8, @splat(0x74))) ++ (@as([12]u8, @splat(0)));
     const gas = AbiEncoding.estimateGasForData(&data);
     std.mem.doNotOptimizeAway(gas);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -63,7 +60,6 @@ pub fn main() !void {
     try bench.add("Abi.encodePacked", benchEncodePacked, .{});
     try bench.add("Abi.estimateGasForData", benchEstimateGasForData, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

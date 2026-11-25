@@ -9,7 +9,7 @@ const AccountState = struct {
 };
 
 fn packAccountState(state: AccountState) [32]u8 {
-    var result = [_]u8{0} ** 32;
+    var result = @as([32]u8, @splat(0));
     @memset(&result, 0);
 
     // Nonce at bytes 0-7
@@ -34,7 +34,7 @@ const StateSnapshot = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

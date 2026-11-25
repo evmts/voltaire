@@ -9,7 +9,7 @@ pub fn main() !void {
 
     // Example 1: Legacy transaction gas cost
     std.debug.print("1. Legacy Transaction Gas Cost\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const legacy_gas_price: u64 = 20_000_000_000; // 20 gwei
     const legacy_gas_used: u64 = 21000;
@@ -28,7 +28,7 @@ pub fn main() !void {
 
     // Example 2: EIP-1559 effective gas price
     std.debug.print("2. EIP-1559 Effective Gas Price\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const base_fee: u64 = 15_000_000_000; // 15 gwei
     const max_priority_fee: u64 = 2_000_000_000; // 2 gwei
@@ -60,7 +60,7 @@ pub fn main() !void {
 
     // Example 3: EIP-4844 blob gas costs
     std.debug.print("3. EIP-4844 Blob Gas Costs\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const blob_count: u32 = 3;
     const BLOB_GAS_PER_BLOB: u64 = 131_072;
@@ -96,7 +96,7 @@ pub fn main() !void {
 
     // Example 4: Fee estimation strategy
     std.debug.print("4. Fee Estimation Strategy\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const current_base_fee: u64 = 15_000_000_000;
 
@@ -121,7 +121,7 @@ pub fn main() !void {
 
     // Example 5: Complete cost breakdown
     std.debug.print("5. Complete Cost Breakdown\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Legacy Transaction:\n", .{});
     std.debug.print("  Gas: {} wei ({} gwei)\n", .{ legacy_gas_cost, legacy_gas_cost / 1_000_000_000 });

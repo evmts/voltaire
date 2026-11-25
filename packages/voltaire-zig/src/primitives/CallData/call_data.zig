@@ -126,7 +126,7 @@ pub fn fromBytes(allocator: std.mem.Allocator, bytes: []const u8) Error!CallData
 
 test "fromBytes - valid calldata" {
     const allocator = std.testing.allocator;
-    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ [_]u8{0} ** 64;
+    const bytes = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ @as([64]u8, @splat(0));
     var calldata = try fromBytes(allocator, &bytes);
     defer calldata.deinit();
 
@@ -169,7 +169,7 @@ pub fn fromHex(allocator: std.mem.Allocator, hex: []const u8) Error!CallData {
 
 test "fromHex - with 0x prefix" {
     const allocator = std.testing.allocator;
-    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("00".*)))));
     defer calldata.deinit();
 
     try std.testing.expectEqual(@as(usize, 68), calldata.len());
@@ -178,7 +178,7 @@ test "fromHex - with 0x prefix" {
 
 test "fromHex - without 0x prefix" {
     const allocator = std.testing.allocator;
-    var calldata = try fromHex(allocator, "a9059cbb" ++ "00" ** 64);
+    var calldata = try fromHex(allocator, "a9059cbb" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("00".*)))));
     defer calldata.deinit();
 
     try std.testing.expectEqual(@as(usize, 68), calldata.len());
@@ -250,7 +250,7 @@ pub fn getSelector(calldata: *const CallData) [SELECTOR_SIZE]u8 {
 
 test "getSelector - basic" {
     const allocator = std.testing.allocator;
-    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("00".*)))));
     defer calldata.deinit();
 
     const selector = getSelector(&calldata);
@@ -336,9 +336,9 @@ pub fn equals(a: *const CallData, b: *const CallData) bool {
 
 test "equals - identical" {
     const allocator = std.testing.allocator;
-    var calldata1 = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    var calldata1 = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("00".*)))));
     defer calldata1.deinit();
-    var calldata2 = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    var calldata2 = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("00".*)))));
     defer calldata2.deinit();
 
     try std.testing.expect(equals(&calldata1, &calldata2));
@@ -378,7 +378,7 @@ pub fn getParams(calldata: *const CallData) []const u8 {
 
 test "getParams - with params" {
     const allocator = std.testing.allocator;
-    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 64);
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("00".*)))));
     defer calldata.deinit();
 
     const params = getParams(&calldata);
@@ -479,7 +479,7 @@ pub fn getArgs(calldata: *const CallData) []const u8 {
 
 test "getArgs - with args" {
     const allocator = std.testing.allocator;
-    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 32);
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*)))));
     defer calldata.deinit();
 
     const args = getArgs(&calldata);
@@ -530,7 +530,7 @@ pub fn slice(calldata: *const CallData, start: usize, end: usize) []const u8 {
 
 test "slice - valid range" {
     const allocator = std.testing.allocator;
-    var calldata = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 32);
+    var calldata = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*)))));
     defer calldata.deinit();
 
     const s = slice(&calldata, 0, 4);
@@ -579,9 +579,9 @@ pub fn concat(allocator: std.mem.Allocator, a: *const CallData, b: *const CallDa
 
 test "concat - two calldatas" {
     const allocator = std.testing.allocator;
-    var calldata1 = try fromHex(allocator, "0xa9059cbb" ++ "00" ** 32);
+    var calldata1 = try fromHex(allocator, "0xa9059cbb" ++ @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*)))));
     defer calldata1.deinit();
-    var calldata2 = try fromHex(allocator, "0x095ea7b3" ++ "11" ** 32);
+    var calldata2 = try fromHex(allocator, "0x095ea7b3" ++ @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("11".*)))));
     defer calldata2.deinit();
 
     var result = try concat(allocator, &calldata1, &calldata2);

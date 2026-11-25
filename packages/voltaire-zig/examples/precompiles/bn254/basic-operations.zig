@@ -18,10 +18,10 @@ pub fn main() !void {
 
     // Example 1: ECADD - Point Addition
     try stdout.print("1. ECADD - G1 Point Addition (0x06)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Add G1 + G1 = 2G
-    var ecadd_input: [128]u8 = [_]u8{0} ** 128;
+    var ecadd_input: [128]u8 = @as([128]u8, @splat(0));
 
     // Point 1: G1
     std.mem.writeInt(u256, ecadd_input[0..32], G1_X, .big);
@@ -49,11 +49,11 @@ pub fn main() !void {
 
     // Example 2: ECMUL - Scalar Multiplication
     try stdout.print("2. ECMUL - G1 Scalar Multiplication (0x07)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     const scalar: u256 = 42;
 
-    var ecmul_input: [96]u8 = [_]u8{0} ** 96;
+    var ecmul_input: [96]u8 = @as([96]u8, @splat(0));
     std.mem.writeInt(u256, ecmul_input[0..32], G1_X, .big);
     std.mem.writeInt(u256, ecmul_input[32..64], G1_Y, .big);
     std.mem.writeInt(u256, ecmul_input[64..96], scalar, .big);
@@ -76,9 +76,9 @@ pub fn main() !void {
 
     // Example 3: Point at infinity
     try stdout.print("3. Point at Infinity (Identity Element)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
-    var identity_input: [128]u8 = [_]u8{0} ** 128;
+    var identity_input: [128]u8 = @as([128]u8, @splat(0));
     std.mem.writeInt(u256, identity_input[0..32], G1_X, .big);
     std.mem.writeInt(u256, identity_input[32..64], G1_Y, .big);
     // Second point is (0, 0) = infinity
@@ -97,7 +97,7 @@ pub fn main() !void {
 
     // Example 4: Scalar multiplication edge cases
     try stdout.print("4. Scalar Multiplication Edge Cases\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     const test_scalars = [_]struct { value: u256, desc: []const u8 }{
         .{ .value = 0, .desc = "Zero (should return infinity)" },
@@ -105,7 +105,7 @@ pub fn main() !void {
     };
 
     for (test_scalars) |test_case| {
-        var edge_input: [96]u8 = [_]u8{0} ** 96;
+        var edge_input: [96]u8 = @as([96]u8, @splat(0));
         std.mem.writeInt(u256, edge_input[0..32], G1_X, .big);
         std.mem.writeInt(u256, edge_input[32..64], G1_Y, .big);
         std.mem.writeInt(u256, edge_input[64..96], test_case.value, .big);
@@ -128,7 +128,7 @@ pub fn main() !void {
 
     // Example 5: Gas cost summary
     try stdout.print("5. Gas Cost Summary\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Post-Istanbul (EIP-1108) gas costs:\n", .{});
     try stdout.print("  ECADD (0x06):    150 gas\n", .{});

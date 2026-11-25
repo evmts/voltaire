@@ -22,7 +22,7 @@ const test_input_g1 = [_]u8{
 const test_input_double = test_input_g1 ++ test_input_g1;
 
 // Point at infinity: (0, 0)
-const test_input_infinity = [_]u8{0x00} ** 64;
+const test_input_infinity = @as([64]u8, @splat(0x00));
 
 // Point 1 + infinity
 const test_input_with_infinity = test_input_g1 ++ test_input_infinity;
@@ -59,11 +59,8 @@ fn benchBn254AddShortInput(allocator: std.mem.Allocator) void {
     defer result.deinit(allocator);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -73,7 +70,6 @@ pub fn main() !void {
     try bench.add("BN254_ADD (empty input)", benchBn254AddEmpty, .{});
     try bench.add("BN254_ADD (short input)", benchBn254AddShortInput, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

@@ -89,11 +89,16 @@ pub const verifyCellKzgProofBatch = peerdas.verifyCellKzgProofBatch;
 pub const recoverCellsAndKzgProofs = peerdas.recoverCellsAndKzgProofs;
 
 /// Load trusted setup from file
-pub fn loadTrustedSetupFile(trusted_setup_path: []const u8, precompute: u64) KZGError!void {
-    const file = std.fs.cwd().openFile(trusted_setup_path, .{}) catch return KZGError.FileNotFound;
-    defer file.close();
-
-    const file_data = file.readToEndAlloc(std.heap.page_allocator, 1024 * 1024 * 10) catch return KZGError.MallocError;
+pub fn loadTrustedSetupFile(io: std.Io, trusted_setup_path: []const u8, precompute: u64) KZGError!void {
+    const file_data = std.Io.Dir.cwd().readFileAlloc(
+        io,
+        trusted_setup_path,
+        std.heap.page_allocator,
+        .limited(10 * 1024 * 1024),
+    ) catch |err| switch (err) {
+        error.FileNotFound => return KZGError.FileNotFound,
+        else => return KZGError.MallocError,
+    };
     defer std.heap.page_allocator.free(file_data);
 
     try ckzg.loadTrustedSetupFromText(file_data, precompute);
@@ -173,7 +178,7 @@ test "c_kzg type sizes are correct" {
 test "c_kzg error handling - file not found" {
     const testing = std.testing;
 
-    const result = loadTrustedSetupFile("nonexistent_file.txt", 0);
+    const result = loadTrustedSetupFile(std.testing.io, "nonexistent_file.txt", 0);
     try testing.expectError(KZGError.FileNotFound, result);
 }
 

@@ -25,17 +25,17 @@ const Crypto = crypto_pkg.Crypto;
 const hash_mod = crypto_pkg.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    std.debug.print("\n" ++ "=" ** 80 ++ "\n", .{});
+    std.debug.print("\n" ++ &@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  EIP-7702 Authorization Transaction Example\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     // Example 1: Understanding Authorizations
     std.debug.print("1. What are EIP-7702 Authorizations?\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  EIP-7702 allows EOAs to temporarily delegate execution to smart contracts.\n", .{});
     std.debug.print("  An authorization is a signed message that says:\n", .{});
@@ -50,10 +50,10 @@ pub fn main() !void {
 
     // Example 2: Creating a Single Authorization
     std.debug.print("2. Creating a Single Authorization\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Private key of the account that will authorize delegation
-    const authority_private_key: Crypto.PrivateKey = [_]u8{0x11} ** 32;
+    const authority_private_key: Crypto.PrivateKey = @as([32]u8, @splat(0x11));
     const authority_public_key = try Crypto.unaudited_getPublicKey(authority_private_key);
     const authority_address = authority_public_key.toAddress();
 
@@ -85,7 +85,7 @@ pub fn main() !void {
 
     // Example 3: Recovering Authority from Authorization
     std.debug.print("3. Recovering Authority from Authorization\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const recovered_authority = try auth1.authority();
     std.debug.print("  Recovered Authority: 0x{X}\n", .{recovered_authority.bytes});
@@ -96,10 +96,10 @@ pub fn main() !void {
 
     // Example 4: Creating Multiple Authorizations
     std.debug.print("4. Creating Multiple Authorizations in One Transaction\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Second authority (different private key)
-    const authority2_private_key: Crypto.PrivateKey = [_]u8{0x22} ** 32;
+    const authority2_private_key: Crypto.PrivateKey = @as([32]u8, @splat(0x22));
     const authority2_public_key = try Crypto.unaudited_getPublicKey(authority2_private_key);
     const authority2_address = authority2_public_key.toAddress();
 
@@ -136,7 +136,7 @@ pub fn main() !void {
 
     // Example 5: Creating an EIP-7702 Transaction
     std.debug.print("5. Creating an EIP-7702 Authorization Transaction\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
 
@@ -156,8 +156,8 @@ pub fn main() !void {
         .access_list = &[_]AccessListItem{},
         .authorization_list = &auth_list,
         .v = 0, // Unsigned (will be set during signing)
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Transaction Fields:\n", .{});
@@ -172,7 +172,7 @@ pub fn main() !void {
 
     // Example 6: Calculate Authorization Gas Costs
     std.debug.print("6. Calculating Authorization Gas Costs\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // Assume 1 empty account for this example
     const empty_accounts: usize = 1;
@@ -193,7 +193,7 @@ pub fn main() !void {
 
     // Example 7: Encode and Sign the Transaction
     std.debug.print("7. Encoding and Signing the Transaction\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const encoded = try Transaction.encodeEip7702ForSigning(allocator, unsigned_tx);
     defer allocator.free(encoded);
@@ -204,7 +204,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     // Sign the transaction with the sender's private key
-    const sender_private_key: Crypto.PrivateKey = [_]u8{0xAA} ** 32;
+    const sender_private_key: Crypto.PrivateKey = @as([32]u8, @splat(0xAA));
 
     const signed_tx = try Transaction.signEip7702Transaction(
         allocator,
@@ -220,7 +220,7 @@ pub fn main() !void {
 
     // Example 8: Compute Transaction Hash
     std.debug.print("8. Computing Transaction Hash\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const tx_hash = try Transaction.computeEip7702TransactionHash(allocator, signed_tx);
 
@@ -230,7 +230,7 @@ pub fn main() !void {
 
     // Example 9: Process Authorizations
     std.debug.print("9. Processing Authorizations (Creating Delegations)\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const delegations = try Authorization.processAuthorizations(allocator, &auth_list);
     defer allocator.free(delegations);
@@ -246,7 +246,7 @@ pub fn main() !void {
 
     // Example 10: Understanding Delegation Revocation
     std.debug.print("10. Delegation Revocation\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Delegations can be revoked by setting delegated_address to zero.\n", .{});
     std.debug.print("\n", .{});
@@ -272,7 +272,7 @@ pub fn main() !void {
 
     // Example 11: Authorization List Encoding
     std.debug.print("11. RLP Encoding Authorization List\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const encoded_auth_list = try Authorization.encodeAuthorizationList(allocator, &auth_list);
     defer allocator.free(encoded_auth_list);
@@ -284,7 +284,7 @@ pub fn main() !void {
 
     // Example 12: Nonce Management
     std.debug.print("12. Nonce Management for Authorizations\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Each authority can issue multiple authorizations with different nonces.\n", .{});
     std.debug.print("  Nonces prevent replay attacks across different transactions.\n", .{});
@@ -322,9 +322,9 @@ pub fn main() !void {
     std.debug.print("  Different nonces produce different signing hashes.\n", .{});
     std.debug.print("\n", .{});
 
-    std.debug.print("=" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Example Complete!\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("Key Takeaways:\n", .{});
     std.debug.print("- EIP-7702 enables EOAs to temporarily delegate to smart contracts\n", .{});

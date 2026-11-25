@@ -4,7 +4,7 @@ const crypto = @import("crypto");
 const ed25519 = crypto.ed25519;
 
 // Test seed (32 bytes)
-const test_seed = [_]u8{1} ** ed25519.SEED_SIZE;
+const test_seed = @as([ed25519.SEED_SIZE]u8, @splat(1));
 
 // Test message
 const test_message = "Hello, Ethereum!";
@@ -55,11 +55,8 @@ fn benchKeypairFromSeed(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
 
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{
         .time_budget_ns = 10_000_000_000, // 10 seconds for crypto operations
@@ -75,7 +72,6 @@ pub fn main() !void {
     try bench.add("derivePublicKey", benchDerivePublicKey, .{});
     try bench.add("keypairFromSeed", benchKeypairFromSeed, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

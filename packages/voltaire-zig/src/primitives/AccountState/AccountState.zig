@@ -220,7 +220,7 @@ pub const AccountState = struct {
         }
 
         // Create list header + concatenate fields
-        var result = std.ArrayList(u8){};
+        var result = std.ArrayList(u8).empty;
         errdefer result.deinit(allocator);
 
         // Add list header

@@ -8,7 +8,7 @@ const crypto = @import("crypto");
 /// - Data integrity verification
 /// - Deduplication
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -18,7 +18,7 @@ pub fn main() !void {
 
     // 1. Basic Content Addressing
     try stdout.print("1. Basic Content Addressing\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Content hash = unique identifier for data\n\n", .{});
 
     const content1 = "Hello, World!";
@@ -52,7 +52,7 @@ pub fn main() !void {
 
     // 2. Content Store Implementation
     try stdout.print("2. Content Store Implementation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     var store = ContentStore.init(allocator);
     defer store.deinit();
@@ -88,7 +88,7 @@ pub fn main() !void {
 
     // 3. Smart Contract Code Storage
     try stdout.print("3. Smart Contract Code Storage\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Ethereum stores contract code by hash\n\n", .{});
 
     const contract_code1 = [_]u8{
@@ -124,7 +124,7 @@ pub fn main() !void {
 
     // 4. File Integrity Verification
     try stdout.print("4. File Integrity Verification\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Build original file
     var original_file = std.ArrayList(u8).init(allocator);
@@ -164,7 +164,7 @@ pub fn main() !void {
 
     // 5. Merkle DAG for Large Files
     try stdout.print("5. Merkle DAG for Large Files\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const chunk_size = 256;
     const large_file_size = 1024;

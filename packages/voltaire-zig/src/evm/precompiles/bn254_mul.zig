@@ -45,7 +45,7 @@ fn executeAtGas(
     }
 
     // Input: 96 bytes (point 64 bytes + scalar 32 bytes)
-    var input_buf: [96]u8 = [_]u8{0} ** 96;
+    var input_buf: [96]u8 = @as([96]u8, @splat(0));
     @memcpy(input_buf[0..@min(input.len, 96)], input[0..@min(input.len, 96)]);
 
     const output = try allocator.alloc(u8, 64);
@@ -68,7 +68,7 @@ test "bn254Mul - multiply by zero" {
     const allocator = testing.allocator;
 
     // Multiply any point by zero = point at infinity
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -80,7 +80,7 @@ test "bn254Mul - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = execute(allocator, &input, GAS - 1);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -89,7 +89,7 @@ test "bn254Mul - exact gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -100,7 +100,7 @@ test "bn254Mul - input too short" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 95;
+    const input = @as([95]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -111,7 +111,7 @@ test "bn254Mul - input too long padded correctly" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 150;
+    const input = @as([150]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -139,7 +139,7 @@ test "bn254Mul - output size validation" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -216,7 +216,7 @@ test "bn254Mul - geth cdetrio1 empty input" {
     const allocator = testing.allocator;
 
     const input = [_]u8{};
-    const expected = [_]u8{0} ** 64;
+    const expected = @as([64]u8, @splat(0));
 
     const result = try execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
@@ -519,14 +519,14 @@ test "bn254Mul - non-canonical coordinates that alias valid points are rejected"
         "0000000000000000000000000000000000000000000000000000000000000000" ++ "30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47",
     };
     for (cases) |case| {
-        var input: [96]u8 = [_]u8{0} ** 96;
+        var input: [96]u8 = @as([96]u8, @splat(0));
         _ = try std.fmt.hexToBytes(&input, case);
         input[95] = 1;
         try testing.expectError(error.InvalidPoint, execute(allocator, &input, 1_000_000));
     }
 
     // The scalar is not a field element: any 256-bit value is accepted.
-    var input: [96]u8 = [_]u8{0xff} ** 96;
+    var input: [96]u8 = @as([96]u8, @splat(0xff));
     @memset(input[0..64], 0);
     input[31] = 1;
     input[63] = 2;
@@ -544,7 +544,7 @@ test "bn254Mul - Byzantium and Istanbul pricing" {
     try testing.expectEqual(@as(u64, 6000), gasCost(.ISTANBUL));
     try testing.expectEqual(@as(u64, 6000), gasCost(.PRAGUE));
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
 
     try testing.expectError(error.OutOfGas, executeWithHardfork(allocator, &input, 39999, .BYZANTIUM));
     const byzantium = try executeWithHardfork(allocator, &input, 40000, .BYZANTIUM);

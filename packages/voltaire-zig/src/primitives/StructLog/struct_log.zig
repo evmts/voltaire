@@ -149,7 +149,7 @@ pub const StructLog = struct {
 
     /// Encode to JSON
     pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
-        var buf = std.ArrayList(u8){};
+        var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.appendSlice(allocator, "{\"pc\":");
@@ -229,9 +229,10 @@ pub const StructLog = struct {
         // Parse opcode from name
         const op_name = obj.get("op").?.string;
         var op: Opcode = .STOP;
-        inline for (std.meta.fields(Opcode)) |field| {
-            if (std.mem.eql(u8, field.name, op_name)) {
-                op = @enumFromInt(field.value);
+        const op_info = @typeInfo(Opcode).@"enum";
+        inline for (op_info.field_names, op_info.field_values) |field_name, field_value| {
+            if (std.mem.eql(u8, field_name, op_name)) {
+                op = @fromBackingInt(@intCast(field_value));
                 break;
             }
         }

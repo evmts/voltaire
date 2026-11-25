@@ -14,7 +14,7 @@ pub fn main() !void {
 
     // 1. ERC-20 Function Selectors
     try stdout.print("1. ERC-20 Function Selectors\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const erc20_functions = [_][]const u8{
         "totalSupply()",
@@ -39,7 +39,7 @@ pub fn main() !void {
 
     // 2. ERC-20 Event Topics
     try stdout.print("2. ERC-20 Event Topics\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const erc20_events = [_][]const u8{
         "Transfer(address,address,uint256)",
@@ -60,7 +60,7 @@ pub fn main() !void {
 
     // 3. ERC-721 Function Selectors
     try stdout.print("3. ERC-721 Function Selectors\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const erc721_functions = [_][]const u8{
         "ownerOf(uint256)",
@@ -85,7 +85,7 @@ pub fn main() !void {
 
     // 4. ERC-721 Event Topics
     try stdout.print("4. ERC-721 Event Topics\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const erc721_events = [_][]const u8{
         "Transfer(address,address,uint256)",
@@ -107,7 +107,7 @@ pub fn main() !void {
 
     // 5. Constructing Transaction Calldata
     try stdout.print("5. Constructing Transaction Calldata\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Example: ERC-20 transfer(address,uint256)\n\n", .{});
 
     const transfer_sig = "transfer(address,uint256)";
@@ -131,7 +131,7 @@ pub fn main() !void {
 
     // 6. Parsing Event Logs
     try stdout.print("6. Parsing Event Logs\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Event logs contain topics[0] = event signature hash\n\n", .{});
 
     const transfer_event_sig = "Transfer(address,address,uint256)";
@@ -149,7 +149,7 @@ pub fn main() !void {
 
     // 7. Custom Contract Examples
     try stdout.print("7. Custom Contract Examples\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const custom_functions = [_][]const u8{
         "mint(address,uint256)",
@@ -173,7 +173,7 @@ pub fn main() !void {
 
     // 8. Verifying Known Selectors
     try stdout.print("8. Verifying Known Selectors\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Well-known selector for ERC-20 transfer
     const known_selector = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };

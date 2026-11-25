@@ -67,7 +67,7 @@ pub fn hashInternal(l: [32]u8, r: [32]u8) [32]u8 {
     // If both children are zero, parent hash is zero
     const lz = std.mem.allEqual(u8, &l, 0);
     const rz = std.mem.allEqual(u8, &r, 0);
-    if (lz and rz) return [_]u8{0} ** 32;
+    if (lz and rz) return @as([32]u8, @splat(0));
 
     var h: [32]u8 = undefined;
     var hasher = blake3.init(.{});
@@ -87,7 +87,7 @@ pub fn hashStem(node: StemNode) [32]u8 {
         if (mv) |v| {
             hasher.update(&v);
         } else {
-            hasher.update(&([_]u8{0} ** 32));
+            hasher.update(&(@as([32]u8, @splat(0))));
         }
     }
 
@@ -107,7 +107,7 @@ pub fn hashLeaf(node: LeafNode) [32]u8 {
 /// Hash any node type
 pub fn hashNode(node: Node) [32]u8 {
     return switch (node) {
-        .empty => [_]u8{0} ** 32,
+        .empty => @as([32]u8, @splat(0)),
         .internal => |n| hashInternal(n.left, n.right),
         .stem => |n| hashStem(n),
         .leaf => |n| hashLeaf(n),
@@ -153,7 +153,7 @@ fn insertNode(self: *BinaryTree, node: Node, stem: Stem, idx: u8, v: [32]u8, dep
             // Create new stem node
             var sn = StemNode{
                 .stem = stem,
-                .values = [_]?[32]u8{null} ** 256,
+                .values = @as([256]?[32]u8, @splat(null)),
             };
             sn.values[idx] = v;
             return .{ .stem = sn };
@@ -210,11 +210,11 @@ fn splitStems(self: *BinaryTree, existing: StemNode, new_stem: Stem, new_idx: u8
         if (existing_bit == 0) {
             return .{ .internal = .{
                 .left = child_hash,
-                .right = [_]u8{0} ** 32,
+                .right = @as([32]u8, @splat(0)),
             } };
         } else {
             return .{ .internal = .{
-                .left = [_]u8{0} ** 32,
+                .left = @as([32]u8, @splat(0)),
                 .right = child_hash,
             } };
         }
@@ -222,7 +222,7 @@ fn splitStems(self: *BinaryTree, existing: StemNode, new_stem: Stem, new_idx: u8
         // Diverged, create internal node
         var new_sn = StemNode{
             .stem = new_stem,
-            .values = [_]?[32]u8{null} ** 256,
+            .values = @as([256]?[32]u8, @splat(null)),
         };
         new_sn.values[new_idx] = new_val;
 
@@ -294,7 +294,7 @@ pub fn rootHashHex(self: *BinaryTree, buf: []u8) ![]const u8 {
 }
 
 test "BinaryTree - addressToKey" {
-    const addr = [_]u8{ 0xf3, 0x9f } ++ [_]u8{0} ** 18;
+    const addr = [_]u8{ 0xf3, 0x9f } ++ @as([18]u8, @splat(0));
     const k = addressToKey(addr);
 
     try std.testing.expectEqual(@as(usize, 32), k.len);
@@ -315,14 +315,14 @@ test "BinaryTree - splitKey" {
 }
 
 test "BinaryTree - hashInternal zero children" {
-    const zero = [_]u8{0} ** 32;
+    const zero = @as([32]u8, @splat(0));
     const h = hashInternal(zero, zero);
     try std.testing.expectEqualSlices(u8, &zero, &h);
 }
 
 test "BinaryTree - hashInternal non-zero children" {
-    const l = [_]u8{0x01} ++ [_]u8{0} ** 31;
-    const r = [_]u8{0x02} ++ [_]u8{0} ** 31;
+    const l = [_]u8{0x01} ++ @as([31]u8, @splat(0));
+    const r = [_]u8{0x02} ++ @as([31]u8, @splat(0));
     const h = hashInternal(l, r);
 
     // Should not be all zeros
@@ -341,7 +341,7 @@ test "BinaryTree - init and deinit" {
     defer tree.deinit();
 
     const h = tree.rootHash();
-    const zero = [_]u8{0} ** 32;
+    const zero = @as([32]u8, @splat(0));
     try std.testing.expectEqualSlices(u8, &zero, &h);
 }
 
@@ -360,7 +360,7 @@ test "BinaryTree - insert single value" {
     try tree.insert(k, v);
 
     const h = tree.rootHash();
-    const zero = [_]u8{0} ** 32;
+    const zero = @as([32]u8, @splat(0));
     const is_zero = std.mem.eql(u8, &h, &zero);
     try std.testing.expect(!is_zero);
 }
@@ -422,7 +422,7 @@ test "BinaryTree - rootHashHex empty tree" {
     try std.testing.expect(std.mem.startsWith(u8, hex, "0x"));
 
     // Empty tree should have all zeros
-    const expected = "0x" ++ "00" ** 32;
+    const expected = "0x" ++ @as(*const [(32) * 2]u8, @ptrCast(&@as([32][2]u8, @splat("00".*))));
     try std.testing.expectEqualStrings(expected, hex);
 }
 

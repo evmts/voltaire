@@ -88,7 +88,7 @@ pub const Domain = struct {
 
     /// Get the type string for EIP712Domain
     pub fn getTypeString(self: Domain, allocator: std.mem.Allocator) ![]u8 {
-        var parts = std.ArrayList([]const u8){};
+        var parts = std.ArrayList([]const u8).empty;
         defer parts.deinit(allocator);
 
         if (self.name != null) try parts.append(allocator, "string name");
@@ -98,7 +98,7 @@ pub const Domain = struct {
         if (self.salt != null) try parts.append(allocator, "bytes32 salt");
 
         // Join with commas
-        var result = std.ArrayList(u8){};
+        var result = std.ArrayList(u8).empty;
         defer result.deinit(allocator);
 
         try result.appendSlice(allocator, "EIP712Domain(");
@@ -125,7 +125,7 @@ pub const Domain = struct {
         crypto.Keccak256.hash(type_string, &type_hash, .{});
 
         // Encode domain data
-        var encoded_data = std.ArrayList(u8){};
+        var encoded_data = std.ArrayList(u8).empty;
         defer encoded_data.deinit(allocator);
 
         // Start with type hash
@@ -148,14 +148,14 @@ pub const Domain = struct {
 
         if (self.chain_id) |chain_id| {
             // uint256 encoded (32 bytes, big-endian)
-            var chain_bytes: [32]u8 = [_]u8{0} ** 32;
+            var chain_bytes: [32]u8 = @as([32]u8, @splat(0));
             std.mem.writeInt(u64, chain_bytes[24..32], chain_id, .big);
             try encoded_data.appendSlice(allocator, &chain_bytes);
         }
 
         if (self.verifying_contract) |addr| {
             // address encoded (left-padded to 32 bytes)
-            var addr_bytes: [32]u8 = [_]u8{0} ** 32;
+            var addr_bytes: [32]u8 = @as([32]u8, @splat(0));
             @memcpy(addr_bytes[12..32], &addr.bytes);
             try encoded_data.appendSlice(allocator, &addr_bytes);
         }
@@ -243,7 +243,7 @@ pub const Domain = struct {
             .version = self.version orelse "",
             .chain_id = self.chain_id orelse 0,
             .verifying_contract = self.verifying_contract orelse Address.ZERO_ADDRESS,
-            .salt = self.salt orelse [_]u8{0} ** 32,
+            .salt = self.salt orelse @as([32]u8, @splat(0)),
         };
     }
 };
@@ -274,7 +274,7 @@ test "Domain: validate succeeds with verifying_contract" {
 }
 
 test "Domain: validate succeeds with salt" {
-    const domain = Domain{ .salt = [_]u8{0xab} ** 32 };
+    const domain = Domain{ .salt = @as([32]u8, @splat(0xab)) };
     try domain.validate();
 }
 
@@ -291,7 +291,7 @@ test "Domain: getTypeString with all fields" {
         .version = "1",
         .chain_id = 1,
         .verifying_contract = addr,
-        .salt = [_]u8{0} ** 32,
+        .salt = @as([32]u8, @splat(0)),
     };
 
     const type_string = try domain.getTypeString(allocator);
@@ -411,7 +411,7 @@ test "Domain: getFieldsBitmap" {
     const domain_contract = Domain{ .verifying_contract = addr };
     try std.testing.expectEqual(@as(u8, 0x08), domain_contract.getFieldsBitmap());
 
-    const domain_salt = Domain{ .salt = [_]u8{0} ** 32 };
+    const domain_salt = Domain{ .salt = @as([32]u8, @splat(0)) };
     try std.testing.expectEqual(@as(u8, 0x10), domain_salt.getFieldsBitmap());
 
     const domain_all = Domain{
@@ -419,7 +419,7 @@ test "Domain: getFieldsBitmap" {
         .version = "1",
         .chain_id = 1,
         .verifying_contract = addr,
-        .salt = [_]u8{0} ** 32,
+        .salt = @as([32]u8, @splat(0)),
     };
     try std.testing.expectEqual(@as(u8, 0x1f), domain_all.getFieldsBitmap());
 }
@@ -452,7 +452,7 @@ test "Domain: getEIP712DomainType with all fields" {
         .version = "1",
         .chain_id = 1,
         .verifying_contract = addr,
-        .salt = [_]u8{0} ** 32,
+        .salt = @as([32]u8, @splat(0)),
     };
 
     var buffer: [5]EIP712Field = undefined;
@@ -511,7 +511,7 @@ test "Domain: typeHash with salt field" {
         .name = "Test",
         .version = "1",
         .chain_id = 1,
-        .salt = [_]u8{0xab} ** 32,
+        .salt = @as([32]u8, @splat(0xab)),
     };
 
     const type_string = try domain.getTypeString(allocator);
@@ -550,7 +550,7 @@ test "Domain: toErc5267Response with all fields" {
         .version = "1",
         .chain_id = 1,
         .verifying_contract = addr,
-        .salt = [_]u8{0xab} ** 32,
+        .salt = @as([32]u8, @splat(0xab)),
     };
 
     const response = domain.toErc5267Response();
@@ -560,7 +560,7 @@ test "Domain: toErc5267Response with all fields" {
     try std.testing.expectEqualStrings("1", response.version);
     try std.testing.expectEqual(@as(u64, 1), response.chain_id);
     try std.testing.expect(response.verifying_contract.equals(addr));
-    try std.testing.expectEqual([_]u8{0xab} ** 32, response.salt);
+    try std.testing.expectEqual(@as([32]u8, @splat(0xab)), response.salt);
 }
 
 test "Domain: toErc5267Response with partial fields uses defaults" {
@@ -576,5 +576,5 @@ test "Domain: toErc5267Response with partial fields uses defaults" {
     try std.testing.expectEqualStrings("", response.version); // default empty
     try std.testing.expectEqual(@as(u64, 1), response.chain_id);
     try std.testing.expect(response.verifying_contract.equals(Address.ZERO_ADDRESS)); // default zero
-    try std.testing.expectEqual([_]u8{0} ** 32, response.salt); // default zeros
+    try std.testing.expectEqual(@as([32]u8, @splat(0)), response.salt); // default zeros
 }

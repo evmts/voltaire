@@ -10,7 +10,7 @@ const primitives = @import("primitives");
 /// - Extracting addresses from logs and return data
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -86,14 +86,14 @@ pub fn main() !void {
     primitives.Address.toAbiEncoded(&to_address, &encoded_to);
 
     // Encode amount (32-byte big-endian)
-    var amount_bytes: [32]u8 = [_]u8{0} ** 32;
+    var amount_bytes: [32]u8 = @as([32]u8, @splat(0));
     std.mem.writeInt(u256, &amount_bytes, amount, .big);
 
     // Concatenate: selector + encodedTo + amountBytes
     const selector_bytes = try primitives.Hex.toBytes(function_selector, allocator);
     defer allocator.free(selector_bytes);
 
-    var calldata = std.ArrayList(u8){};
+    var calldata = std.ArrayList(u8).empty;
     defer calldata.deinit(allocator);
 
     try calldata.appendSlice(allocator, selector_bytes);
@@ -170,16 +170,16 @@ pub fn main() !void {
     try stdout.print("  Count: {}\n", .{targets.len});
 
     // Encode array: offset + length + elements
-    var array_encoding = std.ArrayList(u8){};
+    var array_encoding = std.ArrayList(u8).empty;
     defer array_encoding.deinit(allocator);
 
     // Offset to array data (typically 0x20 for dynamic arrays)
-    var offset_bytes: [32]u8 = [_]u8{0} ** 32;
+    var offset_bytes: [32]u8 = @as([32]u8, @splat(0));
     std.mem.writeInt(u256, &offset_bytes, 32, .big);
     try array_encoding.appendSlice(allocator, &offset_bytes);
 
     // Array length
-    var length_bytes: [32]u8 = [_]u8{0} ** 32;
+    var length_bytes: [32]u8 = @as([32]u8, @splat(0));
     std.mem.writeInt(u256, &length_bytes, targets.len, .big);
     try array_encoding.appendSlice(allocator, &length_bytes);
 
@@ -235,7 +235,7 @@ pub fn main() !void {
     primitives.Address.toAbiEncoded(&addr, &valid_abi);
     try stdout.print("✓ Valid padding: {}\n", .{ValidationHelper.isValidAbiEncoding(&valid_abi)});
 
-    var invalid_abi: [32]u8 = [_]u8{0} ** 32;
+    var invalid_abi: [32]u8 = @as([32]u8, @splat(0));
     invalid_abi[5] = 1; // Non-zero in padding region
     try stdout.print("✗ Invalid padding: {}\n\n", .{ValidationHelper.isValidAbiEncoding(&invalid_abi)});
 

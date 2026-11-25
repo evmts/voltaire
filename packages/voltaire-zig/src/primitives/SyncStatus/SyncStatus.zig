@@ -154,7 +154,7 @@ pub fn from(value: anytype) SyncStatus {
 
 /// Encode SyncStatus to JSON (eth_syncing RPC response format)
 pub fn toJson(status: SyncStatus, allocator: Allocator) ![]u8 {
-    var buf = std.ArrayList(u8){};
+    var buf = std.ArrayList(u8).empty;
     defer buf.deinit(allocator);
 
     switch (status) {

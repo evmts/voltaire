@@ -44,7 +44,7 @@ test "bls12_g2_mul - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const result = execute(allocator, &input, GAS - 1);
 
     try testing.expectError(error.OutOfGas, result);
@@ -54,7 +54,7 @@ test "bls12_g2_mul - invalid input length too short" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 256;
+    const input = @as([256]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     try testing.expectError(error.InvalidInput, result);
@@ -64,7 +64,7 @@ test "bls12_g2_mul - invalid input length too long" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 320;
+    const input = @as([320]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     try testing.expectError(error.InvalidInput, result);
@@ -74,7 +74,7 @@ test "bls12_g2_mul - gas cost" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     if (result) |res| {
@@ -91,7 +91,7 @@ test "bls12_g2_mul - output length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     if (result) |res| {
@@ -108,7 +108,7 @@ test "bls12_g2_mul - scalar zero" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     if (result) |res| {
@@ -125,7 +125,7 @@ test "bls12_g2_mul - scalar one" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 288;
+    var input = @as([288]u8, @splat(0));
     input[287] = 1;
     const result = execute(allocator, &input, 1000000);
 

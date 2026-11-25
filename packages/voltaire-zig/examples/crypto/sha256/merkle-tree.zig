@@ -3,7 +3,7 @@ const crypto = @import("crypto");
 const SHA256 = crypto.SHA256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -11,7 +11,7 @@ pub fn main() !void {
 
     // Example 1: Build simple Merkle tree
     std.debug.print("1. Building Merkle Tree\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const leaves = [_][]const u8{
         "Transaction 1",
@@ -39,7 +39,7 @@ pub fn main() !void {
     std.debug.print("Tree structure:\n", .{});
     var level: usize = tree.items.len;
     while (level > 0) : (level -= 1) {
-        const indent = " " ** ((level - 1) * 2);
+        const indent = &@as([(level - 1) * 2]u8, @splat(' '));
         std.debug.print("Level {}:{s} {} nodes\n", .{
             tree.items.len - level,
             indent,
@@ -51,7 +51,7 @@ pub fn main() !void {
 
     // Example 2: Merkle proof generation and verification
     std.debug.print("2. Merkle Proof Generation and Verification\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const leaf_index: usize = 2;
     const leaf = leaves[leaf_index];
@@ -84,7 +84,7 @@ pub fn main() !void {
 
     // Example 3: Odd number of leaves
     std.debug.print("3. Merkle Tree with Odd Number of Leaves\n", .{});
-    std.debug.print("{s}\n", .{"-" ** 70});
+    std.debug.print("{s}\n", .{&@as([70]u8, @splat('-'))});
 
     const odd_leaves = [_][]const u8{
         "TX 1",
@@ -129,7 +129,7 @@ const ProofStep = struct {
 
 // Build Merkle tree from leaves
 fn buildMerkleTree(leaves: []const []const u8, allocator: std.mem.Allocator) !std.ArrayList([]u8) {
-    var tree = std.ArrayList([]u8){};
+    var tree = std.ArrayList([]u8).empty;
 
     // First level: hash all leaves
     var first_level = try allocator.alloc(u8, leaves.len * 32);
@@ -171,7 +171,7 @@ fn buildMerkleTree(leaves: []const []const u8, allocator: std.mem.Allocator) !st
 
 // Generate Merkle proof for a leaf
 fn generateMerkleProof(tree: std.ArrayList([]u8), leaf_index: usize, allocator: std.mem.Allocator) ![]ProofStep {
-    var proof = std.ArrayList(ProofStep){};
+    var proof = std.ArrayList(ProofStep).empty;
     defer proof.deinit(allocator);
 
     var index = leaf_index;

@@ -8,7 +8,7 @@ const crypto = @import("crypto");
 /// - Merkle tree construction
 /// - ABI encoding patterns
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -18,7 +18,7 @@ pub fn main() !void {
 
     // 1. Basic Multiple Chunk Hashing
     try stdout.print("1. Basic Multiple Chunk Hashing\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const chunk1 = [_]u8{ 1, 2, 3 };
     const chunk2 = [_]u8{ 4, 5, 6 };
@@ -48,7 +48,7 @@ pub fn main() !void {
 
     // 2. Merkle Tree Node Hashing
     try stdout.print("2. Merkle Tree Node Hashing\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Pattern: hash(leftHash ++ rightHash)\n\n", .{});
 
     // Create leaf hashes
@@ -110,7 +110,7 @@ pub fn main() !void {
 
     // 3. Streaming Data Pattern
     try stdout.print("3. Streaming Data Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Hash large data in chunks without loading all at once\n\n", .{});
 
     // Simulate receiving data in chunks
@@ -140,7 +140,7 @@ pub fn main() !void {
 
     // 4. Message Signing with Prefix (EIP-191)
     try stdout.print("4. Message Signing with Prefix (EIP-191)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("Pattern: keccak256(prefix ++ message)\n\n", .{});
 
     const message = "Hello, Ethereum!";
@@ -166,7 +166,7 @@ pub fn main() !void {
 
     // 5. Dynamic Array Encoding
     try stdout.print("5. Dynamic Array Encoding\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
     try stdout.print("ABI encoding: length ++ elements\n\n", .{});
 
     // Encode array: [1, 2, 3, 4, 5]
@@ -174,13 +174,13 @@ pub fn main() !void {
     defer array_buffer.deinit();
 
     // Length (32 bytes, big-endian 5)
-    var length_bytes = [_]u8{0} ** 32;
+    var length_bytes = @as([32]u8, @splat(0));
     length_bytes[31] = 5;
     try array_buffer.appendSlice(&length_bytes);
 
     // Elements (5 x 32 bytes)
     for (1..6) |i| {
-        var element = [_]u8{0} ** 32;
+        var element = @as([32]u8, @splat(0));
         element[31] = @intCast(i);
         try array_buffer.appendSlice(&element);
     }
@@ -196,7 +196,7 @@ pub fn main() !void {
 
     // 6. Batch Processing Performance
     try stdout.print("6. Batch Processing\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const batch_size = 10;
     var inputs: [batch_size][]const u8 = undefined;

@@ -117,8 +117,8 @@ pub fn format(hash: *const BlockHash, allocator: @import("std").mem.Allocator) !
 }
 
 /// Generate random block hash (for testing)
-pub fn random() BlockHash {
-    return Hash.random();
+pub fn random(io: std.Io) BlockHash {
+    return Hash.random(io);
 }
 
 // ============================================================================
@@ -134,7 +134,7 @@ test "BlockHash is Hash alias" {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{1} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(1));
     const hash = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, hash.len);
     try std.testing.expectEqual(@as(u8, 1), hash[0]);
@@ -150,7 +150,7 @@ test "fromHex - with 0x prefix" {
 }
 
 test "fromHex - without 0x prefix" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     const hash = try fromHex(hex);
     try std.testing.expectEqual(@as(u8, 0xcd), hash[0]);
 }
@@ -161,13 +161,13 @@ test "fromHex - invalid length" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(42));
     const hash = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 42), hash[0]);
 }
 
 test "from - hex with 0x" {
-    const hex = "0x" ++ ("ef" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ef".*)))));
     const hash = try from(hex);
     try std.testing.expectEqual(@as(u8, 0xef), hash[0]);
 }
@@ -190,19 +190,19 @@ test "toHex - converts to hex string" {
 }
 
 test "equals - same hash" {
-    const hash: BlockHash = [_]u8{42} ** SIZE;
+    const hash: BlockHash = @as([SIZE]u8, @splat(42));
     try std.testing.expect(equals(&hash, &hash));
 }
 
 test "equals - identical hashes" {
-    const hash1: BlockHash = [_]u8{99} ** SIZE;
-    const hash2: BlockHash = [_]u8{99} ** SIZE;
+    const hash1: BlockHash = @as([SIZE]u8, @splat(99));
+    const hash2: BlockHash = @as([SIZE]u8, @splat(99));
     try std.testing.expect(equals(&hash1, &hash2));
 }
 
 test "equals - different hashes" {
-    const hash1: BlockHash = [_]u8{1} ** SIZE;
-    const hash2: BlockHash = [_]u8{2} ** SIZE;
+    const hash1: BlockHash = @as([SIZE]u8, @splat(1));
+    const hash2: BlockHash = @as([SIZE]u8, @splat(2));
     try std.testing.expect(!equals(&hash1, &hash2));
 }
 
@@ -218,12 +218,12 @@ test "isZero - non-zero hash" {
 }
 
 test "isValidHex - valid with 0x" {
-    const hex = "0x" ++ ("ab" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("ab".*)))));
     try std.testing.expect(isValidHex(hex));
 }
 
 test "isValidHex - valid without 0x" {
-    const hex = "cd" ** SIZE;
+    const hex = @as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("cd".*))));
     try std.testing.expect(isValidHex(hex));
 }
 
@@ -232,12 +232,12 @@ test "isValidHex - invalid length" {
 }
 
 test "isValidHex - invalid chars" {
-    const hex = "0x" ++ ("zz" ** SIZE);
+    const hex = "0x" ++ (@as(*const [(SIZE) * 2]u8, @ptrCast(&@as([SIZE][2]u8, @splat("zz".*)))));
     try std.testing.expect(!isValidHex(hex));
 }
 
 test "clone - creates independent copy" {
-    var original: BlockHash = [_]u8{42} ** SIZE;
+    var original: BlockHash = @as([SIZE]u8, @splat(42));
     var copy = clone(&original);
     try std.testing.expect(equals(&original, &copy));
 
@@ -248,13 +248,13 @@ test "clone - creates independent copy" {
 }
 
 test "random - generates different hashes" {
-    const hash1 = random();
-    const hash2 = random();
+    const hash1 = random(std.testing.io);
+    const hash2 = random(std.testing.io);
     // Astronomically unlikely to be equal
     try std.testing.expect(!equals(&hash1, &hash2));
 }
 
 test "random - correct size" {
-    const hash = random();
+    const hash = random(std.testing.io);
     try std.testing.expectEqual(SIZE, hash.len);
 }

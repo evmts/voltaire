@@ -68,7 +68,7 @@ If your contribution is large, please open a discussion to chat about the change
 
 Install the following dependencies:
 
-- **Zig 0.15.x** (CI uses 0.15.2; `build.zig.zon` requires at least 0.15.1) - https://ziglang.org/download/ - newer Zig releases do not build Voltaire yet; see [docs/MIGRATION_ZIG_017.md](./docs/MIGRATION_ZIG_017.md)
+- **Zig 0.17.1** (CI uses 0.17.1; `build.zig.zon` requires at least 0.17.1) - https://ziglang.org/download/
 - **Rust** (stable) - https://rustup.rs/ - `zig build` compiles the Rust crypto wrappers through Cargo. Add the WASM target for WASM builds: `rustup target add wasm32-unknown-unknown`
 - **Node.js 22** (CI version; `@tevm/voltaire` supports Node 18+ at runtime) - https://nodejs.org/
 - **pnpm 10** (pinned in the root `package.json` `packageManager` field; `corepack enable` picks it up) - https://pnpm.io/
@@ -379,7 +379,7 @@ pnpm clean                   # Same, plus each package's clean script (dist/, ty
 
 ## Fuzz Testing
 
-Fuzz tests use Zig's built-in fuzzer, which only runs on Linux (it assumes ELF binaries). On macOS, run it inside a Linux VM or container that has Zig 0.15.2, Rust stable, and the submodules checked out. There is no official `ziglang/zig` Docker image.
+Fuzz tests use Zig's built-in fuzzer, which only runs on Linux (it assumes ELF binaries). On macOS, run it inside a Linux VM or container that has Zig 0.17.1, Rust stable, and the submodules checked out. There is no official `ziglang/zig` Docker image.
 
 ### Running Fuzz Tests
 
@@ -389,7 +389,7 @@ timeout 300 zig build test --fuzz                    # Stop after 5 minutes
 zig build test --fuzz --webui=127.0.0.1:6971         # Live coverage web UI at http://127.0.0.1:6971
 ```
 
-Zig 0.15 has no `--fuzz=<duration>` or `--port` flag; `zig build -h` lists the supported ones.
+`zig build -h` lists the supported fuzz options.
 
 ### Fuzz Test Organization
 

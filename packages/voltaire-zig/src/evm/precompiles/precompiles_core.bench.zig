@@ -2,12 +2,12 @@ const std = @import("std");
 const zbench = @import("zbench");
 const precompiles = @import("precompiles");
 
-const data_64 = [_]u8{0x42} ** 64;
-const data_1k = [_]u8{0x55} ** 1024;
+const data_64 = @as([64]u8, @splat(0x42));
+const data_1k = @as([1024]u8, @splat(0x55));
 
 // Minimal valid MODEXP input: baseLen=32, expLen=32, modLen=32
 const modexp_input = blk: {
-    var buf = [_]u8{0} ** (96 + 96);
+    var buf = @as([96 + 96]u8, @splat(0));
     buf[31] = 32; // base len
     buf[63] = 32; // exp len
     buf[95] = 32; // mod len
@@ -41,11 +41,8 @@ fn benchModexp32B(allocator: std.mem.Allocator) void {
     std.mem.doNotOptimizeAway(res.gas_used);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
@@ -54,7 +51,6 @@ pub fn main() !void {
     try bench.add("Precompile.ripemd160 (64B)", benchRipemd160_64B, .{});
     try bench.add("Precompile.modexp (32B)", benchModexp32B, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

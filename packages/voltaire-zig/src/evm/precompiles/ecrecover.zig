@@ -29,7 +29,7 @@ pub fn execute(
     }
 
     // Input: 128 bytes (hash32, v32, r32, s32)
-    var input_buf: [128]u8 = [_]u8{0} ** 128;
+    var input_buf: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(input_buf[0..@min(input.len, 128)], input[0..@min(input.len, 128)]);
 
     const hash = input_buf[0..32];
@@ -159,7 +159,7 @@ test "ecRecover - accepts high-s signature used by legacy staticcall fixture" {
         0xb0, 0x9a, 0x3e, 0x50, 0x3d, 0x86, 0xe0, 0x0e,
         0x52, 0x55, 0xff, 0x7f, 0x71, 0x5d, 0x3d, 0x1c,
     };
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
     const r = [_]u8{
         0x73, 0xb1, 0x69, 0x38, 0x92, 0x21, 0x9d, 0x73,
         0x6c, 0xab, 0xa5, 0x5b, 0xdb, 0x67, 0x21, 0x6e,
@@ -194,7 +194,7 @@ test "ecRecover - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     const result = execute(allocator, &input, GAS - 1);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -203,7 +203,7 @@ test "ecRecover - exact gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -214,7 +214,7 @@ test "ecRecover - input too short padded" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 100;
+    var input = @as([100]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -226,7 +226,7 @@ test "ecRecover - input too long truncated" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 200;
+    var input = @as([200]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -250,7 +250,7 @@ test "ecRecover - v value 27 with zero r and s returns empty output" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     input[63] = 27;
 
     const result = try execute(allocator, &input, GAS);
@@ -264,7 +264,7 @@ test "ecRecover - v value 28 with zero r and s returns empty output" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     input[63] = 28;
 
     const result = try execute(allocator, &input, GAS);
@@ -278,7 +278,7 @@ test "ecRecover - invalid v value returns empty output" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     input[63] = 29;
 
     const result = try execute(allocator, &input, GAS);
@@ -292,7 +292,7 @@ test "ecRecover - all zero input returns empty output" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -310,7 +310,7 @@ test "ecRecover - output is empty for an invalid signature" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0} ** 128;
+    var input = @as([128]u8, @splat(0));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -322,7 +322,7 @@ test "ecRecover - invalid signature graceful failure" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input = [_]u8{0xFF} ** 128;
+    var input = @as([128]u8, @splat(0xFF));
     const result = try execute(allocator, &input, GAS);
     defer result.deinit(allocator);
 
@@ -341,13 +341,13 @@ test "ecRecover - unrecoverable r with high s returns empty output" {
     // secp256k1_n / 2 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
 
     var input: [128]u8 = undefined;
-    const hash = [_]u8{0x47} ** 32;
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
-    const r = [_]u8{0x69} ** 32;
+    const hash = @as([32]u8, @splat(0x47));
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
+    const r = @as([32]u8, @splat(0x69));
 
     // s is a high value > n/2
     // Using 0x8000...0000 which is definitely > n/2
-    const s_high = [_]u8{0x80} ++ [_]u8{0x00} ** 31;
+    const s_high = [_]u8{0x80} ++ @as([31]u8, @splat(0x00));
 
     @memcpy(input[0..32], &hash);
     @memcpy(input[32..64], &v);
@@ -367,10 +367,10 @@ test "ecRecover - reject r = 0" {
     const allocator = testing.allocator;
 
     var input: [128]u8 = undefined;
-    const hash = [_]u8{0x47} ** 32;
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
-    const r_zero = [_]u8{0} ** 32; // r = 0 should be rejected
-    const s = [_]u8{0x7a} ** 32;
+    const hash = @as([32]u8, @splat(0x47));
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
+    const r_zero = @as([32]u8, @splat(0)); // r = 0 should be rejected
+    const s = @as([32]u8, @splat(0x7a));
 
     @memcpy(input[0..32], &hash);
     @memcpy(input[32..64], &v);
@@ -390,10 +390,10 @@ test "ecRecover - reject s = 0" {
     const allocator = testing.allocator;
 
     var input: [128]u8 = undefined;
-    const hash = [_]u8{0x47} ** 32;
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
-    const r = [_]u8{0x69} ** 32;
-    const s_zero = [_]u8{0} ** 32; // s = 0 should be rejected
+    const hash = @as([32]u8, @splat(0x47));
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
+    const r = @as([32]u8, @splat(0x69));
+    const s_zero = @as([32]u8, @splat(0)); // s = 0 should be rejected
 
     @memcpy(input[0..32], &hash);
     @memcpy(input[32..64], &v);
@@ -413,12 +413,12 @@ test "ecRecover - reject r >= curve_order" {
     const allocator = testing.allocator;
 
     var input: [128]u8 = undefined;
-    const hash = [_]u8{0x47} ** 32;
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
-    const s = [_]u8{0x7a} ** 32;
+    const hash = @as([32]u8, @splat(0x47));
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
+    const s = @as([32]u8, @splat(0x7a));
 
     // Set r to all 0xFF (definitely >= curve_order)
-    const r_invalid = [_]u8{0xFF} ** 32;
+    const r_invalid = @as([32]u8, @splat(0xFF));
 
     @memcpy(input[0..32], &hash);
     @memcpy(input[32..64], &v);
@@ -438,12 +438,12 @@ test "ecRecover - reject s >= curve_order" {
     const allocator = testing.allocator;
 
     var input: [128]u8 = undefined;
-    const hash = [_]u8{0x47} ** 32;
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
-    const r = [_]u8{0x69} ** 32;
+    const hash = @as([32]u8, @splat(0x47));
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
+    const r = @as([32]u8, @splat(0x69));
 
     // Set s to all 0xFF (definitely >= curve_order)
-    const s_invalid = [_]u8{0xFF} ** 32;
+    const s_invalid = @as([32]u8, @splat(0xFF));
 
     @memcpy(input[0..32], &hash);
     @memcpy(input[32..64], &v);
@@ -463,10 +463,10 @@ test "ecRecover - reject invalid v value beyond 29" {
     const allocator = testing.allocator;
 
     var input: [128]u8 = undefined;
-    const hash = [_]u8{0x47} ** 32;
-    const v_invalid = [_]u8{0} ** 31 ++ [_]u8{100}; // v = 100 (invalid)
-    const r = [_]u8{0x69} ** 32;
-    const s = [_]u8{0x7a} ** 32;
+    const hash = @as([32]u8, @splat(0x47));
+    const v_invalid = @as([31]u8, @splat(0)) ++ [_]u8{100}; // v = 100 (invalid)
+    const r = @as([32]u8, @splat(0x69));
+    const s = @as([32]u8, @splat(0x7a));
 
     @memcpy(input[0..32], &hash);
     @memcpy(input[32..64], &v_invalid);

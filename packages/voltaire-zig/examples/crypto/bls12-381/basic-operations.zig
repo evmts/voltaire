@@ -15,7 +15,7 @@ pub fn main() !void {
 
     // 1. G1 Point Addition
     try stdout.print("1. G1 Point Addition\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Create input for G1 addition: generator + (2 * generator)
     var g1_add_input: [256]u8 = undefined;
@@ -33,7 +33,7 @@ pub fn main() !void {
 
     // 2. G1 Scalar Multiplication
     try stdout.print("2. G1 Scalar Multiplication\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Input: 128-byte G1 point + 32-byte scalar
     var g1_mul_input: [160]u8 = undefined;
@@ -49,7 +49,7 @@ pub fn main() !void {
 
     // 3. G2 Point Addition
     try stdout.print("3. G2 Point Addition (Extension Field Fp2)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // G2 points are 256 bytes (uncompressed)
     // Input: 512 bytes (two 256-byte G2 points)
@@ -63,7 +63,7 @@ pub fn main() !void {
 
     // 4. G2 Scalar Multiplication
     try stdout.print("4. G2 Scalar Multiplication\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Input: 256-byte G2 point + 32-byte scalar
     var g2_mul_input: [288]u8 = undefined;
@@ -78,11 +78,11 @@ pub fn main() !void {
 
     // 5. Identity Points
     try stdout.print("5. Identity Points (Point at Infinity)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Point at infinity is represented as all zeros
-    const g1_identity: [128]u8 = [_]u8{0} ** 128;
-    const g2_identity: [256]u8 = [_]u8{0} ** 256;
+    const g1_identity: [128]u8 = @as([128]u8, @splat(0));
+    const g2_identity: [256]u8 = @as([256]u8, @splat(0));
 
     try stdout.print("G1 identity: 128 zero bytes\n", .{});
     try stdout.print("G2 identity: 256 zero bytes\n", .{});
@@ -91,7 +91,7 @@ pub fn main() !void {
 
     // 6. Curve Order Properties
     try stdout.print("6. Curve Order Properties\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Curve order (r): 255-bit prime\n", .{});
     try stdout.print("Hex: 0x73eda753299d7d48...\n", .{});
@@ -100,7 +100,7 @@ pub fn main() !void {
 
     // 7. Point Formats
     try stdout.print("7. Point Formats\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("G1 Points:\n", .{});
     try stdout.print("  - Compressed: 48 bytes\n", .{});
@@ -113,7 +113,7 @@ pub fn main() !void {
 
     // 8. Security Level
     try stdout.print("8. Security Level\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("Security: 128-bit (classical), 64-bit (quantum)\n", .{});
     try stdout.print("Base field: 381-bit prime\n", .{});
@@ -122,7 +122,7 @@ pub fn main() !void {
 
     // 9. Use Cases
     try stdout.print("9. BLS12-381 Use Cases\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     try stdout.print("- BLS signatures (Ethereum validators)\n", .{});
     try stdout.print("- Signature aggregation (sync committees)\n", .{});

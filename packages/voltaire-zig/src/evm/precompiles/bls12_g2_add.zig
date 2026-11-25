@@ -41,7 +41,7 @@ test "bls12_g2_add - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 512;
+    const input = @as([512]u8, @splat(0));
     const result = execute(allocator, &input, GAS - 1);
 
     try testing.expectError(error.OutOfGas, result);
@@ -51,7 +51,7 @@ test "bls12_g2_add - invalid input length too short" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 256;
+    const input = @as([256]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     try testing.expectError(error.InvalidInput, result);
@@ -61,7 +61,7 @@ test "bls12_g2_add - invalid input length too long" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 600;
+    const input = @as([600]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     try testing.expectError(error.InvalidInput, result);
@@ -71,7 +71,7 @@ test "bls12_g2_add - gas cost" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 512;
+    const input = @as([512]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     if (result) |res| {
@@ -88,7 +88,7 @@ test "bls12_g2_add - output length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 512;
+    const input = @as([512]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     if (result) |res| {

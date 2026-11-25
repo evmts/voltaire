@@ -146,7 +146,7 @@ fn LruCache(comptime K: type, comptime V: type) type {
         pub fn init(allocator: std.mem.Allocator) Self {
             return .{
                 .cache = std.AutoHashMap(K, V).init(allocator),
-                .access_order = .{},
+                .access_order = .empty,
             };
         }
 
@@ -217,10 +217,10 @@ pub const ForkBackend = struct {
             .config = config,
             .account_cache = LruCache(Address.Address, StateCache.AccountState).init(allocator),
             .storage_cache = std.AutoHashMap(Address.Address, std.AutoHashMap(u256, u256)).init(allocator),
-            .storage_access_order = .{},
+            .storage_access_order = .empty,
             .code_cache = std.AutoHashMap(Address.Address, []const u8).init(allocator),
-            .code_access_order = .{},
-            .pending_queue = .{},
+            .code_access_order = .empty,
+            .pending_queue = .empty,
             .pending_by_id = std.AutoHashMap(u64, PendingRequest).init(allocator),
             .pending_keys = std.AutoHashMap(PendingKey, u64).init(allocator),
             .next_request_id = 1,
@@ -634,7 +634,7 @@ test "ForkBackend - transport union" {
 test "ForkBackend native resolver completes code reads while async hosts remain pending" {
     var backend = try ForkBackend.init(std.testing.allocator, "latest", .{});
     defer backend.deinit();
-    const address = Address.Address{ .bytes = [_]u8{0x12} ** 20 };
+    const address = Address.Address{ .bytes = @as([20]u8, @splat(0x12)) };
     try std.testing.expectError(error.RpcPending, backend.fetchCode(address));
     const Resolver = struct {
         fn resolve(context: ?*anyopaque) !void {

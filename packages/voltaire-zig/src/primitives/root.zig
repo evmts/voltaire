@@ -387,9 +387,9 @@ test "Contract deployment appends ABI constructor arguments to initcode" {
     var tx = try Contract.createDeployTransaction(allocator, &initcode, &.{.string}, &args, 7);
     defer tx.deinit(allocator);
 
-    const offset = [_]u8{0} ** 31 ++ [_]u8{32};
-    const length = [_]u8{0} ** 31 ++ [_]u8{3};
-    const contents = "abc".* ++ [_]u8{0} ** 29;
+    const offset = @as([31]u8, @splat(0)) ++ [_]u8{32};
+    const length = @as([31]u8, @splat(0)) ++ [_]u8{3};
+    const contents = "abc".* ++ @as([29]u8, @splat(0));
     try std.testing.expectEqualSlices(u8, &(initcode ++ offset ++ length ++ contents), tx.data);
     try std.testing.expectEqual(@as(?Contract.Address, null), tx.to);
     try std.testing.expectEqual(@as(u256, 7), tx.value);
@@ -415,11 +415,11 @@ test "Contract interaction encodes calls and decodes results, logs and reverts" 
     const args = [_]Contract.AbiValue{.{ .uint256 = 42 }};
     const call = try Contract.encodeFunctionCall(allocator, function, &args);
     defer allocator.free(call);
-    const word = [_]u8{0} ** 31 ++ [_]u8{42};
+    const word = @as([31]u8, @splat(0)) ++ [_]u8{42};
     try std.testing.expectEqualSlices(u8, &.{ 0x60, 0xfe, 0x47, 0xb1 }, call[0..4]);
     try std.testing.expectEqualSlices(u8, &word, call[4..]);
 
-    const true_word = [_]u8{0} ** 31 ++ [_]u8{1};
+    const true_word = @as([31]u8, @splat(0)) ++ [_]u8{1};
     const result = try Contract.decodeFunctionResult(allocator, &true_word, function.outputs);
     defer Contract.freeAbiValues(allocator, result);
     try std.testing.expect(result[0].bool);

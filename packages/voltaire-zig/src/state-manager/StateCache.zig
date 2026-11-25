@@ -85,7 +85,7 @@ pub const AccountCache = struct {
         return .{
             .allocator = allocator,
             .cache = std.AutoHashMap(Address, AccountState).init(allocator),
-            .checkpoints = .{},
+            .checkpoints = .empty,
         };
     }
 
@@ -164,7 +164,7 @@ pub const StorageCache = struct {
         return .{
             .allocator = allocator,
             .cache = std.AutoHashMap(Address, std.AutoHashMap(u256, u256)).init(allocator),
-            .checkpoints = std.ArrayList(std.AutoHashMap(Address, std.AutoHashMap(u256, u256))){},
+            .checkpoints = std.ArrayList(std.AutoHashMap(Address, std.AutoHashMap(u256, u256))).empty,
         };
     }
 
@@ -283,7 +283,7 @@ pub const ContractCache = struct {
         return .{
             .allocator = allocator,
             .cache = std.AutoHashMap(Address, []const u8).init(allocator),
-            .checkpoints = std.ArrayList(std.AutoHashMap(Address, []const u8)){},
+            .checkpoints = std.ArrayList(std.AutoHashMap(Address, []const u8)).empty,
         };
     }
 
@@ -397,7 +397,7 @@ test "AccountCache - basic operations" {
     var cache = try AccountCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const account = AccountState{
         .nonce = 5,
         .balance = 1000,
@@ -418,7 +418,7 @@ test "AccountCache - checkpoint and revert" {
     var cache = try AccountCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
 
     try cache.put(addr, account1);
@@ -444,7 +444,7 @@ test "AccountCache - checkpoint and commit" {
     var cache = try AccountCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const account1 = AccountState{ .nonce = 5, .balance = 1000, .code_hash = Hash.ZERO, .storage_root = Hash.ZERO };
 
     try cache.put(addr, account1);
@@ -468,7 +468,7 @@ test "StorageCache - basic operations" {
     var cache = try StorageCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const slot: u256 = 42;
     const value: u256 = 9999;
 
@@ -484,7 +484,7 @@ test "StorageCache - checkpoint and revert" {
     var cache = try StorageCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const slot: u256 = 42;
 
     try cache.put(addr, slot, 100);
@@ -504,7 +504,7 @@ test "ContractCache - basic operations" {
     var cache = try ContractCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const code = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
 
     try cache.put(addr, &code);
@@ -519,7 +519,7 @@ test "ContractCache - checkpoint and revert" {
     var cache = try ContractCache.init(allocator);
     defer cache.deinit();
 
-    const addr = Address{ .bytes = [_]u8{0x11} ++ [_]u8{0} ** 19 };
+    const addr = Address{ .bytes = [_]u8{0x11} ++ @as([19]u8, @splat(0)) };
     const code1 = [_]u8{ 0x60, 0x60 };
     const code2 = [_]u8{ 0x60, 0x60, 0x60, 0x40 };
 

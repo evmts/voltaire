@@ -21,20 +21,20 @@ const Crypto = crypto_pkg.Crypto;
 const hash_mod = crypto_pkg.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    std.debug.print("\n" ++ "=" ** 80 ++ "\n", .{});
+    std.debug.print("\n" ++ &@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Signature Recovery Workflow\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("  WARNING: This uses UNAUDITED cryptographic implementations.\n", .{});
     std.debug.print("  DO NOT use in production without proper security audit!\n\n", .{});
 
     // Example 1: Generate a Private Key
     std.debug.print("1. Generating a Private Key\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     // In production, use secure random generation
     // For this example, we'll use a deterministic key
@@ -54,7 +54,7 @@ pub fn main() !void {
 
     // Example 2: Derive Public Key from Private Key
     std.debug.print("2. Deriving Public Key from Private Key\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const public_key = try Crypto.unaudited_getPublicKey(private_key);
 
@@ -70,7 +70,7 @@ pub fn main() !void {
 
     // Example 3: Derive Ethereum Address from Public Key
     std.debug.print("3. Deriving Ethereum Address from Public Key\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const address = public_key.toAddress();
 
@@ -86,7 +86,7 @@ pub fn main() !void {
 
     // Example 4: Signing a Message (EIP-191)
     std.debug.print("4. Signing a Message with EIP-191 Prefix\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const message = "Hello, Ethereum! This is a signed message.";
     std.debug.print("  Original Message:\n", .{});
@@ -124,7 +124,7 @@ pub fn main() !void {
 
     // Example 5: Recover Public Key from Signature
     std.debug.print("5. Recovering Public Key from Signature\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const recovered_pubkey = try Crypto.unaudited_recoverPublicKey(message_hash, signature);
 
@@ -139,7 +139,7 @@ pub fn main() !void {
 
     // Example 6: Recover Address from Signature
     std.debug.print("6. Recovering Address from Signature\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const recovered_address = try Crypto.unaudited_recoverMessageAddress(message, signature);
 
@@ -158,7 +158,7 @@ pub fn main() !void {
 
     // Example 7: Verify Signature
     std.debug.print("7. Verifying Signature\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const is_valid = try Crypto.unaudited_verifyMessage(message, signature, address);
     std.debug.print("  Signature Valid for Address: {}\n", .{is_valid});
@@ -178,7 +178,7 @@ pub fn main() !void {
 
     // Example 8: Signing a Raw Hash
     std.debug.print("8. Signing a Raw Hash\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Sometimes you need to sign a hash directly without EIP-191 prefix.\n", .{});
     std.debug.print("  This is common for transaction signatures.\n", .{});
@@ -201,7 +201,7 @@ pub fn main() !void {
 
     // Example 9: Recover Address from Raw Hash Signature
     std.debug.print("9. Recovering Address from Raw Hash Signature\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     const raw_recovered_address = try Crypto.unaudited_recoverAddress(raw_hash, raw_signature);
 
@@ -215,7 +215,7 @@ pub fn main() !void {
 
     // Example 10: Signature Serialization
     std.debug.print("10. Signature Serialization\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Signatures are often serialized as 65-byte hex strings:\n", .{});
     std.debug.print("    r (32 bytes) || s (32 bytes) || v (1 byte)\n", .{});
@@ -242,7 +242,7 @@ pub fn main() !void {
 
     // Example 11: Invalid Signature Detection
     std.debug.print("11. Invalid Signature Detection\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("  Ethereum enforces strict signature validation:\n", .{});
     std.debug.print("\n", .{});
@@ -273,10 +273,10 @@ pub fn main() !void {
 
     // Example 12: Multiple Signers
     std.debug.print("12. Multiple Signers - Different Keys, Same Message\n", .{});
-    std.debug.print("-" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('-')) ++ "\n", .{});
 
-    const signer1_key: Crypto.PrivateKey = [_]u8{0x11} ** 32;
-    const signer2_key: Crypto.PrivateKey = [_]u8{0x22} ** 32;
+    const signer1_key: Crypto.PrivateKey = @as([32]u8, @splat(0x11));
+    const signer2_key: Crypto.PrivateKey = @as([32]u8, @splat(0x22));
 
     const shared_message = "Multisig transaction: Transfer 100 ETH";
 
@@ -303,9 +303,9 @@ pub fn main() !void {
     std.debug.print("  for the same message.\n", .{});
     std.debug.print("\n", .{});
 
-    std.debug.print("=" ** 80 ++ "\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n", .{});
     std.debug.print("  Example Complete!\n", .{});
-    std.debug.print("=" ** 80 ++ "\n\n", .{});
+    std.debug.print(&@as([80]u8, @splat('=')) ++ "\n\n", .{});
 
     std.debug.print("Key Takeaways:\n", .{});
     std.debug.print("- Private keys are 32 bytes and must be kept secret\n", .{});

@@ -43,7 +43,7 @@ pub fn main() !void {
 
     // 1. ECADD - G1 Point Addition (0x06)
     try stdout.print("1. ECADD Precompile (0x06)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const s5 = Fr.init(5);
     const s7 = Fr.init(7);
@@ -68,7 +68,7 @@ pub fn main() !void {
 
     // 2. ECMUL - G1 Scalar Multiplication (0x07)
     try stdout.print("2. ECMUL Precompile (0x07)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const s3 = Fr.init(3);
     const base_point = try g1_gen.mul(&s3);
@@ -92,7 +92,7 @@ pub fn main() !void {
 
     // 3. ECPAIRING - Pairing Check (0x08)
     try stdout.print("3. ECPAIRING Precompile (0x08)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Pairing check: e(P1, Q1) × e(P2, Q2) = 1
     const s11 = Fr.init(11);
@@ -133,7 +133,7 @@ pub fn main() !void {
 
     // 4. Groth16 Verification Pattern
     try stdout.print("4. Groth16 Verification Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Groth16 pairing structure:\n", .{});
     try stdout.print("- e(A, B): Proof commitment\n", .{});
@@ -147,7 +147,7 @@ pub fn main() !void {
 
     // 5. Point Format Details
     try stdout.print("5. Point Serialization Format\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("G1 Point (64 bytes):\n", .{});
     try stdout.print("  Bytes 0-31:  x-coordinate (Fp element, big-endian)\n", .{});
@@ -163,7 +163,7 @@ pub fn main() !void {
 
     // 6. Gas Cost Comparison
     try stdout.print("6. Gas Cost Summary (EIP-1108)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Before Istanbul (EIP-196/197):\n", .{});
     try stdout.print("  ECADD:    500 gas\n", .{});
@@ -181,7 +181,7 @@ pub fn main() !void {
 
     // 7. Edge Cases
     try stdout.print("7. Edge Cases\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Infinity point
     const infinity = G1{

@@ -256,10 +256,10 @@ pub const StorageProof = struct {
 // ============================================================================
 
 test "StorageProof.init - creates non-owning proof" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof = StorageProof.init(key, value, &proof_nodes);
@@ -272,10 +272,10 @@ test "StorageProof.init - creates non-owning proof" {
 test "StorageProof.from - creates owning copy" {
     const allocator = std.testing.allocator;
 
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof = try StorageProof.from(allocator, key, value, &proof_nodes);
@@ -289,8 +289,8 @@ test "StorageProof.from - creates owning copy" {
 test "StorageProof.fromSlot - convenience constructor" {
     const allocator = std.testing.allocator;
 
-    const addr = [_]u8{0x11} ** 20;
-    const node1 = [_]u8{0xbb} ** 32;
+    const addr = @as([20]u8, @splat(0x11));
+    const node1 = @as([32]u8, @splat(0xbb));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof = try StorageProof.fromSlot(allocator, addr, 100, 999, &proof_nodes);
@@ -302,10 +302,10 @@ test "StorageProof.fromSlot - convenience constructor" {
 }
 
 test "StorageProof.equals - identical proofs" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof1 = StorageProof.init(key, value, &proof_nodes);
@@ -315,11 +315,11 @@ test "StorageProof.equals - identical proofs" {
 }
 
 test "StorageProof.equals - different keys" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key1 = State.StorageKey{ .address = addr, .slot = 42 };
     const key2 = State.StorageKey{ .address = addr, .slot = 43 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof1 = StorageProof.init(key1, value, &proof_nodes);
@@ -329,11 +329,11 @@ test "StorageProof.equals - different keys" {
 }
 
 test "StorageProof.equals - different values" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value1 = StorageValue.fromUint256(123);
     const value2 = StorageValue.fromUint256(456);
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const proof1 = StorageProof.init(key, value1, &proof_nodes);
@@ -343,11 +343,11 @@ test "StorageProof.equals - different values" {
 }
 
 test "StorageProof.equals - different proof lengths" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
     const proof_nodes1 = [_][]const u8{&node1};
     const proof_nodes2 = [_][]const u8{ &node1, &node2 };
 
@@ -358,11 +358,11 @@ test "StorageProof.equals - different proof lengths" {
 }
 
 test "StorageProof.equals - different proof elements" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
     const proof_nodes1 = [_][]const u8{&node1};
     const proof_nodes2 = [_][]const u8{&node2};
 
@@ -373,7 +373,7 @@ test "StorageProof.equals - different proof elements" {
 }
 
 test "StorageProof.isEmpty - empty proof" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.ZERO;
     const empty_nodes: []const []const u8 = &.{};
@@ -383,10 +383,10 @@ test "StorageProof.isEmpty - empty proof" {
 }
 
 test "StorageProof.isEmpty - non-empty proof" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.ZERO;
-    const node = [_]u8{0xaa} ** 32;
+    const node = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node};
 
     const proof = StorageProof.init(key, value, &proof_nodes);
@@ -394,7 +394,7 @@ test "StorageProof.isEmpty - non-empty proof" {
 }
 
 test "StorageProof.isZeroValue - zero value" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.ZERO;
     const empty_nodes: []const []const u8 = &.{};
@@ -404,7 +404,7 @@ test "StorageProof.isZeroValue - zero value" {
 }
 
 test "StorageProof.isZeroValue - non-zero value" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.fromUint256(1);
     const empty_nodes: []const []const u8 = &.{};
@@ -414,12 +414,12 @@ test "StorageProof.isZeroValue - non-zero value" {
 }
 
 test "StorageProof.depth - returns correct depth" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.ZERO;
-    const node1 = [_]u8{0xaa} ** 32;
-    const node2 = [_]u8{0xbb} ** 32;
-    const node3 = [_]u8{0xcc} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
+    const node2 = @as([32]u8, @splat(0xbb));
+    const node3 = @as([32]u8, @splat(0xcc));
     const proof_nodes = [_][]const u8{ &node1, &node2, &node3 };
 
     const proof = StorageProof.init(key, value, &proof_nodes);
@@ -427,7 +427,7 @@ test "StorageProof.depth - returns correct depth" {
 }
 
 test "StorageProof.getSlot - returns slot number" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 12345 };
     const value = StorageValue.ZERO;
     const empty_nodes: []const []const u8 = &.{};
@@ -437,7 +437,7 @@ test "StorageProof.getSlot - returns slot number" {
 }
 
 test "StorageProof.getValueU256 - returns value as u256" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.fromUint256(0xdeadbeef);
     const empty_nodes: []const []const u8 = &.{};
@@ -447,7 +447,7 @@ test "StorageProof.getValueU256 - returns value as u256" {
 }
 
 test "StorageProof.computeKeyHash - computes keccak256 of slot" {
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.ZERO;
     const empty_nodes: []const []const u8 = &.{};
@@ -466,10 +466,10 @@ test "StorageProof.computeKeyHash - computes keccak256 of slot" {
 test "StorageProof.clone - creates independent copy" {
     const allocator = std.testing.allocator;
 
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 42 };
     const value = StorageValue.fromUint256(123);
-    const node1 = [_]u8{0xaa} ** 32;
+    const node1 = @as([32]u8, @splat(0xaa));
     const proof_nodes = [_][]const u8{&node1};
 
     const original = StorageProof.init(key, value, &proof_nodes);
@@ -483,7 +483,7 @@ test "StorageProof.clone - creates independent copy" {
 test "StorageProof.from - rejects too deep proof" {
     const allocator = std.testing.allocator;
 
-    const addr = [_]u8{0x42} ** 20;
+    const addr = @as([20]u8, @splat(0x42));
     const key = State.StorageKey{ .address = addr, .slot = 0 };
     const value = StorageValue.ZERO;
 
@@ -500,8 +500,8 @@ test "StorageProof.from - rejects too deep proof" {
 }
 
 test "StorageProof - different addresses same slot are not equal" {
-    const addr1 = [_]u8{0x11} ** 20;
-    const addr2 = [_]u8{0x22} ** 20;
+    const addr1 = @as([20]u8, @splat(0x11));
+    const addr2 = @as([20]u8, @splat(0x22));
     const key1 = State.StorageKey{ .address = addr1, .slot = 42 };
     const key2 = State.StorageKey{ .address = addr2, .slot = 42 };
     const value = StorageValue.fromUint256(123);

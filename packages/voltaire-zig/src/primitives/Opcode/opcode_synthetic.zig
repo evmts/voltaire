@@ -66,8 +66,8 @@ test "synthetic opcode descriptions" {
 test "synthetic opcode values" {
     const testing = std.testing;
 
-    try testing.expectEqual(@as(u8, 0x00), @intFromEnum(OpcodeSynthetic.SYNTHETIC_NOP));
-    try testing.expectEqual(@as(u8, 0x01), @intFromEnum(OpcodeSynthetic.SYNTHETIC_JUMP_TABLE));
-    try testing.expectEqual(@as(u8, 0x02), @intFromEnum(OpcodeSynthetic.SYNTHETIC_CALL_DIRECT));
-    try testing.expectEqual(@as(u8, 0x03), @intFromEnum(OpcodeSynthetic.SYNTHETIC_RETURN_DIRECT));
+    try testing.expectEqual(@as(u8, 0x00), @backingInt(OpcodeSynthetic.SYNTHETIC_NOP));
+    try testing.expectEqual(@as(u8, 0x01), @backingInt(OpcodeSynthetic.SYNTHETIC_JUMP_TABLE));
+    try testing.expectEqual(@as(u8, 0x02), @backingInt(OpcodeSynthetic.SYNTHETIC_CALL_DIRECT));
+    try testing.expectEqual(@as(u8, 0x03), @backingInt(OpcodeSynthetic.SYNTHETIC_RETURN_DIRECT));
 }

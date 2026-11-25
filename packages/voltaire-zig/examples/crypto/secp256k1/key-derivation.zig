@@ -11,7 +11,7 @@ const crypto = @import("crypto");
 const primitives = @import("primitives");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -68,13 +68,13 @@ pub fn main() !void {
     std.debug.print("\n5. Edge Cases\n", .{});
 
     // Minimum valid private key (1)
-    var min_key: [32]u8 = [_]u8{0} ** 32;
+    var min_key: [32]u8 = @as([32]u8, @splat(0));
     min_key[31] = 1;
     const min_key_valid = crypto.secp256k1.isValidPrivateKey(min_key);
     std.debug.print("   Private key = 1: {s}\n", .{if (min_key_valid) "✓ Valid" else "✗ Invalid"});
 
     // Zero private key (invalid)
-    const zero_key: [32]u8 = [_]u8{0} ** 32;
+    const zero_key: [32]u8 = @as([32]u8, @splat(0));
     const zero_key_valid = crypto.secp256k1.isValidPrivateKey(zero_key);
     std.debug.print("   Private key = 0: {s}\n", .{if (!zero_key_valid) "✗ Invalid (expected)" else "✓ Valid"});
 
@@ -105,7 +105,7 @@ pub fn main() !void {
 
     // 8. Generator point (private key = 1)
     std.debug.print("\n8. Generator Point G (private key = 1)\n", .{});
-    var private_key_one: [32]u8 = [_]u8{0} ** 32;
+    var private_key_one: [32]u8 = @as([32]u8, @splat(0));
     private_key_one[31] = 1;
     const generator_point = try crypto.secp256k1.derivePublicKey(private_key_one);
 

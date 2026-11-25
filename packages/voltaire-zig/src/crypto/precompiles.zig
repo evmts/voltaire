@@ -51,7 +51,7 @@ pub const BLAKE2F_PER_ROUND_GAS: u64 = 1;
 pub const POINT_EVALUATION_GAS: u64 = 50000;
 
 fn readPaddedU256(input: []const u8, start: usize) u256 {
-    var word: [32]u8 = [_]u8{0} ** 32;
+    var word: [32]u8 = @as([32]u8, @splat(0));
     if (start < input.len) {
         const copy_len = @min(word.len, input.len - start);
         @memcpy(word[0..copy_len], input[start .. start + copy_len]);
@@ -173,7 +173,7 @@ fn ecRecover(
     }
 
     // Input: 128 bytes (hash32, v32, r32, s32)
-    var input_buf: [128]u8 = [_]u8{0} ** 128;
+    var input_buf: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(input_buf[0..@min(input.len, 128)], input[0..@min(input.len, 128)]);
 
     const hash = input_buf[0..32];
@@ -305,7 +305,7 @@ fn modexp(
     const exp_start = data_start + base_len_usize;
     const mod_start = exp_start + exp_len_usize;
     const exp_head_len = @min(exp_len_usize, 32);
-    var exp_head_buf: [32]u8 = [_]u8{0} ** 32;
+    var exp_head_buf: [32]u8 = @as([32]u8, @splat(0));
     if (exp_start < input.len) {
         const copy_len = @min(exp_head_len, input.len - exp_start);
         @memcpy(exp_head_buf[0..copy_len], input[exp_start .. exp_start + copy_len]);
@@ -374,7 +374,7 @@ fn bn254Add(
     }
 
     // Input: 128 bytes (two points, 64 bytes each)
-    var input_buf: [128]u8 = [_]u8{0} ** 128;
+    var input_buf: [128]u8 = @as([128]u8, @splat(0));
     @memcpy(input_buf[0..@min(input.len, 128)], input[0..@min(input.len, 128)]);
 
     const output = try allocator.alloc(u8, 64);
@@ -401,7 +401,7 @@ fn bn254Mul(
     }
 
     // Input: 96 bytes (point 64 bytes + scalar 32 bytes)
-    var input_buf: [96]u8 = [_]u8{0} ** 96;
+    var input_buf: [96]u8 = @as([96]u8, @splat(0));
     @memcpy(input_buf[0..@min(input.len, 96)], input[0..@min(input.len, 96)]);
 
     const output = try allocator.alloc(u8, 64);
@@ -829,10 +829,10 @@ test "ecRecover - valid signature" {
     const allocator = testing.allocator;
 
     // Example from Ethereum yellow paper
-    const hash = [_]u8{0x47} ** 32;
-    const v = [_]u8{0} ** 31 ++ [_]u8{28};
-    const r = [_]u8{0x69} ** 32;
-    const s = [_]u8{0x7a} ** 32;
+    const hash = @as([32]u8, @splat(0x47));
+    const v = @as([31]u8, @splat(0)) ++ [_]u8{28};
+    const r = @as([32]u8, @splat(0x69));
+    const s = @as([32]u8, @splat(0x7a));
 
     var input: [128]u8 = undefined;
     @memcpy(input[0..32], &hash);
@@ -896,7 +896,7 @@ test "identity - gas calculation" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 64; // 2 words
+    const input = @as([64]u8, @splat(0)); // 2 words
     const result = try identity(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -909,7 +909,7 @@ test "modexp - simple case" {
     const allocator = testing.allocator;
 
     // 2^3 mod 5 = 3
-    var input: [99]u8 = [_]u8{0} ** 99;
+    var input: [99]u8 = @as([99]u8, @splat(0));
 
     // base_len = 1
     input[31] = 1;
@@ -937,7 +937,7 @@ test "bn254Add - point at infinity" {
     const allocator = testing.allocator;
 
     // Adding point at infinity to itself
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try bn254Add(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -950,7 +950,7 @@ test "bn254Mul - multiply by zero" {
     const allocator = testing.allocator;
 
     // Multiply any point by zero = point at infinity
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = try bn254Mul(allocator, &input, 1000000);
     defer result.deinit(allocator);
 
@@ -975,7 +975,7 @@ test "blake2f - invalid input length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 100; // Wrong length
+    const input = @as([100]u8, @splat(0)); // Wrong length
     const result = blake2f(allocator, &input, 1000000);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -984,7 +984,7 @@ test "precompile - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 32;
+    const input = @as([32]u8, @splat(0));
     const result = sha256Hash(allocator, &input, 10); // Not enough gas
     try testing.expectError(error.OutOfGas, result);
 }
@@ -1045,7 +1045,7 @@ test "ecRecover - exact gas boundary" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1056,7 +1056,7 @@ test "ecRecover - gas boundary minus one" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = ecRecover(allocator, &input, ECRECOVER_BASE_GAS - 1);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -1089,7 +1089,7 @@ test "sha256Hash - gas boundary at 32 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 32;
+    const input = @as([32]u8, @splat(0));
     const expected_gas = SHA256_BASE_GAS + SHA256_PER_WORD_GAS;
     const result = try sha256Hash(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1101,7 +1101,7 @@ test "sha256Hash - gas boundary at 33 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 33;
+    const input = @as([33]u8, @splat(0));
     const expected_gas = SHA256_BASE_GAS + SHA256_PER_WORD_GAS * 2;
     const result = try sha256Hash(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1125,7 +1125,7 @@ test "ripemd160Hash - gas boundary at 32 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 32;
+    const input = @as([32]u8, @splat(0));
     const expected_gas = RIPEMD160_BASE_GAS + RIPEMD160_PER_WORD_GAS;
     const result = try ripemd160Hash(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1149,7 +1149,7 @@ test "identity - gas boundary at 31 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 31;
+    const input = @as([31]u8, @splat(0));
     const expected_gas = IDENTITY_BASE_GAS + IDENTITY_PER_WORD_GAS;
     const result = try identity(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1161,7 +1161,7 @@ test "identity - gas boundary at 32 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 32;
+    const input = @as([32]u8, @splat(0));
     const expected_gas = IDENTITY_BASE_GAS + IDENTITY_PER_WORD_GAS;
     const result = try identity(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1173,7 +1173,7 @@ test "identity - gas boundary at 33 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 33;
+    const input = @as([33]u8, @splat(0));
     const expected_gas = IDENTITY_BASE_GAS + IDENTITY_PER_WORD_GAS * 2;
     const result = try identity(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1185,7 +1185,7 @@ test "bn254Add - exact gas boundary" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try bn254Add(allocator, &input, ECADD_GAS);
     defer result.deinit(allocator);
 
@@ -1196,7 +1196,7 @@ test "bn254Add - gas boundary minus one" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = bn254Add(allocator, &input, ECADD_GAS - 1);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -1205,7 +1205,7 @@ test "bn254Mul - exact gas boundary" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = try bn254Mul(allocator, &input, ECMUL_GAS);
     defer result.deinit(allocator);
 
@@ -1216,7 +1216,7 @@ test "bn254Mul - gas boundary minus one" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = bn254Mul(allocator, &input, ECMUL_GAS - 1);
     try testing.expectError(error.OutOfGas, result);
 }
@@ -1225,7 +1225,7 @@ test "bn254Pairing - gas boundary one pair" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 192;
+    const input = @as([192]u8, @splat(0));
     const expected_gas = ECPAIRING_BASE_GAS + ECPAIRING_PER_POINT_GAS;
     const result = try bn254Pairing(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1237,7 +1237,7 @@ test "bn254Pairing - gas boundary two pairs" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 384;
+    const input = @as([384]u8, @splat(0));
     const expected_gas = ECPAIRING_BASE_GAS + ECPAIRING_PER_POINT_GAS * 2;
     const result = try bn254Pairing(allocator, &input, expected_gas);
     defer result.deinit(allocator);
@@ -1261,7 +1261,7 @@ test "ecRecover - partial input 127 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0xFF} ** 127;
+    const input = @as([127]u8, @splat(0xFF));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1272,7 +1272,7 @@ test "ecRecover - exact input 128 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1283,7 +1283,7 @@ test "ecRecover - oversized input 129 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 129;
+    const input = @as([129]u8, @splat(0));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1316,7 +1316,7 @@ test "modexp - zero base length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [96]u8 = [_]u8{0} ** 96;
+    var input: [96]u8 = @as([96]u8, @splat(0));
     const result = try modexp(allocator, &input, 1000000, .Cancun);
     defer result.deinit(allocator);
 
@@ -1327,7 +1327,7 @@ test "modexp - zero exponent length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [97]u8 = [_]u8{0} ** 97;
+    var input: [97]u8 = @as([97]u8, @splat(0));
     input[31] = 1;
     input[95] = 1;
     input[96] = 5;
@@ -1341,7 +1341,7 @@ test "modexp - zero modulus length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [98]u8 = [_]u8{0} ** 98;
+    var input: [98]u8 = @as([98]u8, @splat(0));
     input[31] = 1;
     input[63] = 1;
     input[96] = 2;
@@ -1356,7 +1356,7 @@ test "modexp - input too short" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 95;
+    const input = @as([95]u8, @splat(0));
     const result = modexp(allocator, &input, 1000000, .Cancun);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1365,7 +1365,7 @@ test "bn254Add - short input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 127;
+    const input = @as([127]u8, @splat(0));
     const result = try bn254Add(allocator, &input, ECADD_GAS);
     defer result.deinit(allocator);
 
@@ -1376,7 +1376,7 @@ test "bn254Mul - short input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 95;
+    const input = @as([95]u8, @splat(0));
     const result = try bn254Mul(allocator, &input, ECMUL_GAS);
     defer result.deinit(allocator);
 
@@ -1387,7 +1387,7 @@ test "bn254Pairing - invalid length 191 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 191;
+    const input = @as([191]u8, @splat(0));
     const result = bn254Pairing(allocator, &input, 1000000);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1396,7 +1396,7 @@ test "bn254Pairing - invalid length 193 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 193;
+    const input = @as([193]u8, @splat(0));
     const result = bn254Pairing(allocator, &input, 1000000);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1405,7 +1405,7 @@ test "blake2f - exact length 213 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [213]u8 = [_]u8{0} ** 213;
+    var input: [213]u8 = @as([213]u8, @splat(0));
     input[3] = 1;
     const result = try blake2f(allocator, &input, 100);
     defer result.deinit(allocator);
@@ -1417,7 +1417,7 @@ test "blake2f - length 212 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 212;
+    const input = @as([212]u8, @splat(0));
     const result = blake2f(allocator, &input, 100);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1426,7 +1426,7 @@ test "blake2f - length 214 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 214;
+    const input = @as([214]u8, @splat(0));
     const result = blake2f(allocator, &input, 100);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1435,7 +1435,7 @@ test "bls12G1Add - wrong length 255 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 255;
+    const input = @as([255]u8, @splat(0));
     const result = bls12G1Add(allocator, &input, BLS12_G1ADD_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1444,7 +1444,7 @@ test "bls12G1Add - wrong length 257 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 257;
+    const input = @as([257]u8, @splat(0));
     const result = bls12G1Add(allocator, &input, BLS12_G1ADD_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1453,7 +1453,7 @@ test "bls12G1Mul - wrong length 159 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 159;
+    const input = @as([159]u8, @splat(0));
     const result = bls12G1Mul(allocator, &input, BLS12_G1MUL_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1462,7 +1462,7 @@ test "bls12G1Mul - wrong length 161 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 161;
+    const input = @as([161]u8, @splat(0));
     const result = bls12G1Mul(allocator, &input, BLS12_G1MUL_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1480,7 +1480,7 @@ test "bls12G1Msm - invalid length 159 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 159;
+    const input = @as([159]u8, @splat(0));
     const result = bls12G1Msm(allocator, &input, 1000000);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1489,7 +1489,7 @@ test "bls12G2Add - wrong length 511 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 511;
+    const input = @as([511]u8, @splat(0));
     const result = bls12G2Add(allocator, &input, BLS12_G2ADD_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1498,7 +1498,7 @@ test "bls12G2Mul - wrong length 287 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 287;
+    const input = @as([287]u8, @splat(0));
     const result = bls12G2Mul(allocator, &input, BLS12_G2MUL_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1516,7 +1516,7 @@ test "bls12G2Msm - invalid length 287 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 287;
+    const input = @as([287]u8, @splat(0));
     const result = bls12G2Msm(allocator, &input, 1000000);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1525,7 +1525,7 @@ test "bls12Pairing - invalid length 383 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 383;
+    const input = @as([383]u8, @splat(0));
     const result = bls12Pairing(allocator, &input, 1000000);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1534,7 +1534,7 @@ test "bls12MapFpToG1 - wrong length 63 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 63;
+    const input = @as([63]u8, @splat(0));
     const result = bls12MapFpToG1(allocator, &input, BLS12_MAP_FP_TO_G1_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1543,7 +1543,7 @@ test "bls12MapFp2ToG2 - wrong length 127 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 127;
+    const input = @as([127]u8, @splat(0));
     const result = bls12MapFp2ToG2(allocator, &input, BLS12_MAP_FP2_TO_G2_GAS);
     try testing.expectError(error.InvalidInput, result);
 }
@@ -1567,7 +1567,7 @@ test "ecRecover - output is left padded address" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1607,7 +1607,7 @@ test "blake2f - output is 64 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [213]u8 = [_]u8{0} ** 213;
+    var input: [213]u8 = @as([213]u8, @splat(0));
     input[3] = 1;
     const result = try blake2f(allocator, &input, 100);
     defer result.deinit(allocator);
@@ -1765,7 +1765,7 @@ test "bls12G1Msm - gas cost with k equals 1" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 160;
+    const input = @as([160]u8, @splat(0));
     const k: usize = 1;
     const discount = msmDiscount(k);
     const expected_gas = (BLS12_G1MSM_BASE_GAS * k * discount) / 1000;
@@ -1780,7 +1780,7 @@ test "bls12G1Msm - gas cost with k equals 2" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 320;
+    const input = @as([320]u8, @splat(0));
     const k: usize = 2;
     const discount = msmDiscount(k);
     const expected_gas = (BLS12_G1MSM_BASE_GAS * k * discount) / 1000;
@@ -1795,7 +1795,7 @@ test "bls12G2Msm - gas cost with k equals 1" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const k: usize = 1;
     const discount = msmDiscount(k);
     const expected_gas = (BLS12_G2MSM_BASE_GAS * k * discount) / 1000;
@@ -1810,7 +1810,7 @@ test "bls12G2Msm - gas cost with k equals 2" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 576;
+    const input = @as([576]u8, @splat(0));
     const k: usize = 2;
     const discount = msmDiscount(k);
     const expected_gas = (BLS12_G2MSM_BASE_GAS * k * discount) / 1000;
@@ -1826,7 +1826,7 @@ test "ecRecover - invalid signature returns zero address" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [128]u8 = [_]u8{0xFF} ** 128;
+    var input: [128]u8 = @as([128]u8, @splat(0xFF));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1840,7 +1840,7 @@ test "ecRecover - v value 27" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [128]u8 = [_]u8{0} ** 128;
+    var input: [128]u8 = @as([128]u8, @splat(0));
     input[63] = 27;
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
@@ -1852,7 +1852,7 @@ test "ecRecover - v value 28" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [128]u8 = [_]u8{0} ** 128;
+    var input: [128]u8 = @as([128]u8, @splat(0));
     input[63] = 28;
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
@@ -1864,7 +1864,7 @@ test "ecRecover - all zero input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1878,7 +1878,7 @@ test "ecRecover - all max input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0xFF} ** 128;
+    const input = @as([128]u8, @splat(0xFF));
     const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
     defer result.deinit(allocator);
 
@@ -1912,7 +1912,7 @@ test "sha256Hash - 31 bytes boundary" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0xAB} ** 31;
+    const input = @as([31]u8, @splat(0xAB));
     const result = try sha256Hash(allocator, &input, 100000);
     defer result.deinit(allocator);
 
@@ -1923,7 +1923,7 @@ test "sha256Hash - large input 1024 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0x42} ** 1024;
+    const input = @as([1024]u8, @splat(0x42));
     const result = try sha256Hash(allocator, &input, 100000);
     defer result.deinit(allocator);
 
@@ -1963,7 +1963,7 @@ test "ripemd160Hash - 31 bytes boundary" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0xAB} ** 31;
+    const input = @as([31]u8, @splat(0xAB));
     const result = try ripemd160Hash(allocator, &input, 100000);
     defer result.deinit(allocator);
 
@@ -1974,7 +1974,7 @@ test "ripemd160Hash - large input 1024 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0x42} ** 1024;
+    const input = @as([1024]u8, @splat(0x42));
     const result = try ripemd160Hash(allocator, &input, 100000);
     defer result.deinit(allocator);
 
@@ -1997,7 +1997,7 @@ test "identity - large input 1024 bytes" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0x42} ** 1024;
+    const input = @as([1024]u8, @splat(0x42));
     const result = try identity(allocator, &input, 100000);
     defer result.deinit(allocator);
 
@@ -2009,7 +2009,7 @@ test "modexp - partial base in input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [100]u8 = [_]u8{0} ** 100;
+    var input: [100]u8 = @as([100]u8, @splat(0));
     input[31] = 10;
     input[63] = 1;
     input[95] = 1;
@@ -2027,7 +2027,7 @@ test "modexp - partial exponent in input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [100]u8 = [_]u8{0} ** 100;
+    var input: [100]u8 = @as([100]u8, @splat(0));
     input[31] = 1;
     input[63] = 10;
     input[95] = 1;
@@ -2045,7 +2045,7 @@ test "modexp - partial modulus in input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [100]u8 = [_]u8{0} ** 100;
+    var input: [100]u8 = @as([100]u8, @splat(0));
     input[31] = 1;
     input[63] = 1;
     input[95] = 10;
@@ -2063,7 +2063,7 @@ test "modexp - output longer than result" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [99]u8 = [_]u8{0} ** 99;
+    var input: [99]u8 = @as([99]u8, @splat(0));
     input[31] = 1;
     input[63] = 1;
     input[94] = 10;
@@ -2082,7 +2082,7 @@ test "modexp - Byzantium hardfork" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [99]u8 = [_]u8{0} ** 99;
+    var input: [99]u8 = @as([99]u8, @splat(0));
     input[31] = 1;
     input[63] = 1;
     input[95] = 1;
@@ -2101,7 +2101,7 @@ test "bn254Add - oversized input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 200;
+    const input = @as([200]u8, @splat(0));
     const result = try bn254Add(allocator, &input, ECADD_GAS);
     defer result.deinit(allocator);
 
@@ -2112,7 +2112,7 @@ test "bn254Mul - oversized input" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 150;
+    const input = @as([150]u8, @splat(0));
     const result = try bn254Mul(allocator, &input, ECMUL_GAS);
     defer result.deinit(allocator);
 
@@ -2124,7 +2124,7 @@ test "blake2f - zero rounds" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [213]u8 = [_]u8{0} ** 213;
+    var input: [213]u8 = @as([213]u8, @splat(0));
     const result = try blake2f(allocator, &input, 100);
     defer result.deinit(allocator);
 
@@ -2136,7 +2136,7 @@ test "blake2f - one round" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [213]u8 = [_]u8{0} ** 213;
+    var input: [213]u8 = @as([213]u8, @splat(0));
     input[3] = 1;
     const result = try blake2f(allocator, &input, 100);
     defer result.deinit(allocator);
@@ -2149,7 +2149,7 @@ test "blake2f - many rounds gas cost" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [213]u8 = [_]u8{0} ** 213;
+    var input: [213]u8 = @as([213]u8, @splat(0));
     const rounds: u32 = 1000;
     input[0] = @intCast((rounds >> 24) & 0xFF);
     input[1] = @intCast((rounds >> 16) & 0xFF);
@@ -2166,7 +2166,7 @@ test "blake2f - max rounds gas check" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [213]u8 = [_]u8{0} ** 213;
+    var input: [213]u8 = @as([213]u8, @splat(0));
     const rounds: u32 = 4294967295;
     input[0] = 0xFF;
     input[1] = 0xFF;
@@ -2182,7 +2182,7 @@ test "execute - frontier hardfork ecrecover" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(allocator, ECRECOVER_ADDRESS, &input, 100000, .Frontier);
     defer result.deinit(allocator);
 
@@ -2193,7 +2193,7 @@ test "execute - frontier hardfork rejects modexp" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 96;
+    const input = @as([96]u8, @splat(0));
     const result = execute(allocator, MODEXP_ADDRESS, &input, 100000, .Frontier);
     try testing.expectError(error.NotImplemented, result);
 }
@@ -2202,7 +2202,7 @@ test "execute - byzantium hardfork accepts modexp" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    var input: [96]u8 = [_]u8{0} ** 96;
+    var input: [96]u8 = @as([96]u8, @splat(0));
     const result = try execute(allocator, MODEXP_ADDRESS, &input, 100000, .Byzantium);
     defer result.deinit(allocator);
 
@@ -2231,7 +2231,7 @@ test "execute - invalid address" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 32;
+    const input = @as([32]u8, @splat(0));
     const result = execute(allocator, Address.fromInt(0x14), &input, 100000, .Prague);
     try testing.expectError(error.NotImplemented, result);
 }

@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub fn checkKnownTags(comptime crypto: type) !void {
     // RFC 4231, test case 6. The key exceeds each hash's block length.
-    const key = [_]u8{0xaa} ** 131;
+    const key = @as([131]u8, @splat(0xaa));
     const message = "Test Using Larger Than Block-Size Key - Hash Key First";
     var sha256_tag: [32]u8 = undefined;
     var sha512_tag: [64]u8 = undefined;
@@ -13,7 +13,7 @@ pub fn checkKnownTags(comptime crypto: type) !void {
         "6b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0aec8b915a985d786598", &sha512_tag);
 
     const KeccakHmac = crypto.Hmac(crypto.Keccak256);
-    const keccak_key = [_]u8{0xaa} ** 137;
+    const keccak_key = @as([137]u8, @splat(0xaa));
     var keccak_tag: [32]u8 = undefined;
     crypto.hmacKeccak256(&keccak_tag, message, &keccak_key);
     try expectHex("729e0d9f4bb07a089c0093c353f9613ef18430bc2eddb683982cf65ef5429c73", &keccak_tag);

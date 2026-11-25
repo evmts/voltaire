@@ -44,13 +44,13 @@ pub fn fromBytes(bytes: []const u8) !Bundler {
 }
 
 test "fromBytes - valid 20 bytes" {
-    const bytes = [_]u8{0xab} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(0xab));
     const bundler = try fromBytes(&bytes);
     try std.testing.expectEqual(@as(u8, 0xab), bundler.bytes[0]);
 }
 
 test "fromBytes - invalid length" {
-    const bytes = [_]u8{0xab} ** 19;
+    const bytes = @as([19]u8, @splat(0xab));
     try std.testing.expectError(error.InvalidAddressLength, fromBytes(&bytes));
 }
 

@@ -38,9 +38,9 @@ pub fn main() !void {
 
     // Example 1: Standard Blake2f compression (12 rounds)
     try stdout.print("1. Standard Blake2f Compression (12 rounds)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
-    var input1: [213]u8 = [_]u8{0} ** 213;
+    var input1: [213]u8 = @as([213]u8, @splat(0));
 
     // Set rounds: 12 (big-endian)
     std.mem.writeInt(u32, input1[0..4], 12, .big);
@@ -80,9 +80,9 @@ pub fn main() !void {
 
     // Example 2: Hash message "abc"
     try stdout.print("2. Hash Message \"abc\"\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
-    var input2: [213]u8 = [_]u8{0} ** 213;
+    var input2: [213]u8 = @as([213]u8, @splat(0));
 
     // Set rounds: 12
     std.mem.writeInt(u32, input2[0..4], 12, .big);
@@ -124,11 +124,11 @@ pub fn main() !void {
 
     // Example 3: Variable rounds (gas cost demonstration)
     try stdout.print("3. Variable Rounds (Gas Cost)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     const round_tests = [_]u32{ 1, 12, 100, 1000 };
     for (round_tests) |rounds| {
-        var input: [213]u8 = [_]u8{0} ** 213;
+        var input: [213]u8 = @as([213]u8, @splat(0));
         std.mem.writeInt(u32, input[0..4], rounds, .big);
 
         for (BLAKE2B_IV, 0..) |iv, i| {
@@ -147,10 +147,10 @@ pub fn main() !void {
 
     // Example 4: Error cases
     try stdout.print("4. Error Cases\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
 
     // Wrong input length
-    var wrong_length: [212]u8 = [_]u8{0} ** 212;
+    var wrong_length: [212]u8 = @as([212]u8, @splat(0));
     var output4: [64]u8 = undefined;
     const result4a = precompiles.blake2f(&wrong_length, &output4);
     try stdout.print("Wrong input length (212): ", .{});
@@ -161,7 +161,7 @@ pub fn main() !void {
     }
 
     // Invalid final flag
-    var input4c: [213]u8 = [_]u8{0} ** 213;
+    var input4c: [213]u8 = @as([213]u8, @splat(0));
     std.mem.writeInt(u32, input4c[0..4], 12, .big);
     input4c[212] = 0x02; // Invalid
     const result4c = precompiles.blake2f(&input4c, &output4);
@@ -176,7 +176,7 @@ pub fn main() !void {
 
     // Example 5: Byte order demonstration
     try stdout.print("5. Byte Order (Little-Endian)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 50});
+    try stdout.print("{s}\n", .{&@as([50]u8, @splat('-'))});
     try stdout.print("Blake2f uses little-endian for h, m, t (unlike most EVM)\n", .{});
     try stdout.print("Only the rounds field is big-endian.\n\n", .{});
 

@@ -63,7 +63,7 @@ test "bls12_g2_msm - invalid input length not multiple of 288" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 300;
+    const input = @as([300]u8, @splat(0));
     const result = execute(allocator, &input, 1000000);
 
     try testing.expectError(error.InvalidInput, result);
@@ -73,7 +73,7 @@ test "bls12_g2_msm - single pair gas cost with discount" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const k = 1;
     const expected_gas = gasCost(k);
     try testing.expectEqual(@as(u64, 22500), expected_gas);
@@ -89,7 +89,7 @@ test "bls12_g2_msm - two pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 2);
+    const input = @as([288 * 2]u8, @splat(0));
     const k = 2;
     const expected_gas = gasCost(k);
 
@@ -107,7 +107,7 @@ test "bls12_g2_msm - four pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 4);
+    const input = @as([288 * 4]u8, @splat(0));
     const k = 4;
     const expected_gas = gasCost(k);
 
@@ -125,7 +125,7 @@ test "bls12_g2_msm - eight pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 8);
+    const input = @as([288 * 8]u8, @splat(0));
     const k = 8;
     const expected_gas = gasCost(k);
 
@@ -143,7 +143,7 @@ test "bls12_g2_msm - sixteen pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 16);
+    const input = @as([288 * 16]u8, @splat(0));
     const k = 16;
     const expected_gas = gasCost(k);
 
@@ -161,7 +161,7 @@ test "bls12_g2_msm - thirty-two pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 32);
+    const input = @as([288 * 32]u8, @splat(0));
     const k = 32;
     const expected_gas = gasCost(k);
 
@@ -179,7 +179,7 @@ test "bls12_g2_msm - sixty-four pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 64);
+    const input = @as([288 * 64]u8, @splat(0));
     const k = 64;
     const expected_gas = gasCost(k);
 
@@ -197,7 +197,7 @@ test "bls12_g2_msm - one hundred twenty-eight pairs discount tier" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** (288 * 128);
+    const input = @as([288 * 128]u8, @splat(0));
     const k = 128;
     const expected_gas = gasCost(k);
 
@@ -215,7 +215,7 @@ test "bls12_g2_msm - out of gas" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const k = 1;
     const gas_cost = gasCost(k);
 
@@ -228,7 +228,7 @@ test "bls12_g2_msm - output length" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const input = [_]u8{0} ** 288;
+    const input = @as([288]u8, @splat(0));
     const res = try execute(allocator, &input, 1000000);
     defer res.deinit(allocator);
     try testing.expectEqual(@as(usize, 256), res.output.len);

@@ -41,7 +41,7 @@ pub fn main() !void {
 
     // 1. Groth16 Proof Structure
     try stdout.print("1. Groth16 Proof Structure\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // A Groth16 proof consists of exactly 3 group elements
     const Groth16Proof = struct {
@@ -65,7 +65,7 @@ pub fn main() !void {
 
     // 2. Verification Key Structure
     try stdout.print("2. Verification Key Structure\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const Groth16VerificationKey = struct {
         alpha: G1,
@@ -100,7 +100,7 @@ pub fn main() !void {
 
     // 3. Public Inputs
     try stdout.print("3. Public Inputs Encoding\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Public inputs are field elements (scalars)
     const public_inputs = [_]Fr{
@@ -126,7 +126,7 @@ pub fn main() !void {
 
     // 4. Verification Equation
     try stdout.print("4. Verification Equation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Groth16 verification checks:\n", .{});
     try stdout.print("  e(A, B) = e(α, β) × e(L, γ) × e(C, δ)\n\n", .{});
@@ -157,7 +157,7 @@ pub fn main() !void {
 
     // 5. Tornado Cash Pattern
     try stdout.print("5. Tornado Cash Privacy Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Tornado Cash deposit/withdrawal:\n", .{});
     try stdout.print("\nDeposit phase:\n", .{});
@@ -182,7 +182,7 @@ pub fn main() !void {
 
     // 6. zkSync L2 Rollup Pattern
     try stdout.print("6. zkSync L2 Rollup Pattern\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("zkSync batch proof:\n", .{});
     try stdout.print("  Public inputs:\n", .{});
@@ -206,7 +206,7 @@ pub fn main() !void {
 
     // 7. Proof Generation Workflow
     try stdout.print("7. Proof Generation Workflow\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     try stdout.print("Prover steps:\n", .{});
     try stdout.print("  1. Compile circuit (Circom/R1CS)\n", .{});
@@ -225,7 +225,7 @@ pub fn main() !void {
 
     // 8. Gas Analysis
     try stdout.print("8. Gas Cost Analysis\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const ecpairing_base = 45000;
     const ecpairing_per_pair = 34000;

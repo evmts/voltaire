@@ -22,7 +22,7 @@ pub fn main() !void {
 
     // 1. G1 Generator and Basic Operations
     try stdout.print("1. G1 Point Operations\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Get G1 generator (hardcoded values from curve_parameters.zig)
     const g1_gen = G1{
@@ -63,7 +63,7 @@ pub fn main() !void {
 
     // 2. G2 Operations (Extension Field)
     try stdout.print("2. G2 Point Operations (Fp2)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     // Get G2 generator (hardcoded values from curve_parameters.zig)
     const g2_gen = G2{
@@ -106,7 +106,7 @@ pub fn main() !void {
 
     // 3. Point Negation
     try stdout.print("3. Point Negation\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const g1_neg = g1_gen.neg();
     const g1_zero_from_add = g1_gen.add(&g1_neg);
@@ -118,7 +118,7 @@ pub fn main() !void {
 
     // 4. Infinity Point
     try stdout.print("4. Infinity Point (Group Identity)\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const g1_infinity = G1{
         .x = FpMont.init(0),
@@ -141,7 +141,7 @@ pub fn main() !void {
 
     // 5. Large Scalar Multiplication
     try stdout.print("5. Large Scalar Multiplication\n", .{});
-    try stdout.print("{s}\n", .{"-" ** 40});
+    try stdout.print("{s}\n", .{&@as([40]u8, @splat('-'))});
 
     const large_scalar = Fr.init(123456789);
     const g1_large = try g1_gen.mul(&large_scalar);

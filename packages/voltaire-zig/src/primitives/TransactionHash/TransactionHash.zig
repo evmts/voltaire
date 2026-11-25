@@ -39,14 +39,14 @@ pub fn fromBytes(bytes: []const u8) TransactionHash {
 }
 
 test "fromBytes - valid 32 bytes" {
-    const bytes = [_]u8{1} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(1));
     const tx_hash = fromBytes(&bytes);
     try std.testing.expectEqual(SIZE, tx_hash.len);
     try std.testing.expectEqual(@as(u8, 1), tx_hash[0]);
 }
 
 test "fromBytes - creates independent copy" {
-    var bytes = [_]u8{42} ** SIZE;
+    var bytes = @as([SIZE]u8, @splat(42));
     const tx_hash = fromBytes(&bytes);
     bytes[0] = 99;
     try std.testing.expectEqual(@as(u8, 42), tx_hash[0]);
@@ -92,7 +92,7 @@ test "from - TransactionHash passthrough" {
 }
 
 test "from - raw bytes" {
-    const bytes = [_]u8{42} ** SIZE;
+    const bytes = @as([SIZE]u8, @splat(42));
     const tx_hash = try from(bytes[0..]);
     try std.testing.expectEqual(@as(u8, 42), tx_hash[0]);
 }
@@ -171,19 +171,19 @@ pub fn equals(a: *const TransactionHash, b: *const TransactionHash) bool {
 }
 
 test "equals - same hash" {
-    const tx_hash: TransactionHash = [_]u8{42} ** SIZE;
+    const tx_hash: TransactionHash = @as([SIZE]u8, @splat(42));
     try std.testing.expect(equals(&tx_hash, &tx_hash));
 }
 
 test "equals - identical hashes" {
-    const tx_hash1: TransactionHash = [_]u8{99} ** SIZE;
-    const tx_hash2: TransactionHash = [_]u8{99} ** SIZE;
+    const tx_hash1: TransactionHash = @as([SIZE]u8, @splat(99));
+    const tx_hash2: TransactionHash = @as([SIZE]u8, @splat(99));
     try std.testing.expect(equals(&tx_hash1, &tx_hash2));
 }
 
 test "equals - different hashes" {
-    const tx_hash1: TransactionHash = [_]u8{1} ** SIZE;
-    const tx_hash2: TransactionHash = [_]u8{2} ** SIZE;
+    const tx_hash1: TransactionHash = @as([SIZE]u8, @splat(1));
+    const tx_hash2: TransactionHash = @as([SIZE]u8, @splat(2));
     try std.testing.expect(!equals(&tx_hash1, &tx_hash2));
 }
 
@@ -253,7 +253,7 @@ test "isTransactionHash - pointer types" {
 }
 
 test "isTransactionHash - non-TransactionHash type" {
-    const bytes = [_]u8{0} ** 16;
+    const bytes = @as([16]u8, @splat(0));
     try std.testing.expect(!isTransactionHash(bytes));
 }
 
@@ -267,7 +267,7 @@ pub fn clone(tx_hash: *const TransactionHash) TransactionHash {
 }
 
 test "clone - creates independent copy" {
-    var original: TransactionHash = [_]u8{42} ** SIZE;
+    var original: TransactionHash = @as([SIZE]u8, @splat(42));
     var copy = clone(&original);
     try std.testing.expect(equals(&original, &copy));
 
@@ -304,17 +304,17 @@ test "format - returns hex string" {
 }
 
 /// Generate random transaction hash (for testing)
-pub fn random() TransactionHash {
-    return Hash.random();
+pub fn random(io: std.Io) TransactionHash {
+    return Hash.random(io);
 }
 
 test "random - generates different hashes" {
-    const tx_hash1 = random();
-    const tx_hash2 = random();
+    const tx_hash1 = random(std.testing.io);
+    const tx_hash2 = random(std.testing.io);
     try std.testing.expect(!equals(&tx_hash1, &tx_hash2));
 }
 
 test "random - correct size" {
-    const tx_hash = random();
+    const tx_hash = random(std.testing.io);
     try std.testing.expectEqual(SIZE, tx_hash.len);
 }

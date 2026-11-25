@@ -14,7 +14,7 @@ const LegacyTransaction = Transaction.LegacyTransaction;
 const Address = primitives.Address.Address;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -22,7 +22,7 @@ pub fn main() !void {
 
     // Example 1: Simple ETH transfer
     std.debug.print("1. Simple ETH Transfer\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -34,8 +34,8 @@ pub fn main() !void {
         .value = 1_000_000_000_000_000_000, // 1 ETH
         .data = &[_]u8{}, // Empty data for simple transfer
         .v = 37, // EIP-155: chainId=1, yParity=0 → 1*2+35+0 = 37
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Type: Legacy (0x00)\n", .{});
@@ -62,7 +62,7 @@ pub fn main() !void {
 
     // Example 2: Contract call with data
     std.debug.print("2. Contract Call with Data\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const dai_contract = try Address.fromHex("0x6B175474E89094C44Da98b954EedeAC495271d0F");
 
@@ -97,8 +97,8 @@ pub fn main() !void {
         .value = 0,
         .data = &call_data,
         .v = 37,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  Contract: 0x{X}\n", .{dai_contract.bytes});
@@ -109,7 +109,7 @@ pub fn main() !void {
 
     // Example 3: Contract deployment (to = null)
     std.debug.print("3. Contract Deployment\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Simple contract bytecode (example)
     const bytecode = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52, 0x60, 0x00, 0x80, 0xfd };
@@ -122,8 +122,8 @@ pub fn main() !void {
         .value = 0,
         .data = &bytecode,
         .v = 37,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  To: null (contract creation)\n", .{});
@@ -134,7 +134,7 @@ pub fn main() !void {
 
     // Example 4: Different chain IDs (EIP-155)
     std.debug.print("4. EIP-155 Chain ID Examples\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const ChainExample = struct {
         name: []const u8,
@@ -160,7 +160,7 @@ pub fn main() !void {
 
     // Example 5: Pre-EIP-155 transaction (no chain ID)
     std.debug.print("5. Pre-EIP-155 Transaction (old format)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const pre_eip155 = LegacyTransaction{
         .nonce = 0,
@@ -170,8 +170,8 @@ pub fn main() !void {
         .value = 1_000_000_000_000_000_000,
         .data = &[_]u8{},
         .v = 27, // Pre-EIP-155: just 27 or 28
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("  v: {} (27 or 28 only, no chain ID)\n", .{pre_eip155.v});
@@ -183,7 +183,7 @@ pub fn main() !void {
 
     // Example 6: Calculate transaction cost
     std.debug.print("6. Transaction Cost Calculation\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const gas_used: u64 = 21000; // Actual gas used
     const total_gas_cost = transfer.gas_price * gas_used;

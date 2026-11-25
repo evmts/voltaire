@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const a = gpa.allocator();
 
@@ -232,7 +232,7 @@ pub fn main() !void {
         v >>= 8;
     }
 
-    var combined = [_]u8{0} ** 52; // 20 + 32
+    var combined = @as([52]u8, @splat(0)); // 20 + 32
     @memcpy(combined[0..20], &addr);
     @memcpy(combined[20..52], &value_bytes);
 

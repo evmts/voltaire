@@ -3,7 +3,7 @@ const primitives = @import("primitives");
 const Address = primitives.address.Address;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const a = gpa.allocator();
 

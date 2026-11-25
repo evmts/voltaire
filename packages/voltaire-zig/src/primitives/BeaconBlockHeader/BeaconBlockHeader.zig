@@ -96,11 +96,11 @@ pub const SignedBeaconBlockHeader = struct {
 };
 
 fn filled32(value: u8) [32]u8 {
-    return [_]u8{value} ** 32;
+    return @as([32]u8, @splat(value));
 }
 
 fn filled96(value: u8) [96]u8 {
-    return [_]u8{value} ** 96;
+    return @as([96]u8, @splat(value));
 }
 
 test "BeaconBlockHeader: construction and field access" {

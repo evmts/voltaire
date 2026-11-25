@@ -62,7 +62,7 @@ pub const ReceiptStatus = enum(u8) {
 
     /// Convert to u8 value
     pub fn toInt(self: ReceiptStatus) u8 {
-        return @intFromEnum(self);
+        return @backingInt(self);
     }
 
     /// Check if success
@@ -780,7 +780,7 @@ test "equals - different types not equal" {
 
 /// Check type-only equality (ignores data values)
 pub fn equalsType(a: *const TransactionStatus, b: *const TransactionStatus) bool {
-    return @intFromEnum(a.*) == @intFromEnum(b.*);
+    return @backingInt(a.*) == @backingInt(b.*);
 }
 
 test "equalsType - included same type different values" {

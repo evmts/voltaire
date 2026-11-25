@@ -18,7 +18,7 @@ const Crypto = crypto.Crypto;
 const Hex = primitives.Hex;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -71,8 +71,8 @@ pub fn main() !void {
     // Fill in the actual values for the message
     std.debug.print("3. Adding Message Data\n", .{});
 
-    const from_address = primitives.Address{ .bytes = [_]u8{0xAA} ** 20 };
-    const to_address = primitives.Address{ .bytes = [_]u8{0xBB} ** 20 };
+    const from_address = primitives.Address{ .bytes = @as([20]u8, @splat(0xAA)) };
+    const to_address = primitives.Address{ .bytes = @as([20]u8, @splat(0xBB)) };
     const amount: u256 = 1000000000000000000; // 1.0 tokens (18 decimals)
 
     try typed_data.message.put(
@@ -209,7 +209,7 @@ pub fn main() !void {
     );
     try from_person.put(
         try allocator.dupe(u8, "wallet"),
-        Eip712.MessageValue{ .address = primitives.Address{ .bytes = [_]u8{0xAA} ** 20 } },
+        Eip712.MessageValue{ .address = primitives.Address{ .bytes = @as([20]u8, @splat(0xAA)) } },
     );
 
     // Create to person
@@ -220,7 +220,7 @@ pub fn main() !void {
     );
     try to_person.put(
         try allocator.dupe(u8, "wallet"),
-        Eip712.MessageValue{ .address = primitives.Address{ .bytes = [_]u8{0xBB} ** 20 } },
+        Eip712.MessageValue{ .address = primitives.Address{ .bytes = @as([20]u8, @splat(0xBB)) } },
     );
 
     // Create mail message

@@ -10,7 +10,7 @@ const primitives = @import("primitives");
 /// - Comparison with Zig's natural idioms
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -98,7 +98,7 @@ pub fn main() !void {
     };
 
     // Filter non-zero addresses
-    var non_zero = std.ArrayList(primitives.Address){};
+    var non_zero = std.ArrayList(primitives.Address).empty;
     defer non_zero.deinit(allocator);
 
     for (addresses) |addr| {
@@ -111,7 +111,7 @@ pub fn main() !void {
 
     // Find addresses less than threshold
     const threshold = primitives.Address.fromNumber(80);
-    var below_threshold = std.ArrayList(primitives.Address){};
+    var below_threshold = std.ArrayList(primitives.Address).empty;
     defer below_threshold.deinit(allocator);
 
     for (addresses) |addr| {
@@ -128,7 +128,7 @@ pub fn main() !void {
     try stdout.writeAll("\n");
 
     // Find addresses greater than threshold
-    var above_threshold = std.ArrayList(primitives.Address){};
+    var above_threshold = std.ArrayList(primitives.Address).empty;
     defer above_threshold.deinit(allocator);
 
     for (addresses) |addr| {
@@ -184,7 +184,7 @@ pub fn main() !void {
     };
 
     try stdout.writeAll("Processing raw inputs:\n");
-    var processed = std.ArrayList(primitives.Address){};
+    var processed = std.ArrayList(primitives.Address).empty;
     defer processed.deinit(allocator);
 
     // Validate, convert, filter zeros

@@ -457,7 +457,7 @@ test "constantTimeEqBytes: different lengths" {
 }
 
 test "eql: detects a flipped bit at every position" {
-    const a = [_]u8{0xa5} ** 32;
+    const a = @as([32]u8, @splat(0xa5));
     try std.testing.expect(eql(&a, &a));
     try std.testing.expect(constantTimeEqual(&a, &a));
     for (0..a.len) |i| {
@@ -486,9 +486,9 @@ test "eql: length mismatch and empty slices" {
 }
 
 test "isZero: any single non-zero byte" {
-    try std.testing.expect(isZero(&([_]u8{0} ** 32)));
+    try std.testing.expect(isZero(&(@as([32]u8, @splat(0)))));
     for (0..32) |i| {
-        var bytes = [_]u8{0} ** 32;
+        var bytes = @as([32]u8, @splat(0));
         bytes[i] = 0x80;
         try std.testing.expect(!isZero(&bytes));
     }

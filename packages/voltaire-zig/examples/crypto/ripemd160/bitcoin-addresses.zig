@@ -2,7 +2,7 @@ const std = @import("std");
 const crypto = @import("crypto");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -10,7 +10,7 @@ pub fn main() !void {
 
     // 1. P2PKH Address Generation
     std.debug.print("1. P2PKH Address Generation\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     // Simulate a Bitcoin public key (65 bytes uncompressed)
     var public_key: [65]u8 = undefined;
@@ -53,20 +53,20 @@ pub fn main() !void {
 
     // 2. P2SH Address Generation
     std.debug.print("2. P2SH Address Generation\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     // Simulate a redeem script (2-of-3 multisig)
     const redeem_script = [_]u8{
         0x52, // OP_2
         0x21,
         0x03,
-    } ++ [_]u8{0xAA} ** 32 ++ // Pubkey 1
+    } ++ @as([32]u8, @splat(0xAA)) ++ // Pubkey 1
         [_]u8{
             0x21, 0x03,
-        } ++ [_]u8{0xBB} ** 32 ++ // Pubkey 2
+        } ++ @as([32]u8, @splat(0xBB)) ++ // Pubkey 2
         [_]u8{
             0x21, 0x03,
-        } ++ [_]u8{0xCC} ** 32 ++ // Pubkey 3
+        } ++ @as([32]u8, @splat(0xCC)) ++ // Pubkey 3
         [_]u8{
             0x53, // OP_3
             0xAE, // OP_CHECKMULTISIG
@@ -98,7 +98,7 @@ pub fn main() !void {
 
     // 3. Why Bitcoin uses both algorithms
     std.debug.print("3. Why Bitcoin Uses Both SHA-256 and RIPEMD160\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Reasons for double hashing:\n", .{});
     std.debug.print("\n1. Redundancy:\n", .{});
@@ -123,7 +123,7 @@ pub fn main() !void {
 
     // 4. Address collision probability
     std.debug.print("4. Address Collision Probability\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Total address space: 2^160\n", .{});
     std.debug.print("(That's about 1.46 x 10^48 addresses)\n", .{});
@@ -134,7 +134,7 @@ pub fn main() !void {
 
     // 5. Hash160 function
     std.debug.print("5. Hash160 Function (SHA256 -> RIPEMD160)\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     const test_data = "test data";
     const sha_result = try crypto.SHA256.hash(test_data, allocator);
@@ -155,17 +155,17 @@ pub fn main() !void {
 
     // 6. Multiple public keys
     std.debug.print("6. Multiple Public Keys -> Different Addresses\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
-    var pubkey1 = [_]u8{0x02} ** 33;
+    var pubkey1 = @as([33]u8, @splat(0x02));
     pubkey1[0] = 0x02;
     pubkey1[1] = 0xAA;
 
-    var pubkey2 = [_]u8{0x03} ** 33;
+    var pubkey2 = @as([33]u8, @splat(0x03));
     pubkey2[0] = 0x03;
     pubkey2[1] = 0xBB;
 
-    var pubkey3 = [_]u8{0x02} ** 33;
+    var pubkey3 = @as([33]u8, @splat(0x02));
     pubkey3[0] = 0x02;
     pubkey3[1] = 0xCC;
 
@@ -196,7 +196,7 @@ pub fn main() !void {
 
     // 7. Legacy vs modern
     std.debug.print("7. Legacy RIPEMD160 vs Modern SegWit\n", .{});
-    std.debug.print("-" ** 40 ++ "\n", .{});
+    std.debug.print(&@as([40]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Legacy addresses (P2PKH/P2SH):\n", .{});
     std.debug.print("- Use SHA-256 + RIPEMD160\n", .{});

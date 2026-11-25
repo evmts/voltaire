@@ -37,7 +37,7 @@ pub const SiweMessage = struct {
     resources: ?[]const []const u8,
 
     pub fn format(self: *const SiweMessage, allocator: Allocator) ![]u8 {
-        var result = std.ArrayList(u8){};
+        var result = std.ArrayList(u8).empty;
         errdefer result.deinit(allocator);
 
         // Header
@@ -68,7 +68,7 @@ pub const SiweMessage = struct {
 
         // Chain ID
         try result.appendSlice(allocator, "Chain ID: ");
-        try result.writer(allocator).print("{d}", .{self.chain_id});
+        try result.print(allocator, "{d}", .{self.chain_id});
         try result.appendSlice(allocator, "\n");
 
         // Nonce
@@ -377,7 +377,7 @@ test "SIWE message signature verification" {
     const Crypto = crypto_pkg.Crypto;
 
     // Deterministic test key; derive its address
-    const private_key = [_]u8{0x4c} ++ [_]u8{0x08} ** 30 ++ [_]u8{0x1f};
+    const private_key = [_]u8{0x4c} ++ @as([30]u8, @splat(0x08)) ++ [_]u8{0x1f};
     const public_key = try Crypto.unaudited_getPublicKey(private_key);
     const signer = Address.fromPublicKey(public_key.x, public_key.y);
 

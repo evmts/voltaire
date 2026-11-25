@@ -50,7 +50,7 @@ pub const HttpRpcClient = struct {
         defer self.allocator.free(addr_hex);
 
         // Format slots as hex array
-        var slots_json = std.ArrayList(u8){};
+        var slots_json = std.ArrayList(u8).empty;
         defer slots_json.deinit(self.allocator);
         try slots_json.append(self.allocator, '[');
         for (slots, 0..) |slot, i| {
@@ -124,7 +124,7 @@ pub const HttpRpcClient = struct {
         const response = try request.finish();
 
         // Read response body
-        var response_buffer = std.ArrayList(u8){};
+        var response_buffer = std.ArrayList(u8).empty;
         defer response_buffer.deinit(self.allocator);
 
         var reader_buffer: [8192]u8 = undefined;
@@ -195,7 +195,7 @@ fn httpGetCode(
 
 /// Demo: Use HttpRpcClient with ForkBackend
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 

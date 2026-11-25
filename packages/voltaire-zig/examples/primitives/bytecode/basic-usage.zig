@@ -13,7 +13,7 @@ const Opcode = primitives.opcode.Opcode;
 
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -79,7 +79,7 @@ pub fn main() !void {
     for (0..bytecode.len()) |i| {
         const pc: u32 = @intCast(i);
         if (bytecode.getOpcode(pc)) |opcode| {
-            const opcode_enum: Opcode = @enumFromInt(opcode);
+            const opcode_enum: Opcode = @fromBackingInt(@intCast(opcode));
             try stdout.print("  Position {}: 0x{x:0>2} ({})\n", .{ pc, opcode, opcode_enum });
         }
     }
@@ -149,8 +149,8 @@ pub fn main() !void {
             try stdout.print("  {}: {}\n", .{ pc, opcode });
 
             // Skip PUSH data
-            if (@intFromEnum(opcode) >= 0x60 and @intFromEnum(opcode) <= 0x7f) {
-                const push_size = @intFromEnum(opcode) - 0x5f;
+            if (@backingInt(opcode) >= 0x60 and @backingInt(opcode) <= 0x7f) {
+                const push_size = @backingInt(opcode) - 0x5f;
                 pc += 1 + push_size;
             } else {
                 pc += 1;

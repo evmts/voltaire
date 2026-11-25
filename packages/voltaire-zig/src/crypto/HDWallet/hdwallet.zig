@@ -622,7 +622,7 @@ test "deriveBitcoin and deriveHardened" {
 }
 
 test "fromSeed rejects seed lengths outside 16..64" {
-    const big = [_]u8{1} ** 65;
+    const big = @as([65]u8, @splat(1));
     try testing.expectError(error.InvalidSeedLength, fromSeed(big[0..0]));
     try testing.expectError(error.InvalidSeedLength, fromSeed(big[0..15]));
     try testing.expectError(error.InvalidSeedLength, fromSeed(big[0..65]));
@@ -699,11 +699,11 @@ test "fromExtendedKey rejects malformed input" {
         .{ .private = true, .offset = 5, .bytes = &.{1}, .err = error.InvalidExtendedKey }, // depth 0, nonzero fingerprint
         .{ .private = false, .offset = 12, .bytes = &.{1}, .err = error.InvalidExtendedKey }, // depth 0, nonzero index
         .{ .private = true, .offset = 45, .bytes = &.{1}, .err = error.InvalidPrivateKey }, // missing 0x00 prefix
-        .{ .private = true, .offset = 46, .bytes = &([_]u8{0} ** 32), .err = error.InvalidPrivateKey }, // k = 0
-        .{ .private = true, .offset = 46, .bytes = &([_]u8{0xff} ** 32), .err = error.InvalidPrivateKey }, // k >= n
+        .{ .private = true, .offset = 46, .bytes = &(@as([32]u8, @splat(0))), .err = error.InvalidPrivateKey }, // k = 0
+        .{ .private = true, .offset = 46, .bytes = &(@as([32]u8, @splat(0xff))), .err = error.InvalidPrivateKey }, // k >= n
         .{ .private = false, .offset = 45, .bytes = &.{0x04}, .err = error.InvalidPublicKey }, // bad prefix
         .{ .private = false, .offset = 45, .bytes = &.{0x00}, .err = error.InvalidPublicKey },
-        .{ .private = false, .offset = 46, .bytes = &([_]u8{0xff} ** 32), .err = error.InvalidPublicKey }, // x >= p
+        .{ .private = false, .offset = 46, .bytes = &(@as([32]u8, @splat(0xff))), .err = error.InvalidPublicKey }, // x >= p
     };
     for (cases) |case| {
         var raw = try serialize(root, case.private);

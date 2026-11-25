@@ -26,24 +26,20 @@ fn benchBlockStorePutAndGet(allocator: std.mem.Allocator) void {
         .total_difficulty = null,
     };
     block.header.number = 1;
-    block.hash = [_]u8{0xab} ** 32;
+    block.hash = @as([32]u8, @splat(0xab));
     store.putBlock(block) catch unreachable;
     const got = store.getBlock(block.hash);
     std.mem.doNotOptimizeAway(got != null);
 }
 
-pub fn main() !void {
-    var buf: [8192]u8 = undefined;
-    var stdout_file = std.fs.File.stdout();
-    var writer_instance = stdout_file.writer(&buf);
-    var writer = &writer_instance.interface;
+pub fn main(init: std.process.Init) !void {
+    const stdout = std.Io.File.stdout();
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
     try bench.add("BlockStore.init+deinit", benchBlockStoreInitDeinit, .{});
     try bench.add("BlockStore.putBlock+getBlock", benchBlockStorePutAndGet, .{});
 
-    try writer.writeAll("\n");
-    try bench.run(writer);
-    try writer.flush();
+    try stdout.writeStreamingAll(init.io, "\n");
+    try bench.run(init.io, stdout);
 }

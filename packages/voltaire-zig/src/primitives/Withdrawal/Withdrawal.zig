@@ -112,7 +112,7 @@ pub const Withdrawal = struct {
         const amount_slice = stripLeadingZeros(&amount_bytes);
 
         // Build list of items
-        var list = std.ArrayList([]const u8){};
+        var list = std.ArrayList([]const u8).empty;
         defer list.deinit(allocator);
 
         try list.append(allocator, index_slice);
@@ -224,7 +224,7 @@ test "Withdrawal: from creates withdrawal" {
 }
 
 test "Withdrawal: fromAddressBytes creates from bytes" {
-    const addr_bytes = [_]u8{0x74} ++ [_]u8{0} ** 19;
+    const addr_bytes = [_]u8{0x74} ++ @as([19]u8, @splat(0));
     const withdrawal = Withdrawal.fromAddressBytes(1, 2, addr_bytes, 100);
 
     try std.testing.expectEqual(@as(u64, 1), withdrawal.index);

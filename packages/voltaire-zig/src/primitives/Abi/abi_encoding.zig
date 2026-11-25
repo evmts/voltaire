@@ -402,7 +402,7 @@ fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T 
         // The whole word is the big-endian two's complement value
         return @bitCast(std.mem.readInt(u256, &word, .big));
     } else {
-        const unsigned = std.mem.readInt(std.meta.Int(.unsigned, @bitSizeOf(T)), word[start_offset..32], .big);
+        const unsigned = std.mem.readInt(@Int(.unsigned, @bitSizeOf(T)), word[start_offset..32], .big);
         const value: T = @bitCast(unsigned);
         const padding: u8 = if (value < 0) 0xff else 0x00;
         if (!allBytes(word[0..start_offset], padding)) return AbiError.InvalidData;
@@ -748,7 +748,7 @@ pub fn decodeFunctionData(allocator: std.mem.Allocator, data: []const u8, types:
 /// left-padded with zeros, `intN` sign-extended, `bytesN` right-padded.
 /// Returns `InvalidType` for dynamic and array values.
 fn abiWord(value: AbiValue) AbiError![32]u8 {
-    var word = [_]u8{0} ** 32;
+    var word = @as([32]u8, @splat(0));
     switch (value) {
         inline .uint8, .uint16, .uint32, .uint64, .uint128, .uint256 => |val| std.mem.writeInt(u256, &word, val, .big),
         inline .int8, .int16, .int32, .int64, .int128, .int256 => |val| std.mem.writeInt(u256, &word, @bitCast(@as(i256, val)), .big),
@@ -1348,7 +1348,7 @@ pub fn encodeFunctionData(allocator: std.mem.Allocator, selector: Selector, para
 /// Hash one array element in the in-place encoding Solidity uses for indexed
 /// arrays: the element's bytes right-padded with zeros to a multiple of 32.
 fn hashPadded(hasher: *std.crypto.hash.sha3.Keccak256, bytes: []const u8) void {
-    const zeros = [_]u8{0} ** 32;
+    const zeros = @as([32]u8, @splat(0));
     hasher.update(bytes);
     hasher.update(zeros[0 .. (32 - bytes.len % 32) % 32]);
 }
@@ -1437,7 +1437,7 @@ fn appendPacked(result: *std.array_list.AlignedManaged(u8, null), values: []cons
                 try result.appendSlice(&bytes);
             },
             inline .int8, .int16, .int32, .int64, .int128, .int256 => |val| {
-                const Unsigned = std.meta.Int(.unsigned, @bitSizeOf(@TypeOf(val)));
+                const Unsigned = @Int(.unsigned, @bitSizeOf(@TypeOf(val)));
                 var bytes: [@sizeOf(Unsigned)]u8 = undefined;
                 std.mem.writeInt(Unsigned, &bytes, @bitCast(val), .big);
                 try result.appendSlice(&bytes);
@@ -1581,7 +1581,7 @@ test "encodePacked - uint256" {
 
 test "encodePacked - address" {
     const allocator = std.testing.allocator;
-    const addr_bytes = [_]u8{0xAA} ** 20;
+    const addr_bytes = @as([20]u8, @splat(0xAA));
     const addr = address.Address{ .bytes = addr_bytes };
     const values = [_]AbiValue{AbiValue{ .address = addr }};
     const encoded = try encodePacked(allocator, &values);
@@ -1615,7 +1615,7 @@ test "encodePacked - bool false" {
 
 test "encodePacked - bytes32" {
     const allocator = std.testing.allocator;
-    const hash_bytes = [_]u8{0xFF} ** 32;
+    const hash_bytes = @as([32]u8, @splat(0xFF));
     const values = [_]AbiValue{AbiValue{ .bytes32 = hash_bytes }};
     const encoded = try encodePacked(allocator, &values);
     defer allocator.free(encoded);
@@ -1629,9 +1629,9 @@ test "encodePacked - bytes32" {
 test "encodePacked - issue #28 exact scenario" {
     const allocator = std.testing.allocator;
 
-    const alice = [_]u8{0xAA} ** 20;
-    const bob = [_]u8{0xBB} ** 20;
-    const zero_addr = [_]u8{0x00} ** 20;
+    const alice = @as([20]u8, @splat(0xAA));
+    const bob = @as([20]u8, @splat(0xBB));
+    const zero_addr = @as([20]u8, @splat(0x00));
 
     const values = [_]AbiValue{
         addressValue(address.Address{ .bytes = alice }),
@@ -1676,8 +1676,8 @@ test "encodePacked - issue #28 exact scenario" {
 test "encodePacked - multiple addresses" {
     const allocator = std.testing.allocator;
 
-    const addr1 = [_]u8{0x11} ** 20;
-    const addr2 = [_]u8{0x22} ** 20;
+    const addr1 = @as([20]u8, @splat(0x11));
+    const addr2 = @as([20]u8, @splat(0x22));
 
     const values = [_]AbiValue{
         addressValue(address.Address{ .bytes = addr1 }),
@@ -1884,7 +1884,7 @@ test "encodePacked - bytes8" {
 
 test "encodePacked - bytes16" {
     const allocator = std.testing.allocator;
-    const bytes16_val = [_]u8{0xAA} ** 16;
+    const bytes16_val = @as([16]u8, @splat(0xAA));
     const values = [_]AbiValue{AbiValue{ .bytes16 = bytes16_val }};
     const encoded = try encodePacked(allocator, &values);
     defer allocator.free(encoded);
@@ -1952,8 +1952,8 @@ test "encodePacked - uint256 array" {
 
 test "encodePacked - bytes32 array" {
     const allocator = std.testing.allocator;
-    const b1 = [_]u8{0xAA} ** 32;
-    const b2 = [_]u8{0xBB} ** 32;
+    const b1 = @as([32]u8, @splat(0xAA));
+    const b2 = @as([32]u8, @splat(0xBB));
     const arr = [_][32]u8{ b1, b2 };
     const values = [_]AbiValue{AbiValue{ .@"bytes32[]" = &arr }};
     const encoded = try encodePacked(allocator, &values);
@@ -2010,8 +2010,8 @@ test "encodePacked - fixed array uint256[3]" {
 
 test "encodePacked - fixed array address[2]" {
     const allocator = std.testing.allocator;
-    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
-    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const addr1 = address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
+    const addr2 = address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
     const arr = [_]address.Address{ addr1, addr2 };
     const values = [_]AbiValue{AbiValue{ .@"address[2]" = arr }};
     const encoded = try encodePacked(allocator, &values);
@@ -2019,8 +2019,8 @@ test "encodePacked - fixed array address[2]" {
 
     // Array elements are padded to 32 bytes: 12 zero bytes, then the address
     try std.testing.expectEqual(@as(usize, 64), encoded.len);
-    try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 12 ++ [_]u8{0x11} ** 20), encoded[0..32]);
-    try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 12 ++ [_]u8{0x22} ** 20), encoded[32..64]);
+    try std.testing.expectEqualSlices(u8, &(@as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0x11))), encoded[0..32]);
+    try std.testing.expectEqualSlices(u8, &(@as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0x22))), encoded[32..64]);
 }
 
 test "encodePacked - fixed array bool[4]" {
@@ -2047,13 +2047,13 @@ test "encodePacked - fixed array bytes4[2]" {
 
     // Array elements are padded to 32 bytes: bytes4 is right-padded
     try std.testing.expectEqual(@as(usize, 64), encoded.len);
-    try std.testing.expectEqualSlices(u8, &(b1 ++ [_]u8{0} ** 28), encoded[0..32]);
-    try std.testing.expectEqualSlices(u8, &(b2 ++ [_]u8{0} ** 28), encoded[32..64]);
+    try std.testing.expectEqualSlices(u8, &(b1 ++ @as([28]u8, @splat(0))), encoded[0..32]);
+    try std.testing.expectEqualSlices(u8, &(b2 ++ @as([28]u8, @splat(0))), encoded[32..64]);
 }
 
 test "encodePacked - uint8 + address + bool (22 bytes)" {
     const allocator = std.testing.allocator;
-    const addr = address.Address{ .bytes = [_]u8{0x01} ** 20 };
+    const addr = address.Address{ .bytes = @as([20]u8, @splat(0x01)) };
     const values = [_]AbiValue{
         AbiValue{ .uint8 = 42 },
         AbiValue{ .address = addr },
@@ -2239,7 +2239,7 @@ test "basic ABI decoding" {
     const allocator = std.testing.allocator;
 
     // Test decoding uint256
-    const uint256_data = [_]u8{0} ** 28 ++ [_]u8{ 0x00, 0x00, 0x00, 0x2A }; // 42 in big-endian
+    const uint256_data = @as([28]u8, @splat(0)) ++ [_]u8{ 0x00, 0x00, 0x00, 0x2A }; // 42 in big-endian
     const types = [_]AbiType{.uint256};
 
     const decoded = try decodeAbiParameters(allocator, &uint256_data, &types);
@@ -2270,7 +2270,7 @@ test "function data encoding" {
 
     const selector = computeSelector("transfer(address,uint256)");
     const params = [_]AbiValue{
-        addressValue(address.Address{ .bytes = [_]u8{0x12} ** 20 }),
+        addressValue(address.Address{ .bytes = @as([20]u8, @splat(0x12)) }),
         uint256_value(1000),
     };
 
@@ -2408,7 +2408,7 @@ test "encode uint256" {
 
     try std.testing.expectEqual(@as(usize, 32), encoded.len);
 
-    const expected = [_]u8{0} ** 29 ++ [_]u8{ 0x01, 0x0f, 0x2c };
+    const expected = @as([29]u8, @splat(0)) ++ [_]u8{ 0x01, 0x0f, 0x2c };
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2423,7 +2423,7 @@ test "encode uint8" {
 
     try std.testing.expectEqual(@as(usize, 32), encoded.len);
 
-    const expected = [_]u8{0} ** 31 ++ [_]u8{0x20};
+    const expected = @as([31]u8, @splat(0)) ++ [_]u8{0x20};
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2449,7 +2449,7 @@ test "encode int32 positive" {
     const encoded = try encodeAbiParameters(std.testing.allocator, &values);
     defer std.testing.allocator.free(encoded);
 
-    const expected = [_]u8{0} ** 28 ++ [_]u8{ 0x7f, 0xff, 0xff, 0xff };
+    const expected = @as([28]u8, @splat(0)) ++ [_]u8{ 0x7f, 0xff, 0xff, 0xff };
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2462,7 +2462,7 @@ test "encode int32 negative two's complement" {
     defer std.testing.allocator.free(encoded);
 
     // Two's complement representation
-    const expected = [_]u8{0xff} ** 28 ++ [_]u8{ 0x80, 0x00, 0x00, 0x00 };
+    const expected = @as([28]u8, @splat(0xff)) ++ [_]u8{ 0x80, 0x00, 0x00, 0x00 };
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2482,7 +2482,7 @@ test "encode address" {
     defer std.testing.allocator.free(encoded);
 
     // Address should be right-padded with zeros
-    const expected = [_]u8{0} ** 12 ++ addr.bytes;
+    const expected = @as([12]u8, @splat(0)) ++ addr.bytes;
     try std.testing.expectEqualSlices(u8, &expected, encoded);
 }
 
@@ -2497,7 +2497,7 @@ test "encode bool" {
         const encoded = try encodeAbiParameters(std.testing.allocator, &values);
         defer std.testing.allocator.free(encoded);
 
-        const expected = [_]u8{0} ** 31 ++ [_]u8{0x01};
+        const expected = @as([31]u8, @splat(0)) ++ [_]u8{0x01};
         try std.testing.expectEqualSlices(u8, &expected, encoded);
     }
 
@@ -2510,14 +2510,14 @@ test "encode bool" {
         const encoded = try encodeAbiParameters(std.testing.allocator, &values);
         defer std.testing.allocator.free(encoded);
 
-        const expected = [_]u8{0} ** 32;
+        const expected = @as([32]u8, @splat(0));
         try std.testing.expectEqualSlices(u8, &expected, encoded);
     }
 }
 
 // Test ABI decoding
 test "decode uint256" {
-    const data = [_]u8{0} ** 29 ++ [_]u8{ 0x01, 0x0f, 0x2c };
+    const data = @as([29]u8, @splat(0)) ++ [_]u8{ 0x01, 0x0f, 0x2c };
     const types = [_]AbiType{.uint256};
 
     const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
@@ -2544,7 +2544,7 @@ test "decode uint256" {
 
 test "decode int32 negative" {
     // Two's complement representation of -2147483648
-    const data = [_]u8{0xff} ** 28 ++ [_]u8{ 0x80, 0x00, 0x00, 0x00 };
+    const data = @as([28]u8, @splat(0xff)) ++ [_]u8{ 0x80, 0x00, 0x00, 0x00 };
     const types = [_]AbiType{.int32};
 
     const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
@@ -2561,7 +2561,7 @@ test "decode address" {
         0x19, 0x3d, 0x99, 0x55,
     } };
 
-    const data = [_]u8{0} ** 12 ++ expectedAddr.bytes;
+    const data = @as([12]u8, @splat(0)) ++ expectedAddr.bytes;
     const types = [_]AbiType{.address};
 
     const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
@@ -2574,7 +2574,7 @@ test "decode address" {
 test "decode bool" {
     // Test true
     {
-        const data = [_]u8{0} ** 31 ++ [_]u8{0x01};
+        const data = @as([31]u8, @splat(0)) ++ [_]u8{0x01};
         const types = [_]AbiType{.bool};
 
         const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
@@ -2586,7 +2586,7 @@ test "decode bool" {
 
     // Test false
     {
-        const data = [_]u8{0} ** 32;
+        const data = @as([32]u8, @splat(0));
         const types = [_]AbiType{.bool};
 
         const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
@@ -2611,7 +2611,7 @@ test "compute selector" {
 test "encode function data" {
     const selector = computeSelector("transfer(address,uint256)");
 
-    const recipient = address.Address{ .bytes = [_]u8{0x12} ** 20 };
+    const recipient = address.Address{ .bytes = @as([20]u8, @splat(0x12)) };
     const params = [_]AbiValue{
         addressValue(recipient),
         uint256_value(1000),
@@ -2701,7 +2701,7 @@ test "decode with insufficient data" {
 
 // Test complex types
 test "encode and decode multiple types" {
-    const addr = address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const addr = address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     const originalValues = [_]AbiValue{
         uint256_value(42),
         boolValue(true),
@@ -2925,7 +2925,7 @@ test "ABI fixed bytes types encoding" {
     const values = [_]AbiValue{
         .{ .bytes1 = [_]u8{0xaa} },
         .{ .bytes4 = [_]u8{ 0x11, 0x22, 0x33, 0x44 } },
-        .{ .bytes32 = [_]u8{0xff} ** 32 },
+        .{ .bytes32 = @as([32]u8, @splat(0xff)) },
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -2942,7 +2942,7 @@ test "ABI fixed bytes decode round-trip" {
 
     const values = [_]AbiValue{
         .{ .bytes8 = [_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 } },
-        .{ .bytes16 = [_]u8{0xab} ** 16 },
+        .{ .bytes16 = @as([16]u8, @splat(0xab)) },
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -2980,7 +2980,7 @@ test "ABI dynamic bytes encoding" {
 test "ABI large dynamic bytes" {
     const allocator = std.testing.allocator;
 
-    const large_data = [_]u8{0xaa} ** 1000;
+    const large_data = @as([1000]u8, @splat(0xaa));
     const values = [_]AbiValue{
         bytesValue(&large_data),
     };
@@ -3027,9 +3027,9 @@ test "ABI bytes32 array encoding" {
     const allocator = std.testing.allocator;
 
     const arr = [_][32]u8{
-        [_]u8{0xaa} ** 32,
-        [_]u8{0xbb} ** 32,
-        [_]u8{0xcc} ** 32,
+        @as([32]u8, @splat(0xaa)),
+        @as([32]u8, @splat(0xbb)),
+        @as([32]u8, @splat(0xcc)),
     };
     const values = [_]AbiValue{
         .{ .@"bytes32[]" = &arr },
@@ -3054,8 +3054,8 @@ test "ABI bytes32 array encoding" {
 test "ABI address array encoding" {
     const allocator = std.testing.allocator;
 
-    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
-    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const addr1 = address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
+    const addr2 = address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
     const arr = [_]address.Address{ addr1, addr2 };
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -3206,7 +3206,7 @@ test "ABI decode function data with no parameters" {
 test "ABI encode event topics with indexed values" {
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const addr = address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     const indexed = [_]AbiValue{
         addressValue(addr),
         uint256_value(1000),
@@ -3237,7 +3237,7 @@ test "ABI zero values encoding" {
     const encoded = try encodeAbiParameters(allocator, &values);
     defer allocator.free(encoded);
 
-    const expected_zeros = [_]u8{0} ** 96;
+    const expected_zeros = @as([96]u8, @splat(0));
     try std.testing.expectEqualSlices(u8, &expected_zeros, encoded);
 }
 
@@ -3364,9 +3364,9 @@ test "ABI dynamic array - single element uint256 array" {
 test "ABI dynamic array - multiple elements address array" {
     const allocator = std.testing.allocator;
 
-    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
-    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
-    const addr3 = address.Address{ .bytes = [_]u8{0x33} ** 20 };
+    const addr1 = address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
+    const addr2 = address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
+    const addr3 = address.Address{ .bytes = @as([20]u8, @splat(0x33)) };
     const arr = [_]address.Address{ addr1, addr2, addr3 };
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -3473,9 +3473,9 @@ test "ABI dynamic array - bytes32 array with all zeros" {
     const allocator = std.testing.allocator;
 
     const arr = [_][32]u8{
-        [_]u8{0} ** 32,
-        [_]u8{0} ** 32,
-        [_]u8{0} ** 32,
+        @as([32]u8, @splat(0)),
+        @as([32]u8, @splat(0)),
+        @as([32]u8, @splat(0)),
     };
     const values = [_]AbiValue{
         .{ .@"bytes32[]" = &arr },
@@ -3493,7 +3493,7 @@ test "ABI dynamic array - bytes32 array with all zeros" {
 
     try std.testing.expectEqual(@as(usize, 3), decoded[0].@"bytes32[]".len);
     for (decoded[0].@"bytes32[]") |val| {
-        try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 32), &val);
+        try std.testing.expectEqualSlices(u8, &(@as([32]u8, @splat(0))), &val);
     }
 }
 
@@ -3535,8 +3535,8 @@ test "ABI dynamic array - mixed static and dynamic array encoding" {
 test "ABI dynamic array - address array with zero addresses" {
     const allocator = std.testing.allocator;
 
-    const zero_addr = address.Address{ .bytes = [_]u8{0} ** 20 };
-    const arr = [_]address.Address{zero_addr} ** 5;
+    const zero_addr = address.Address{ .bytes = @as([20]u8, @splat(0)) };
+    const arr = @as([5]address.Address, @splat(zero_addr));
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
     };
@@ -3731,7 +3731,7 @@ test "ABI boundary - int128 maximum value" {
 test "ABI boundary - address zero (0x0000...0000)" {
     const allocator = std.testing.allocator;
 
-    const zero_addr = address.Address{ .bytes = [_]u8{0} ** 20 };
+    const zero_addr = address.Address{ .bytes = @as([20]u8, @splat(0)) };
     const values = [_]AbiValue{
         addressValue(zero_addr),
     };
@@ -3749,7 +3749,7 @@ test "ABI boundary - address zero (0x0000...0000)" {
 test "ABI boundary - address maximum (0xFFFF...FFFF)" {
     const allocator = std.testing.allocator;
 
-    const max_addr = address.Address{ .bytes = [_]u8{0xFF} ** 20 };
+    const max_addr = address.Address{ .bytes = @as([20]u8, @splat(0xFF)) };
     const values = [_]AbiValue{
         addressValue(max_addr),
     };
@@ -3769,7 +3769,7 @@ test "ABI boundary - bytes1 vs bytes32 comparison" {
 
     const values = [_]AbiValue{
         .{ .bytes1 = [_]u8{0xAA} },
-        .{ .bytes32 = [_]u8{0xBB} ** 32 },
+        .{ .bytes32 = @as([32]u8, @splat(0xBB)) },
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -3788,7 +3788,7 @@ test "ABI boundary - bytes1 vs bytes32 comparison" {
 test "ABI boundary - empty string vs long string (>1000 bytes)" {
     const allocator = std.testing.allocator;
 
-    const long_str = "a" ** 1500;
+    const long_str = &@as([1500]u8, @splat('a'));
     const values = [_]AbiValue{
         stringValue(""),
         stringValue(long_str),
@@ -3814,7 +3814,7 @@ test "ABI boundary - empty bytes vs maximum bytes" {
     const allocator = std.testing.allocator;
 
     const empty_bytes = [_]u8{};
-    const large_bytes = [_]u8{0xCD} ** 5000;
+    const large_bytes = @as([5000]u8, @splat(0xCD));
     const values = [_]AbiValue{
         bytesValue(&empty_bytes),
         bytesValue(&large_bytes),
@@ -4162,11 +4162,11 @@ test "ABI cross-validation - ethers.js multiple parameters encoding" {
 test "ABI cross-validation - real contract function encoding" {
     const allocator = std.testing.allocator;
 
-    const addr1 = address.Address{ .bytes = [_]u8{0x11} ** 20 };
-    const addr2 = address.Address{ .bytes = [_]u8{0x22} ** 20 };
+    const addr1 = address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
+    const addr2 = address.Address{ .bytes = @as([20]u8, @splat(0x22)) };
     const path = [_]address.Address{ addr1, addr2 };
 
-    const to_addr = address.Address{ .bytes = [_]u8{0x33} ** 20 };
+    const to_addr = address.Address{ .bytes = @as([20]u8, @splat(0x33)) };
 
     const values = [_]AbiValue{
         uint256_value(1000000000000000000),
@@ -4416,8 +4416,8 @@ test "Fixed array - uint256[3] encoding and decoding" {
 test "Fixed array - address[2] encoding" {
     const allocator = std.testing.allocator;
 
-    const addr1 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
-    const addr2 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{2} };
+    const addr1 = address.Address{ .bytes = @as([19]u8, @splat(0)) ++ [_]u8{1} };
+    const addr2 = address.Address{ .bytes = @as([19]u8, @splat(0)) ++ [_]u8{2} };
     const arr = [2]address.Address{ addr1, addr2 };
     const values = [_]AbiValue{
         .{ .@"address[2]" = arr },
@@ -4475,8 +4475,8 @@ test "Fixed array - bytes4[2] encoding" {
 test "Fixed array - mixed with other params (uint256, address[2], bool)" {
     const allocator = std.testing.allocator;
 
-    const addr1 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
-    const addr2 = address.Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{2} };
+    const addr1 = address.Address{ .bytes = @as([19]u8, @splat(0)) ++ [_]u8{1} };
+    const addr2 = address.Address{ .bytes = @as([19]u8, @splat(0)) ++ [_]u8{2} };
     const arr = [2]address.Address{ addr1, addr2 };
 
     const values = [_]AbiValue{
@@ -4538,7 +4538,7 @@ test "Tuple - simple all-static (uint256, address)" {
 
     const values = [_]AbiValue{
         uint256_value(100),
-        addressValue(address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} }),
+        addressValue(address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} }),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -4588,7 +4588,7 @@ test "Tuple - multiple types (uint8, address, bool, bytes4)" {
 
     const values = [_]AbiValue{
         AbiValue{ .uint8 = 255 },
-        addressValue(address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} }),
+        addressValue(address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} }),
         boolValue(true),
         AbiValue{ .bytes4 = [_]u8{ 0x12, 0x34, 0x56, 0x78 } },
     };
@@ -4617,7 +4617,7 @@ test "Tuple - mixed (address, string, uint256)" {
     const allocator = std.testing.allocator;
 
     const values = [_]AbiValue{
-        addressValue(address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} }),
+        addressValue(address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} }),
         stringValue("test"),
         uint256_value(999),
     };
@@ -4791,7 +4791,7 @@ test "int types boundary - negative min values two's complement" {
     defer allocator.free(encoded);
 
     // Verify two's complement encoding for int8 = -128
-    const expected_int8 = [_]u8{0xff} ** 31 ++ [_]u8{0x80};
+    const expected_int8 = @as([31]u8, @splat(0xff)) ++ [_]u8{0x80};
     try std.testing.expectEqualSlices(u8, &expected_int8, encoded[0..32]);
 
     const types = [_]AbiType{ .int8, .int16, .int32, .int64, .int128 };
@@ -4846,8 +4846,8 @@ test "bytesN types - all sizes" {
         .{ .bytes3 = [_]u8{ 0x01, 0x02, 0x03 } },
         .{ .bytes4 = [_]u8{ 0x01, 0x02, 0x03, 0x04 } },
         .{ .bytes8 = [_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 } },
-        .{ .bytes16 = [_]u8{0xff} ** 16 },
-        .{ .bytes32 = [_]u8{0xaa} ** 32 },
+        .{ .bytes16 = @as([16]u8, @splat(0xff)) },
+        .{ .bytes32 = @as([32]u8, @splat(0xaa)) },
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -4914,7 +4914,7 @@ test "dynamic bytes - single byte" {
 test "dynamic bytes - 32 bytes no extra padding" {
     const allocator = std.testing.allocator;
 
-    const exact = [_]u8{0x42} ** 32;
+    const exact = @as([32]u8, @splat(0x42));
     const values = [_]AbiValue{
         bytesValue(&exact),
     };
@@ -4936,7 +4936,7 @@ test "dynamic bytes - 32 bytes no extra padding" {
 test "dynamic bytes - 33 bytes requires padding" {
     const allocator = std.testing.allocator;
 
-    const over = [_]u8{0x42} ** 33;
+    const over = @as([33]u8, @splat(0x42));
     const values = [_]AbiValue{
         bytesValue(&over),
     };
@@ -5102,7 +5102,7 @@ test "arrays - bytes32[] empty" {
 test "arrays - bytes32[] single element" {
     const allocator = std.testing.allocator;
 
-    const arr = [_][32]u8{[_]u8{0x42} ** 32};
+    const arr = [_][32]u8{@as([32]u8, @splat(0x42))};
     const values = [_]AbiValue{
         .{ .@"bytes32[]" = &arr },
     };
@@ -5145,7 +5145,7 @@ test "arrays - address[] empty" {
 test "arrays - address[] single element" {
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x11} ** 20 };
+    const addr = address.Address{ .bytes = @as([20]u8, @splat(0x11)) };
     const arr = [_]address.Address{addr};
     const values = [_]AbiValue{
         .{ .@"address[]" = &arr },
@@ -5222,7 +5222,7 @@ test "nested - tuple in tuple (all static) ((uint256, address), bool)" {
     // In ABI encoding, nested tuples flatten: ((uint256, address), bool) → uint256, address, bool
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
+    const addr = address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} };
     const values = [_]AbiValue{
         uint256_value(100),
         addressValue(addr),
@@ -5252,7 +5252,7 @@ test "nested - tuple in tuple with dynamic ((uint256, string), address)" {
     // With dynamic string in middle
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
+    const addr = address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} };
     const values = [_]AbiValue{
         uint256_value(42),
         stringValue("hello"),
@@ -5283,7 +5283,7 @@ test "nested - triple nesting (((uint256, bool), address), bytes4)" {
     // All tuples flatten to: uint256, bool, address, bytes4
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
+    const addr = address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} };
     const values = [_]AbiValue{
         uint256_value(123),
         boolValue(false),
@@ -5311,7 +5311,7 @@ test "nested - tuple with array (uint256[], address) - tuple flattens" {
     // Flattens to: uint256[], address
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
+    const addr = address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} };
     const arr = [_]u256{ 1, 2, 3 };
     const values = [_]AbiValue{
         .{ .@"uint256[]" = &arr },
@@ -5344,7 +5344,7 @@ test "nested - tuple with multiple arrays (address, uint256[], bool[])" {
     // Multiple dynamic types require correct offset calculation
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
+    const addr = address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} };
     const nums = [_]u256{ 10, 20 };
     const bools = [_]bool{ true, false, true };
 
@@ -5386,7 +5386,7 @@ test "nested - complex mixed (address, uint256[], (bool, string))" {
     // Two dynamic types: uint256[] and string
     const allocator = std.testing.allocator;
 
-    const addr = address.Address{ .bytes = [_]u8{0x00} ** 19 ++ [_]u8{0x01} };
+    const addr = address.Address{ .bytes = @as([19]u8, @splat(0x00)) ++ [_]u8{0x01} };
     const nums = [_]u256{100};
 
     const values = [_]AbiValue{
@@ -5653,7 +5653,7 @@ test "FunctionDefinition - decode_params transfer" {
 
     // First encode
     const args = [_]AbiValue{
-        addressValue(address.Address{ .bytes = [_]u8{0x12} ** 20 }),
+        addressValue(address.Address{ .bytes = @as([20]u8, @splat(0x12)) }),
         uint256_value(1000),
     };
 
@@ -5770,7 +5770,7 @@ test "FunctionDefinition - round trip encode/decode" {
 
     // Original arguments
     const args = [_]AbiValue{
-        addressValue(address.Address{ .bytes = [_]u8{0xAB} ** 20 }),
+        addressValue(address.Address{ .bytes = @as([20]u8, @splat(0xAB)) }),
         uint256_value(999999),
     };
 
@@ -5933,7 +5933,7 @@ test "error - decode data with invalid selector" {
     var data = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer data.deinit();
     try data.appendSlice(&wrong_selector);
-    try data.appendSlice(&[_]u8{0} ** 64); // dummy params
+    try data.appendSlice(&@as([64]u8, @splat(0))); // dummy params
 
     const result = err.decode_data(allocator, data.items);
     try std.testing.expectError(AbiError.InvalidSelector, result);
@@ -6028,7 +6028,7 @@ test "constructor - encode params with multiple params" {
         .state_mutability = .nonpayable,
     };
 
-    const addr = [_]u8{0x12} ** 20;
+    const addr = @as([20]u8, @splat(0x12));
     const values = [_]AbiValue{
         addressValue(address.Address{ .bytes = addr }),
         uint256_value(1000),
@@ -6084,7 +6084,7 @@ test "constructor - decode params" {
     };
 
     // Encode
-    const addr = [_]u8{0xAB} ** 20;
+    const addr = @as([20]u8, @splat(0xAB));
     const values = [_]AbiValue{
         uint256_value(999),
         addressValue(address.Address{ .bytes = addr }),
@@ -6426,8 +6426,8 @@ test "Event - encode topics with 2 indexed addresses" {
         .inputs = &params,
     };
 
-    const from_addr: [20]u8 = [_]u8{0x11} ** 20;
-    const to_addr: [20]u8 = [_]u8{0x22} ** 20;
+    const from_addr: [20]u8 = @as([20]u8, @splat(0x11));
+    const to_addr: [20]u8 = @as([20]u8, @splat(0x22));
 
     const indexed = [_]AbiValue{
         addressValue(address.Address{ .bytes = from_addr }),
@@ -6479,7 +6479,7 @@ test "Event - anonymous event (no topic0)" {
         .anonymous = true,
     };
 
-    const addr: [20]u8 = [_]u8{0xaa} ** 20;
+    const addr: [20]u8 = @as([20]u8, @splat(0xaa));
     const indexed = [_]AbiValue{
         addressValue(address.Address{ .bytes = addr }),
         .{ .uint256 = 42 },
@@ -6553,8 +6553,8 @@ test "Event - decode log with indexed and non-indexed params" {
     };
 
     // Create topics
-    const from_addr: [20]u8 = [_]u8{0x11} ** 20;
-    const to_addr: [20]u8 = [_]u8{0x22} ** 20;
+    const from_addr: [20]u8 = @as([20]u8, @splat(0x11));
+    const to_addr: [20]u8 = @as([20]u8, @splat(0x22));
     const indexed = [_]AbiValue{
         addressValue(address.Address{ .bytes = from_addr }),
         addressValue(address.Address{ .bytes = to_addr }),
@@ -6599,7 +6599,7 @@ test "Event - decode log invalid selector" {
     };
 
     // Create wrong topic0
-    const wrong_topic0 = [_]u8{0xff} ** 32;
+    const wrong_topic0 = @as([32]u8, @splat(0xff));
     const topic0_copy = try allocator.alloc(u8, 32);
     defer allocator.free(topic0_copy);
     @memcpy(topic0_copy, &wrong_topic0);
@@ -6641,7 +6641,7 @@ fn testWord(comptime n: u256) [32]u8 {
 }
 
 fn testPadRight(comptime text: []const u8) [32]u8 {
-    var w = [_]u8{0} ** 32;
+    var w = @as([32]u8, @splat(0));
     @memcpy(w[0..text.len], text);
     return w;
 }
@@ -6730,7 +6730,7 @@ test "ABI bool[] and uint256[][] encode as dynamic types" {
 }
 
 test "ABI Cursor.readBytes rejects lengths that overflow usize" {
-    var cursor = Cursor.init(&[_]u8{0} ** 64);
+    var cursor = Cursor.init(&@as([64]u8, @splat(0)));
     cursor.setPosition(32);
 
     try std.testing.expectError(AbiError.OutOfBounds, cursor.readBytes(std.math.maxInt(usize)));
@@ -6799,7 +6799,7 @@ test "ABI decode rejects array lengths the data cannot hold before allocating" {
 test "ABI decode enforces canonical padding" {
     const allocator = std.testing.allocator;
     const Case = struct { abi_type: AbiType, word: [32]u8, valid: bool };
-    const ff = [_]u8{0xff} ** 32;
+    const ff = @as([32]u8, @splat(0xff));
     const cases = [_]Case{
         // uintN: high bytes must be zero
         .{ .abi_type = .uint8, .word = testWord(0xff), .valid = true },
@@ -6819,19 +6819,19 @@ test "ABI decode enforces canonical padding" {
         .{ .abi_type = .int8, .word = ff, .valid = true }, // -1
         .{ .abi_type = .int8, .word = testWord(0x80), .valid = false }, // 128 does not fit
         .{ .abi_type = .int8, .word = testWord(0xff), .valid = false }, // 255 does not fit
-        .{ .abi_type = .int8, .word = [_]u8{0xff} ** 31 ++ [_]u8{0x7f}, .valid = false }, // ff.. padding on a positive
-        .{ .abi_type = .int8, .word = [_]u8{0x01} ++ [_]u8{0xff} ** 31, .valid = false },
-        .{ .abi_type = .int16, .word = [_]u8{0xff} ** 30 ++ [_]u8{ 0x80, 0x00 }, .valid = true }, // min
+        .{ .abi_type = .int8, .word = @as([31]u8, @splat(0xff)) ++ [_]u8{0x7f}, .valid = false }, // ff.. padding on a positive
+        .{ .abi_type = .int8, .word = [_]u8{0x01} ++ @as([31]u8, @splat(0xff)), .valid = false },
+        .{ .abi_type = .int16, .word = @as([30]u8, @splat(0xff)) ++ [_]u8{ 0x80, 0x00 }, .valid = true }, // min
         .{ .abi_type = .int16, .word = testWord(0x8000), .valid = false },
-        .{ .abi_type = .int32, .word = [_]u8{0xff} ** 28 ++ [_]u8{ 0x80, 0, 0, 0 }, .valid = true },
+        .{ .abi_type = .int32, .word = @as([28]u8, @splat(0xff)) ++ [_]u8{ 0x80, 0, 0, 0 }, .valid = true },
         .{ .abi_type = .int32, .word = testWord(0x8000_0000), .valid = false },
         .{ .abi_type = .int64, .word = ff, .valid = true },
         .{ .abi_type = .int64, .word = testWord(1 << 63), .valid = false },
         .{ .abi_type = .int128, .word = ff, .valid = true },
         .{ .abi_type = .int128, .word = testWord(1 << 127), .valid = false },
         // address: 12 high bytes must be zero
-        .{ .abi_type = .address, .word = [_]u8{0} ** 12 ++ [_]u8{0xff} ** 20, .valid = true },
-        .{ .abi_type = .address, .word = [_]u8{0} ** 11 ++ [_]u8{0x01} ++ [_]u8{0xff} ** 20, .valid = false },
+        .{ .abi_type = .address, .word = @as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0xff)), .valid = true },
+        .{ .abi_type = .address, .word = @as([11]u8, @splat(0)) ++ [_]u8{0x01} ++ @as([20]u8, @splat(0xff)), .valid = false },
         .{ .abi_type = .address, .word = ff, .valid = false },
         // bool: exactly 0 or 1
         .{ .abi_type = .bool, .word = testWord(0), .valid = true },
@@ -6841,12 +6841,12 @@ test "ABI decode enforces canonical padding" {
         .{ .abi_type = .bool, .word = testWord(0x101), .valid = false },
         .{ .abi_type = .bool, .word = ff, .valid = false },
         // bytesN: low bytes must be zero
-        .{ .abi_type = .bytes1, .word = [_]u8{0xab} ++ [_]u8{0} ** 31, .valid = true },
-        .{ .abi_type = .bytes1, .word = [_]u8{0xab} ++ [_]u8{0} ** 30 ++ [_]u8{1}, .valid = false },
-        .{ .abi_type = .bytes4, .word = [_]u8{0xab} ** 4 ++ [_]u8{0} ** 28, .valid = true },
-        .{ .abi_type = .bytes4, .word = [_]u8{0xab} ** 5 ++ [_]u8{0} ** 27, .valid = false },
-        .{ .abi_type = .bytes16, .word = [_]u8{0xab} ** 16 ++ [_]u8{0} ** 16, .valid = true },
-        .{ .abi_type = .bytes16, .word = [_]u8{0xab} ** 16 ++ [_]u8{0} ** 15 ++ [_]u8{1}, .valid = false },
+        .{ .abi_type = .bytes1, .word = [_]u8{0xab} ++ @as([31]u8, @splat(0)), .valid = true },
+        .{ .abi_type = .bytes1, .word = [_]u8{0xab} ++ @as([30]u8, @splat(0)) ++ [_]u8{1}, .valid = false },
+        .{ .abi_type = .bytes4, .word = @as([4]u8, @splat(0xab)) ++ @as([28]u8, @splat(0)), .valid = true },
+        .{ .abi_type = .bytes4, .word = @as([5]u8, @splat(0xab)) ++ @as([27]u8, @splat(0)), .valid = false },
+        .{ .abi_type = .bytes16, .word = @as([16]u8, @splat(0xab)) ++ @as([16]u8, @splat(0)), .valid = true },
+        .{ .abi_type = .bytes16, .word = @as([16]u8, @splat(0xab)) ++ @as([15]u8, @splat(0)) ++ [_]u8{1}, .valid = false },
         .{ .abi_type = .bytes32, .word = ff, .valid = true },
     };
 
@@ -6867,7 +6867,7 @@ test "ABI decode enforces canonical padding" {
     // Padding is also enforced inside arrays
     const bad_bool_array = testWord(0x20) ++ testWord(2) ++ testWord(1) ++ testWord(2);
     try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &bad_bool_array, &[_]AbiType{.@"bool[]"}));
-    const bad_address_array = testWord(0x20) ++ testWord(1) ++ [_]u8{0xff} ** 32;
+    const bad_address_array = testWord(0x20) ++ testWord(1) ++ @as([32]u8, @splat(0xff));
     try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &bad_address_array, &[_]AbiType{.@"address[]"}));
     const bad_fixed = testWord(1) ++ testWord(1) ++ testWord(0) ++ testWord(3);
     try std.testing.expectError(AbiError.InvalidData, decodeAbiParameters(allocator, &bad_fixed, &[_]AbiType{.@"bool[4]"}));
@@ -6948,12 +6948,12 @@ test "int256 standard encode and decode: 0, -1, minInt, maxInt" {
 
     const Vector = struct { value: i256, word: [32]u8 };
     const vectors = [_]Vector{
-        .{ .value = 0, .word = [_]u8{0} ** 32 },
-        .{ .value = -1, .word = [_]u8{0xff} ** 32 },
-        .{ .value = std.math.minInt(i256), .word = [_]u8{0x80} ++ [_]u8{0} ** 31 },
-        .{ .value = std.math.maxInt(i256), .word = [_]u8{0x7f} ++ [_]u8{0xff} ** 31 },
+        .{ .value = 0, .word = @as([32]u8, @splat(0)) },
+        .{ .value = -1, .word = @as([32]u8, @splat(0xff)) },
+        .{ .value = std.math.minInt(i256), .word = [_]u8{0x80} ++ @as([31]u8, @splat(0)) },
+        .{ .value = std.math.maxInt(i256), .word = [_]u8{0x7f} ++ @as([31]u8, @splat(0xff)) },
         .{ .value = 1, .word = testWord(1) },
-        .{ .value = -2, .word = [_]u8{0xff} ** 31 ++ [_]u8{0xfe} },
+        .{ .value = -2, .word = @as([31]u8, @splat(0xff)) ++ [_]u8{0xfe} },
     };
 
     for (vectors) |vector| {
@@ -7162,7 +7162,7 @@ test "decodeAbiParameters shares one byte budget across aliased bytes parameters
 
     // 10 MiB materialized: exactly the budget
     {
-        const types = [_]AbiType{.bytes} ** 10;
+        const types = @as([10]AbiType, @splat(.bytes));
         const data = try Build.data(allocator, 10, payload);
         defer allocator.free(data);
         const decoded = try decodeAbiParameters(allocator, data, &types);
@@ -7172,7 +7172,7 @@ test "decodeAbiParameters shares one byte budget across aliased bytes parameters
 
     // 11 MiB materialized from a ~1 MiB input: rejected, nothing leaked
     {
-        const types = [_]AbiType{.bytes} ** 11;
+        const types = @as([11]AbiType, @splat(.bytes));
         const data = try Build.data(allocator, 11, payload);
         defer allocator.free(data);
         try std.testing.expectError(AbiError.MaxLengthExceeded, decodeAbiParameters(allocator, data, &types));
@@ -7180,7 +7180,7 @@ test "decodeAbiParameters shares one byte budget across aliased bytes parameters
 
     // The budget is per call: a second call starts fresh
     {
-        const types = [_]AbiType{.bytes} ** 10;
+        const types = @as([10]AbiType, @splat(.bytes));
         const data = try Build.data(allocator, 10, payload);
         defer allocator.free(data);
         const decoded = try decodeAbiParameters(allocator, data, &types);
@@ -7214,7 +7214,7 @@ test "encodeEventTopics: topic0 is keccak256 of the signature" {
 }
 
 test "encodeEventTopics: every elementary type is its 32-byte ABI word" {
-    const addr = address.Address{ .bytes = [_]u8{0xaa} ** 20 };
+    const addr = address.Address{ .bytes = @as([20]u8, @splat(0xaa)) };
     const indexed = [_]AbiValue{
         .{ .bool = true },
         .{ .bool = false },
@@ -7235,9 +7235,9 @@ test "encodeEventTopics: every elementary type is its 32-byte ABI word" {
         .{ .bytes2 = .{ 0x01, 0x02 } },
         .{ .bytes3 = .{ 0x01, 0x02, 0x03 } },
         .{ .bytes4 = .{ 0x12, 0x34, 0x56, 0x78 } },
-        .{ .bytes8 = [_]u8{0x08} ** 8 },
-        .{ .bytes16 = [_]u8{0x16} ** 16 },
-        .{ .bytes32 = [_]u8{0x32} ** 32 },
+        .{ .bytes8 = @as([8]u8, @splat(0x08)) },
+        .{ .bytes16 = @as([16]u8, @splat(0x16)) },
+        .{ .bytes32 = @as([32]u8, @splat(0x32)) },
     };
     const want = [_][32]u8{
         testWord(1),
@@ -7248,20 +7248,20 @@ test "encodeEventTopics: every elementary type is its 32-byte ABI word" {
         testWord(std.math.maxInt(u64)),
         testWord(std.math.maxInt(u128)),
         testWord(1000),
-        [_]u8{0xff} ** 32,
-        [_]u8{0xff} ** 31 ++ [_]u8{0xfe},
+        @as([32]u8, @splat(0xff)),
+        @as([31]u8, @splat(0xff)) ++ [_]u8{0xfe},
         testWord(5),
-        [_]u8{0xff} ** 24 ++ [_]u8{0x80} ++ [_]u8{0} ** 7,
-        [_]u8{0xff} ** 32,
-        [_]u8{0x80} ++ [_]u8{0} ** 31,
-        [_]u8{0} ** 12 ++ [_]u8{0xaa} ** 20,
-        [_]u8{0x01} ++ [_]u8{0} ** 31,
-        [_]u8{ 0x01, 0x02 } ++ [_]u8{0} ** 30,
-        [_]u8{ 0x01, 0x02, 0x03 } ++ [_]u8{0} ** 29,
-        [_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28,
-        [_]u8{0x08} ** 8 ++ [_]u8{0} ** 24,
-        [_]u8{0x16} ** 16 ++ [_]u8{0} ** 16,
-        [_]u8{0x32} ** 32,
+        @as([24]u8, @splat(0xff)) ++ [_]u8{0x80} ++ @as([7]u8, @splat(0)),
+        @as([32]u8, @splat(0xff)),
+        [_]u8{0x80} ++ @as([31]u8, @splat(0)),
+        @as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0xaa)),
+        [_]u8{0x01} ++ @as([31]u8, @splat(0)),
+        [_]u8{ 0x01, 0x02 } ++ @as([30]u8, @splat(0)),
+        [_]u8{ 0x01, 0x02, 0x03 } ++ @as([29]u8, @splat(0)),
+        [_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ @as([28]u8, @splat(0)),
+        @as([8]u8, @splat(0x08)) ++ @as([24]u8, @splat(0)),
+        @as([16]u8, @splat(0x16)) ++ @as([16]u8, @splat(0)),
+        @as([32]u8, @splat(0x32)),
     };
     try expectTopics(&indexed, &want);
 }
@@ -7286,9 +7286,9 @@ test "encodeEventTopics: string and bytes are keccak256 of the contents" {
 test "encodeEventTopics: arrays hash their elements padded to 32 bytes, no length" {
     const numbers = [_]u256{ 1, 2 };
     const names = [_][]const u8{ "hello", "world" };
-    const addrs = [_]address.Address{ .{ .bytes = [_]u8{0x11} ** 20 }, .{ .bytes = [_]u8{0x22} ** 20 } };
+    const addrs = [_]address.Address{ .{ .bytes = @as([20]u8, @splat(0x11)) }, .{ .bytes = @as([20]u8, @splat(0x22)) } };
     const flags = [_]bool{ true, false };
-    const hashes = [_][32]u8{ [_]u8{0xaa} ** 32, [_]u8{0xbb} ** 32 };
+    const hashes = [_][32]u8{ @as([32]u8, @splat(0xaa)), @as([32]u8, @splat(0xbb)) };
     const row0 = [_]u256{1};
     const row1 = [_]u256{2};
     const rows = [_][]const u256{ &row0, &row1 };
@@ -7307,7 +7307,7 @@ test "encodeEventTopics: arrays hash their elements padded to 32 bytes, no lengt
     };
 
     const one_two = testWord(1) ++ testWord(2);
-    const addr_words = [_]u8{0} ** 12 ++ [_]u8{0x11} ** 20 ++ [_]u8{0} ** 12 ++ [_]u8{0x22} ** 20;
+    const addr_words = @as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0x11)) ++ @as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0x22));
     const want = [_][32]u8{
         // cast keccak of word(1) ++ word(2)
         testHex32("e90b7bceb6e7df5418fb78d8ee546e97c83a08bbccc01a0644d599ccd2a7c2e0"),
@@ -7315,13 +7315,13 @@ test "encodeEventTopics: arrays hash their elements padded to 32 bytes, no lengt
         testHex32("efcfaab04a0d9eacb11af2f871a90bae131874f9f74f16130b9ac6079768153f"),
         hash.keccak256(&addr_words),
         hash.keccak256(&(testWord(1) ++ testWord(0))),
-        hash.keccak256(&([_]u8{0xaa} ** 32 ++ [_]u8{0xbb} ** 32)),
+        hash.keccak256(&(@as([32]u8, @splat(0xaa)) ++ @as([32]u8, @splat(0xbb)))),
         // Nested arrays flatten: no length prefix at any level
         hash.keccak256(&one_two),
         hash.keccak256(&one_two),
         hash.keccak256(&addr_words),
         hash.keccak256(&(testWord(1) ++ testWord(0) ++ testWord(1) ++ testWord(0))),
-        hash.keccak256(&([_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28 ++ [_]u8{ 0x9a, 0xbc, 0xde, 0xf0 } ++ [_]u8{0} ** 28)),
+        hash.keccak256(&([_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ @as([28]u8, @splat(0)) ++ [_]u8{ 0x9a, 0xbc, 0xde, 0xf0 } ++ @as([28]u8, @splat(0)))),
     };
     try expectTopics(&indexed, &want);
 
@@ -7348,8 +7348,8 @@ test "encodeEventTopicsFromDef: elementary words and in-place hashes for dynamic
         allocator.free(topics);
     }
     try std.testing.expectEqual(@as(usize, 4), topics.len);
-    try std.testing.expectEqualSlices(u8, &([_]u8{0xff} ** 32), topics[1]);
-    try std.testing.expectEqualSlices(u8, &([_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ [_]u8{0} ** 28), topics[2]);
+    try std.testing.expectEqualSlices(u8, &(@as([32]u8, @splat(0xff))), topics[1]);
+    try std.testing.expectEqualSlices(u8, &([_]u8{ 0x12, 0x34, 0x56, 0x78 } ++ @as([28]u8, @splat(0))), topics[2]);
     // keccak256("hello"), not the hash of the offset/length ABI encoding
     try std.testing.expectEqualSlices(u8, &testHex32("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"), topics[3]);
 
@@ -7368,7 +7368,7 @@ test "encodeEventTopicsFromDef: elementary words and in-place hashes for dynamic
 test "encodePacked - dynamic array elements are padded to 32 bytes" {
     const allocator = std.testing.allocator;
 
-    const addrs = [_]address.Address{ .{ .bytes = [_]u8{0x11} ** 20 }, .{ .bytes = [_]u8{0x22} ** 20 } };
+    const addrs = [_]address.Address{ .{ .bytes = @as([20]u8, @splat(0x11)) }, .{ .bytes = @as([20]u8, @splat(0x22)) } };
     const flags = [_]bool{ true, false };
     const values = [_]AbiValue{
         .{ .@"address[]" = &addrs },
@@ -7376,7 +7376,7 @@ test "encodePacked - dynamic array elements are padded to 32 bytes" {
     };
 
     // cast abi-encode --packed "f(address[],bool[])" "[0x1111..,0x2222..]" "[true,false]"
-    const want = [_]u8{0} ** 12 ++ [_]u8{0x11} ** 20 ++ [_]u8{0} ** 12 ++ [_]u8{0x22} ** 20 ++ testWord(1) ++ testWord(0);
+    const want = @as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0x11)) ++ @as([12]u8, @splat(0)) ++ @as([20]u8, @splat(0x22)) ++ testWord(1) ++ testWord(0);
 
     const encoded = try encodePacked(allocator, &values);
     defer allocator.free(encoded);
@@ -7389,7 +7389,7 @@ test "encodePacked - dynamic array elements are padded to 32 bytes" {
     // Outside an array the same values stay unpadded
     const scalars = try encodePackedStrict(allocator, &[_]AbiValue{ .{ .address = addrs[0] }, .{ .bool = true }, .{ .bytes4 = .{ 1, 2, 3, 4 } } });
     defer allocator.free(scalars);
-    try std.testing.expectEqualSlices(u8, &([_]u8{0x11} ** 20 ++ [_]u8{ 1, 1, 2, 3, 4 }), scalars);
+    try std.testing.expectEqualSlices(u8, &(@as([20]u8, @splat(0x11)) ++ [_]u8{ 1, 1, 2, 3, 4 }), scalars);
 
     // Empty arrays add nothing
     const empty = try encodePackedStrict(allocator, &[_]AbiValue{ .{ .@"address[]" = &.{} }, .{ .@"bool[]" = &.{} } });

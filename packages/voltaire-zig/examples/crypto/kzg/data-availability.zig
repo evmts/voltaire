@@ -13,7 +13,7 @@ const c_kzg = crypto.c_kzg;
 const Sha256 = crypto.sha256.Sha256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -26,7 +26,7 @@ pub fn main() !void {
 
     // Step 1: L2 sequencer posts data
     std.debug.print("1. L2 Sequencer: Publishing Rollup Data\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("L2 Batch:\n", .{});
     std.debug.print("  Batch number: 12345\n", .{});
@@ -57,7 +57,7 @@ pub fn main() !void {
 
     // Step 2: Full nodes verify
     std.debug.print("2. Full Nodes: Download and Verify\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Full node workflow:\n", .{});
     std.debug.print("  1. Download blob from consensus layer\n", .{});
@@ -76,7 +76,7 @@ pub fn main() !void {
 
     // Step 3: Light client sampling
     std.debug.print("3. Light Client: Data Availability Sampling\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Light client strategy:\n", .{});
     std.debug.print("  - Cannot download full 128 KB blob\n", .{});
@@ -98,7 +98,7 @@ pub fn main() !void {
 
     // Step 4: Request proofs
     std.debug.print("4. Requesting Proofs from Full Node\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Light client requests proofs for sample points:\n", .{});
 
@@ -138,7 +138,7 @@ pub fn main() !void {
 
     // Step 5: Verify samples
     std.debug.print("5. Light Client: Verifying Samples\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var all_valid = true;
     std.debug.print("Verifying each sample proof:\n", .{});
@@ -158,7 +158,7 @@ pub fn main() !void {
 
     // Step 6: DA guarantees
     std.debug.print("6. Data Availability Guarantees\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("What KZG proves:\n", .{});
     std.debug.print("  ✓ Data exists (blob was published)\n", .{});
@@ -174,7 +174,7 @@ pub fn main() !void {
 
     // Step 7: Sampling statistics
     std.debug.print("7. Sampling Statistics\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const confidence_levels = [_]u32{ 1, 5, 10, 20, 50 };
 
@@ -192,7 +192,7 @@ pub fn main() !void {
 
     // Step 8: Production recommendations
     std.debug.print("8. Production Recommendations\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("For L2 operators:\n", .{});
     std.debug.print("  ✓ Publish blobs with every batch\n", .{});

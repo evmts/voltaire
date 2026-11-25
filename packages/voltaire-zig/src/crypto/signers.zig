@@ -158,8 +158,8 @@ pub const LocalSigner = struct {
 
     /// Generate a random local signer
     /// WARNING: UNAUDITED - Uses system random source
-    pub fn random() SignerError!Self {
-        const private_key = Crypto.unaudited_randomPrivateKey() catch {
+    pub fn random(io: std.Io) SignerError!Self {
+        const private_key = Crypto.unaudited_randomPrivateKey(io) catch {
             return SignerError.InvalidPrivateKey;
         };
         return init(private_key);
@@ -312,14 +312,14 @@ pub const JsonRpcSigner = struct {
         var address_hex: [42]u8 = undefined;
         address_hex[0] = '0';
         address_hex[1] = 'x';
-        _ = std.fmt.bufPrint(address_hex[2..], "{x}", .{std.fmt.fmtSliceHexLower(&self.address.bytes)}) catch {
+        _ = std.fmt.bufPrint(address_hex[2..], "{x}", .{&self.address.bytes}) catch {
             return SignerError.InvalidAddress;
         };
 
         var hash_hex: [66]u8 = undefined;
         hash_hex[0] = '0';
         hash_hex[1] = 'x';
-        _ = std.fmt.bufPrint(hash_hex[2..], "{x}", .{std.fmt.fmtSliceHexLower(&hash)}) catch {
+        _ = std.fmt.bufPrint(hash_hex[2..], "{x}", .{&hash}) catch {
             return SignerError.InvalidMessage;
         };
 
@@ -413,9 +413,11 @@ pub fn createSigner(options: struct {
     private_key: ?PrivateKey = null,
     private_key_hex: ?[]const u8 = null,
     random: bool = false,
+    io: ?std.Io = null,
 }) SignerError!LocalSigner {
     if (options.random) {
-        return LocalSigner.random();
+        const io = options.io orelse return SignerError.InvalidPrivateKey;
+        return LocalSigner.random(io);
     }
     if (options.private_key_hex) |hex_str| {
         return LocalSigner.fromHex(hex_str);
@@ -432,8 +434,8 @@ pub fn createSignerFromHex(hex_str: []const u8) SignerError!LocalSigner {
 }
 
 /// Create a random LocalSigner (convenience function)
-pub fn createRandomSigner() SignerError!LocalSigner {
-    return LocalSigner.random();
+pub fn createRandomSigner(io: std.Io) SignerError!LocalSigner {
+    return LocalSigner.random(io);
 }
 
 /// Validate that a signer is properly configured and can sign
@@ -589,10 +591,10 @@ test "LocalSigner - signature recovery" {
 }
 
 test "LocalSigner - random generation" {
-    var signer1 = try LocalSigner.random();
+    var signer1 = try LocalSigner.random(testing.io);
     defer signer1.deinit();
 
-    var signer2 = try LocalSigner.random();
+    var signer2 = try LocalSigner.random(testing.io);
     defer signer2.deinit();
 
     // Addresses should be different
@@ -622,7 +624,7 @@ test "LocalSigner - signer interface" {
 }
 
 test "LocalSigner - invalid private key zero" {
-    const zero_key: PrivateKey = [_]u8{0} ** 32;
+    const zero_key: PrivateKey = @as([32]u8, @splat(0));
     const result = LocalSigner.init(zero_key);
     try testing.expectError(SignerError.InvalidPrivateKey, result);
 }
@@ -724,7 +726,7 @@ test "createSigner - from hex string" {
 }
 
 test "createSigner - random" {
-    var signer = try createSigner(.{ .random = true });
+    var signer = try createSigner(.{ .random = true, .io = testing.io });
     defer signer.deinit();
 
     try testing.expect(signer.public_key.isValid());
@@ -745,10 +747,10 @@ test "createSignerFromHex" {
 }
 
 test "createRandomSigner" {
-    var signer1 = try createRandomSigner();
+    var signer1 = try createRandomSigner(testing.io);
     defer signer1.deinit();
 
-    var signer2 = try createRandomSigner();
+    var signer2 = try createRandomSigner(testing.io);
     defer signer2.deinit();
 
     // Should produce different signers
@@ -792,7 +794,7 @@ test "createSigner priority - random takes precedence" {
         0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
     };
 
-    var signer = try createSigner(.{ .random = true, .private_key = private_key });
+    var signer = try createSigner(.{ .random = true, .private_key = private_key, .io = testing.io });
     defer signer.deinit();
 
     // Verify it's a valid signer (could be the same or different address)

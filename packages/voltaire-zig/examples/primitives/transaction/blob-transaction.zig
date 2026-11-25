@@ -12,14 +12,14 @@ const Hash = primitives.Hash.Hash;
 const Address = primitives.Address.Address;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
 
     std.debug.print("\n=== EIP-4844 Blob Transaction Examples ===\n\n", .{});
 
     // Example 1: Blob transaction basics
     std.debug.print("1. Blob Transaction Basics\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const blob_count: u32 = 2;
     const max_fee_per_blob_gas: u64 = 2_000_000_000; // 2 gwei
@@ -32,7 +32,7 @@ pub fn main() !void {
 
     // Example 2: Blob size and gas
     std.debug.print("2. Blob Size and Gas\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const BLOB_SIZE: u64 = 131_072; // 128 KB per blob
     const BLOB_GAS_PER_BLOB: u64 = 131_072;
@@ -59,7 +59,7 @@ pub fn main() !void {
 
     // Example 3: Blob gas cost calculation
     std.debug.print("3. Blob Gas Cost Calculation\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const blob_base_fee: u64 = 1; // 1 wei per blob gas (example)
     const blob_gas_cost = total_blob_gas * blob_base_fee;
@@ -74,7 +74,7 @@ pub fn main() !void {
 
     // Example 4: Total transaction cost
     std.debug.print("4. Total Transaction Cost\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const base_fee: u64 = 15_000_000_000; // Execution base fee
     const gas_used: u64 = 50_000;
@@ -105,7 +105,7 @@ pub fn main() !void {
 
     // Example 5: Blob vs calldata cost comparison
     std.debug.print("5. Blob vs Calldata Cost Comparison\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const data_size: u64 = 131_072; // 128 KB
 
@@ -145,7 +145,7 @@ pub fn main() !void {
 
     // Example 6: Blob versioned hashes
     std.debug.print("6. Blob Versioned Hashes (KZG Commitments)\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Versioned Hash Format:\n", .{});
     std.debug.print("  Byte 0: Version (0x01 = SHA-256)\n", .{});
@@ -170,7 +170,7 @@ pub fn main() !void {
 
     // Example 7: Blob transaction limitations
     std.debug.print("7. Blob Transaction Limitations\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Restrictions:\n", .{});
     std.debug.print("  ✗ to cannot be null (no contract creation)\n", .{});
@@ -187,7 +187,7 @@ pub fn main() !void {
 
     // Example 8: Blob base fee market
     std.debug.print("8. Blob Base Fee Market\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Blob gas pricing (separate from execution gas):\n", .{});
     std.debug.print("  Target: 3 blobs per block\n", .{});

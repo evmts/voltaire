@@ -17,7 +17,7 @@ const Address = primitives.Address.Address;
 const Crypto = crypto_pkg.Crypto;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -25,7 +25,7 @@ pub fn main() !void {
 
     // Example 1: Transaction hash vs signing hash
     std.debug.print("1. Transaction Hash vs Signing Hash\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const recipient = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -67,7 +67,7 @@ pub fn main() !void {
 
     // Example 2: Check if transaction is signed
     std.debug.print("2. Checking Transaction Signature\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Check if r and s are non-zero
     var is_signed = false;
@@ -86,7 +86,7 @@ pub fn main() !void {
 
     // Example 3: Legacy transaction chain ID extraction
     std.debug.print("3. Legacy Transaction Chain ID Extraction\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const legacy_tx = LegacyTransaction{
         .nonce = 0,
@@ -125,7 +125,7 @@ pub fn main() !void {
 
     // Example 4: Signing and verification workflow
     std.debug.print("4. Signing Workflow\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Test private key (DO NOT use in production!)
     const private_key = Crypto.PrivateKey{
@@ -143,8 +143,8 @@ pub fn main() !void {
         .value = 1_000_000_000_000_000_000,
         .data = &[_]u8{},
         .v = 0, // Will be set during signing
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
+        .r = @as([32]u8, @splat(0)),
+        .s = @as([32]u8, @splat(0)),
     };
 
     std.debug.print("Unsigned Transaction:\n", .{});
@@ -173,7 +173,7 @@ pub fn main() !void {
 
     // Example 5: Transaction hash uniqueness
     std.debug.print("5. Transaction Hash Uniqueness\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const tx1_hash = try Transaction.computeLegacyTransactionHash(allocator, legacy_tx);
     std.debug.print("Transaction 1 Hash: 0x{X}\n", .{tx1_hash});
@@ -199,7 +199,7 @@ pub fn main() !void {
 
     // Example 6: Signature components
     std.debug.print("6. ECDSA Signature Components\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Signature format:\n", .{});
     std.debug.print("  r: 32-byte scalar (x-coordinate)\n", .{});

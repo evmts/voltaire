@@ -12,7 +12,7 @@ const c_kzg = crypto.c_kzg;
 const Sha256 = crypto.sha256.Sha256;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -25,7 +25,7 @@ pub fn main() !void {
 
     // Step 1: Understanding versioned hashes
     std.debug.print("1. What is a Versioned Hash?\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("Purpose:\n", .{});
     std.debug.print("  - Compact on-chain reference to blob commitment\n", .{});
@@ -43,7 +43,7 @@ pub fn main() !void {
 
     // Step 2: Computing versioned hash
     std.debug.print("2. Computing Versioned Hash\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var blob = getRandomBlob(12345);
     const commitment = try c_kzg.blobToKZGCommitment(&blob);
@@ -76,7 +76,7 @@ pub fn main() !void {
 
     // Step 3: Extracting components
     std.debug.print("3. Versioned Hash Components\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const version = versioned_hash[0];
     const hash_suffix = versioned_hash[1..];
@@ -97,7 +97,7 @@ pub fn main() !void {
 
     // Step 4: Verification
     std.debug.print("4. Versioned Hash Verification\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var expected_hash: [32]u8 = undefined;
     Sha256.hash(&commitment, &expected_hash);
@@ -108,7 +108,7 @@ pub fn main() !void {
 
     // Step 5: Testing invalid cases
     std.debug.print("5. Testing Invalid Versioned Hashes\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Wrong version
     var wrong_version = versioned_hash;
@@ -129,7 +129,7 @@ pub fn main() !void {
 
     // Step 6: Multiple blobs
     std.debug.print("6. Managing Multiple Versioned Hashes\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const NUM_BLOBS = 3;
     var blobs: [NUM_BLOBS]c_kzg.Blob = undefined;
@@ -163,7 +163,7 @@ pub fn main() !void {
 
     // Step 7: Size comparison
     std.debug.print("7. Size Comparison\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const MAX_BLOBS = 6;
     std.debug.print("For {} blobs:\n", .{MAX_BLOBS});
@@ -178,7 +178,7 @@ pub fn main() !void {
 
     // Step 8: Production checklist
     std.debug.print("8. Production Checklist\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     std.debug.print("When working with versioned hashes:\n", .{});
     std.debug.print("  ✓ Always verify version byte = 0x01\n", .{});

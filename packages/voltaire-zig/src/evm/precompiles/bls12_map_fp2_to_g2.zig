@@ -41,13 +41,13 @@ pub fn execute(
 // ============================================================================
 
 test "map fp2 to g2 - out of gas" {
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = execute(std.testing.allocator, &input, GAS - 1);
     try std.testing.expectError(error.OutOfGas, result);
 }
 
 test "map fp2 to g2 - exact gas" {
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, GAS);
     defer std.testing.allocator.free(result.output);
 
@@ -56,7 +56,7 @@ test "map fp2 to g2 - exact gas" {
 }
 
 test "map fp2 to g2 - excess gas" {
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, GAS + 1000);
     defer std.testing.allocator.free(result.output);
 
@@ -65,13 +65,13 @@ test "map fp2 to g2 - excess gas" {
 }
 
 test "map fp2 to g2 - invalid input length too short" {
-    const input = [_]u8{0} ** 127;
+    const input = @as([127]u8, @splat(0));
     const result = execute(std.testing.allocator, &input, GAS);
     try std.testing.expectError(error.InvalidInput, result);
 }
 
 test "map fp2 to g2 - invalid input length too long" {
-    const input = [_]u8{0} ** 129;
+    const input = @as([129]u8, @splat(0));
     const result = execute(std.testing.allocator, &input, GAS);
     try std.testing.expectError(error.InvalidInput, result);
 }
@@ -84,7 +84,7 @@ test "map fp2 to g2 - invalid input length zero" {
 
 test "map fp2 to g2 - zero fp2 element" {
     // Zero Fp2 element (c0=0, c1=0) should map to a valid G2 point
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, GAS);
     defer std.testing.allocator.free(result.output);
 
@@ -221,7 +221,7 @@ test "map fp2 to g2 - gas cost validation" {
 
 test "map fp2 to g2 - output size validation" {
     // Output should be 256 bytes (uncompressed G2 point: 2x128 bytes for (x,y) in Fp2)
-    const input = [_]u8{0} ** 128;
+    const input = @as([128]u8, @splat(0));
     const result = try execute(std.testing.allocator, &input, 100000);
     defer std.testing.allocator.free(result.output);
 

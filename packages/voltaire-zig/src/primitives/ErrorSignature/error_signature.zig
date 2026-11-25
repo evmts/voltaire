@@ -30,7 +30,7 @@ pub const SIZE = 4;
 pub const ErrorSignature = [SIZE]u8;
 
 /// Zero error signature constant
-pub const ZERO: ErrorSignature = [_]u8{0} ** SIZE;
+pub const ZERO: ErrorSignature = @as([SIZE]u8, @splat(0));
 
 // ============================================================================
 // Well-known error signatures (precomputed)

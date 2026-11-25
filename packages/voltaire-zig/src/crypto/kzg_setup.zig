@@ -11,14 +11,19 @@ const trusted_setup_data = kzg_trusted_setup.data;
 /// sequence is atomic. Whether a setup is loaded is never cached here: the
 /// binding's own lock-protected `loaded` flag is the single source of truth, so
 /// state stays correct when callers use `c_kzg.freeTrustedSetup` directly.
-var init_mutex = std.Thread.Mutex{};
+var init_mutex: std.Io.Mutex = .init;
+
+fn mutexIo() std.Io {
+    return std.Io.Threaded.global_single_threaded.io();
+}
 
 /// Initialize the KZG trusted setup from embedded data
 /// This should be called once during application startup
 /// Thread-safe for concurrent calls
 pub fn init() !void {
-    init_mutex.lock();
-    defer init_mutex.unlock();
+    const io = mutexIo();
+    init_mutex.lockUncancelable(io);
+    defer init_mutex.unlock(io);
 
     if (c_kzg.isTrustedSetupLoaded()) return;
 
@@ -38,8 +43,9 @@ pub fn init() !void {
 pub fn initFromFile(_allocator: std.mem.Allocator, trusted_setup_path: []const u8) !void {
     _ = _allocator;
 
-    init_mutex.lock();
-    defer init_mutex.unlock();
+    const io = mutexIo();
+    init_mutex.lockUncancelable(io);
+    defer init_mutex.unlock(io);
 
     if (c_kzg.isTrustedSetupLoaded()) return;
 
@@ -57,8 +63,9 @@ pub fn initFromFile(_allocator: std.mem.Allocator, trusted_setup_path: []const u
 pub fn deinit(allocator: std.mem.Allocator) void {
     _ = allocator; // allocator unused
 
-    init_mutex.lock();
-    defer init_mutex.unlock();
+    const io = mutexIo();
+    init_mutex.lockUncancelable(io);
+    defer init_mutex.unlock(io);
 
     // Free via Zig binding; only ignore TrustedSetupNotLoaded error
     c_kzg.freeTrustedSetup() catch |err| {
@@ -309,9 +316,9 @@ test "KZG setup - initialization state transitions" {
 }
 
 test "loadTrustedSetupFile rejects paths that overflow the buffer or contain NUL" {
-    const exact = [_]u8{'a'} ** 256;
+    const exact = @as([256]u8, @splat('a'));
     try std.testing.expectError(c_kzg.KZGError.BadArgs, c_kzg.loadTrustedSetupFile(&exact, 0));
-    const long = [_]u8{'a'} ** 1000;
+    const long = @as([1000]u8, @splat('a'));
     try std.testing.expectError(c_kzg.KZGError.BadArgs, c_kzg.loadTrustedSetupFile(&long, 0));
     try std.testing.expectError(c_kzg.KZGError.BadArgs, c_kzg.loadTrustedSetupFile("src/trusted_setup.txt\x00ignored", 0));
     try std.testing.expectError(c_kzg.KZGError.BadArgs, c_kzg.loadTrustedSetupFile("\x00", 0));
@@ -323,8 +330,8 @@ test "operations without a trusted setup return TrustedSetupNotLoaded" {
     const blob = try std.testing.allocator.create(c_kzg.Blob);
     defer std.testing.allocator.destroy(blob);
     @memset(blob, 0);
-    const zero32: c_kzg.Bytes32 = [_]u8{0} ** 32;
-    const zero48: c_kzg.Bytes48 = [_]u8{0} ** 48;
+    const zero32: c_kzg.Bytes32 = @as([32]u8, @splat(0));
+    const zero48: c_kzg.Bytes48 = @as([48]u8, @splat(0));
 
     try std.testing.expectError(c_kzg.KZGError.TrustedSetupNotLoaded, c_kzg.verifyKZGProof(&zero48, &zero32, &zero32, &zero48));
     try std.testing.expectError(c_kzg.KZGError.TrustedSetupNotLoaded, c_kzg.computeBlobKZGProof(blob, &zero48));
@@ -378,8 +385,8 @@ test "isInitialized follows a direct c_kzg.freeTrustedSetup and init reloads" {
     // init must actually reload rather than trust a cached flag.
     try init();
     try std.testing.expect(isInitialized());
-    const zero32: c_kzg.Bytes32 = [_]u8{0} ** 32;
-    var infinity: c_kzg.Bytes48 = [_]u8{0} ** 48;
+    const zero32: c_kzg.Bytes32 = @as([32]u8, @splat(0));
+    var infinity: c_kzg.Bytes48 = @as([48]u8, @splat(0));
     infinity[0] = 0xc0;
     // Commitment and proof at infinity open the zero polynomial: p(0) = 0.
     try std.testing.expect(try verifyKZGProofThreadSafe(&infinity, &zero32, &zero32, &infinity));

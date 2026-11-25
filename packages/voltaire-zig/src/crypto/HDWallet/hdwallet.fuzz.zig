@@ -16,13 +16,20 @@ fn vector1Root() !HDWallet.ExtendedKey {
 }
 
 fn readIndex(input: []const u8) u32 {
-    var bytes = [_]u8{0} ** 4;
+    var bytes = @as([4]u8, @splat(0));
     const n = @min(input.len, 4);
     @memcpy(bytes[0..n], input[0..n]);
     return std.mem.readInt(u32, &bytes, .big);
 }
 
-fn seedLength(_: void, input: []const u8) anyerror!void {
+fn fuzzInput(smith: *testing.Smith, buf: []u8) []const u8 {
+    if (smith.in) |raw| return raw;
+    return buf[0..smith.slice(buf)];
+}
+
+fn seedLength(_: void, smith: *testing.Smith) anyerror!void {
+    var input_buf: [128]u8 = undefined;
+    const input = fuzzInput(smith, &input_buf);
     const valid = input.len >= HDWallet.MIN_SEED_LENGTH and input.len <= HDWallet.MAX_SEED_LENGTH;
     var a = HDWallet.fromSeed(input) catch |err| {
         // Invalid master keys occur with probability < 2^-127.
@@ -43,17 +50,19 @@ fn seedLength(_: void, input: []const u8) anyerror!void {
 test "fuzz seed length and determinism" {
     try testing.fuzz({}, seedLength, .{ .corpus = &.{
         "",
-        &([_]u8{0} ** 15),
-        &([_]u8{0} ** 16),
-        &([_]u8{0xff} ** 16),
-        &([_]u8{0} ** 32),
-        &([_]u8{0xff} ** 64),
-        &([_]u8{0} ** 65),
+        &(@as([15]u8, @splat(0))),
+        &(@as([16]u8, @splat(0))),
+        &(@as([16]u8, @splat(0xff))),
+        &(@as([32]u8, @splat(0))),
+        &(@as([64]u8, @splat(0xff))),
+        &(@as([65]u8, @splat(0))),
         &vector1_seed,
     } });
 }
 
-fn pathParsing(_: void, input: []const u8) anyerror!void {
+fn pathParsing(_: void, smith: *testing.Smith) anyerror!void {
+    var input_buf: [256]u8 = undefined;
+    const input = fuzzInput(smith, &input_buf);
     var buf: [HDWallet.MAX_DEPTH]u32 = undefined;
     const parsed = HDWallet.parsePath(input, &buf);
     try testing.expectEqual(HDWallet.isValidPath(input), if (parsed) |_| true else |_| false);
@@ -97,7 +106,9 @@ test "fuzz derivation path parsing" {
     } });
 }
 
-fn childIndex(_: void, input: []const u8) anyerror!void {
+fn childIndex(_: void, smith: *testing.Smith) anyerror!void {
+    var input_buf: [16]u8 = undefined;
+    const input = fuzzInput(smith, &input_buf);
     const index = readIndex(input);
     var root = try vector1Root();
     defer root.zeroize();
@@ -138,7 +149,9 @@ test "fuzz child index boundaries" {
     } });
 }
 
-fn extendedKeyParsing(_: void, input: []const u8) anyerror!void {
+fn extendedKeyParsing(_: void, smith: *testing.Smith) anyerror!void {
+    var input_buf: [256]u8 = undefined;
+    const input = fuzzInput(smith, &input_buf);
     var key = HDWallet.fromExtendedKey(input) catch return;
     defer key.zeroize();
 
@@ -163,7 +176,9 @@ test "fuzz extended key parsing" {
     } });
 }
 
-fn serializationRoundTrip(_: void, input: []const u8) anyerror!void {
+fn serializationRoundTrip(_: void, smith: *testing.Smith) anyerror!void {
+    var input_buf: [128]u8 = undefined;
+    const input = fuzzInput(smith, &input_buf);
     if (input.len < 32) return;
     var root = HDWallet.fromSeed(input[0..@min(input.len, HDWallet.MAX_SEED_LENGTH)]) catch return;
     defer root.zeroize();
@@ -182,8 +197,8 @@ fn serializationRoundTrip(_: void, input: []const u8) anyerror!void {
 
 test "fuzz extended key round trip" {
     try testing.fuzz({}, serializationRoundTrip, .{ .corpus = &.{
-        &([_]u8{0} ** 32),
-        &([_]u8{0xff} ** 64),
-        &([_]u8{0x80} ++ [_]u8{0x42} ** 47),
+        &(@as([32]u8, @splat(0))),
+        &(@as([64]u8, @splat(0xff))),
+        &([_]u8{0x80} ++ @as([47]u8, @splat(0x42))),
     } });
 }

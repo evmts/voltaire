@@ -12,7 +12,7 @@ const crypto = @import("crypto");
 const c_kzg = crypto.c_kzg;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -20,7 +20,7 @@ pub fn main() !void {
 
     // Step 1: Load trusted setup
     std.debug.print("1. Loading Trusted Setup\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const ckzg = @import("c_kzg");
     try ckzg.loadTrustedSetupFromText(ckzg.embedded_trusted_setup, 0);
@@ -30,7 +30,7 @@ pub fn main() !void {
 
     // Step 2: Create a blob
     std.debug.print("2. Creating Blob\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     // Create empty blob
     var empty_blob: c_kzg.Blob = undefined;
@@ -48,14 +48,14 @@ pub fn main() !void {
 
     // Step 3: Validate blob
     std.debug.print("3. Validating Blob\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const blob_valid = blob.len == c_kzg.BYTES_PER_BLOB;
     std.debug.print("Blob validation: {s}\n\n", .{if (blob_valid) "✓ Valid" else "✗ Invalid"});
 
     // Step 4: Generate KZG commitment
     std.debug.print("4. Generating KZG Commitment\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const commitment = try c_kzg.blobToKZGCommitment(&blob);
     std.debug.print("Commitment size: {} bytes (48 bytes = BLS12-381 G1 point)\n", .{commitment.len});
@@ -67,7 +67,7 @@ pub fn main() !void {
 
     // Step 5: Commitment is deterministic
     std.debug.print("5. Commitment Determinism\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const commitment2 = try c_kzg.blobToKZGCommitment(&blob);
     const are_equal = std.mem.eql(u8, &commitment, &commitment2);
@@ -75,7 +75,7 @@ pub fn main() !void {
 
     // Step 6: Different blobs produce different commitments
     std.debug.print("6. Commitment Uniqueness\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     var blob2 = getRandomBlob(54321);
     const commitment3 = try c_kzg.blobToKZGCommitment(&blob2);
@@ -84,7 +84,7 @@ pub fn main() !void {
 
     // Step 7: Commitment binding
     std.debug.print("7. Understanding Commitment Binding\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
     std.debug.print("The KZG commitment is:\n", .{});
     std.debug.print("  - Succinct: 48 bytes for 128 KB blob\n", .{});
     std.debug.print("  - Binding: Cannot change blob after commitment\n", .{});
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     // Step 8: Multiple blobs
     std.debug.print("8. Processing Multiple Blobs\n", .{});
-    std.debug.print("-" ** 50 ++ "\n", .{});
+    std.debug.print(&@as([50]u8, @splat('-')) ++ "\n", .{});
 
     const num_blobs = 3;
     var blobs: [num_blobs]c_kzg.Blob = undefined;

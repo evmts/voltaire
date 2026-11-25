@@ -12,7 +12,7 @@ const primitives = @import("primitives");
 const Hex = primitives.Hex;
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
@@ -130,7 +130,7 @@ fn ethereumTypes(allocator: std.mem.Allocator) !void {
     std.debug.print("4. Ethereum type patterns:\n", .{});
 
     // Hash (32 bytes)
-    const hash = [_]u8{0xff} ** 32;
+    const hash = @as([32]u8, @splat(0xff));
     std.debug.print("  Hash size: {} bytes\n", .{hash.len});
 
     // Address (20 bytes)
@@ -144,8 +144,8 @@ fn ethereumTypes(allocator: std.mem.Allocator) !void {
     std.debug.print("  Selector size: {} bytes\n", .{selector.len});
 
     // Signature (65 bytes)
-    const r = [_]u8{0} ** 32;
-    const s = [_]u8{0} ** 32;
+    const r = @as([32]u8, @splat(0));
+    const s = @as([32]u8, @splat(0));
     const v = [_]u8{27};
 
     const sig_parts = [_][]const u8{ &r, &s, &v };

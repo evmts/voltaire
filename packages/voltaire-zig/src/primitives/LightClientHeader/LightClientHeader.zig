@@ -78,7 +78,7 @@ pub const LightClientHeader = struct {
         gas_limit: u64,
         gas_used: u64,
         timestamp: u64,
-        extra_data: [32]u8 = [_]u8{0} ** 32,
+        extra_data: [32]u8 = @as([32]u8, @splat(0)),
         extra_data_len: u8 = 0,
         base_fee_per_gas: u256,
         block_hash: [32]u8,
@@ -148,7 +148,7 @@ pub const LightClientHeader = struct {
         ) !ExecutionPayloadHeaderFields {
             if (extra_data.len > 32) return error.ExtraDataTooLong;
 
-            var extra_data_bytes: [32]u8 = [_]u8{0} ** 32;
+            var extra_data_bytes: [32]u8 = @as([32]u8, @splat(0));
             @memcpy(extra_data_bytes[0..extra_data.len], extra_data);
 
             return .{
@@ -250,29 +250,29 @@ fn fixtureLightClientHeader(slot: u64, marker: u8) LightClientHeader {
         LightClientHeader.BeaconBlockHeader.from(
             slot,
             slot + 1,
-            [_]u8{marker} ** 32,
-            [_]u8{marker +% 1} ** 32,
-            [_]u8{marker +% 2} ** 32,
+            @as([32]u8, @splat(marker)),
+            @as([32]u8, @splat(marker +% 1)),
+            @as([32]u8, @splat(marker +% 2)),
         ),
         LightClientHeader.ExecutionPayloadHeaderFields.from(
-            [_]u8{marker +% 3} ** 32,
-            [_]u8{marker +% 4} ** 20,
-            [_]u8{marker +% 5} ** 32,
-            [_]u8{marker +% 6} ** 32,
-            [_]u8{marker +% 7} ** 256,
-            [_]u8{marker +% 8} ** 32,
+            @as([32]u8, @splat(marker +% 3)),
+            @as([20]u8, @splat(marker +% 4)),
+            @as([32]u8, @splat(marker +% 5)),
+            @as([32]u8, @splat(marker +% 6)),
+            @as([256]u8, @splat(marker +% 7)),
+            @as([32]u8, @splat(marker +% 8)),
             slot + 10,
             30_000_000,
             15_000_000,
             1_700_000_000 + slot,
             @as(u256, marker) + 1,
-            [_]u8{marker +% 9} ** 32,
-            [_]u8{marker +% 10} ** 32,
-            [_]u8{marker +% 11} ** 32,
+            @as([32]u8, @splat(marker +% 9)),
+            @as([32]u8, @splat(marker +% 10)),
+            @as([32]u8, @splat(marker +% 11)),
             slot + 12,
             slot + 13,
         ),
-        [_][32]u8{[_]u8{marker +% 12} ** 32} ** 4,
+        @as([4][32]u8, @splat(@as([32]u8, @splat(marker +% 12)))),
     );
 }
 
