@@ -488,7 +488,7 @@ export interface WasmExports {
  * ```
  */
 export interface WasiImports {
-	[key: string]: (...args: number[]) => number | never;
+	[key: string]: (...args: never[]) => number | never;
 	args_get: (argv: number, argv_buf: number) => number;
 	args_sizes_get: (argc_ptr: number, argv_buf_size_ptr: number) => number;
 	environ_get: (environ: number, environ_buf: number) => number;
@@ -526,7 +526,8 @@ export interface WasiImports {
 		offset: number,
 		nwritten: number,
 	) => number;
-	clock_time_get: () => number;
+	clock_res_get: (id: number, res_ptr: number) => number;
+	clock_time_get: (id: number, precision: bigint, time_ptr: number) => number;
 	random_get: (buf: number, len: number) => number;
 	proc_exit: (code: number) => never;
 	sched_yield: () => number;

@@ -50,6 +50,7 @@ export default defineConfig({
 			// Benchmarks are not library source; counting them as uncovered
 			// functions drags the global thresholds below their floor.
 			exclude: [
+				"src/**/*.d.ts",
 				"src/**/*.test.ts",
 				"src/**/*.test-d.ts",
 				"src/**/*.spec.ts",

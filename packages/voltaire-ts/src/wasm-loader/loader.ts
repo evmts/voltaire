@@ -177,7 +177,24 @@ export async function loadWasm(
 			return 0;
 		},
 		// time
-		clock_time_get: (): number => 0,
+		clock_res_get: (_id: number, resPtr: number): number => {
+			if (!wasmMemory) return -1;
+			const mem = new DataView(wasmMemory.buffer);
+			mem.setBigUint64(resPtr, 1_000_000n, true);
+			return 0;
+		},
+		clock_time_get: (
+			_id: number,
+			_precision: bigint,
+			timePtr: number,
+		): number => {
+			if (!wasmMemory) return -1;
+			if (typeof timePtr === "number") {
+				const mem = new DataView(wasmMemory.buffer);
+				mem.setBigUint64(timePtr, BigInt(Date.now()) * 1_000_000n, true);
+			}
+			return 0;
+		},
 		// random
 		random_get: (buf: number, len: number): number => {
 			if (!wasmMemory) return -1;
@@ -223,6 +240,26 @@ export async function loadWasm(
 		fd_prestat_dir_name: (): number => 0,
 		fd_datasync: (): number => 0,
 		fd_sync: (): number => 0,
+		fd_advise: (): number => 0,
+		fd_allocate: (): number => 0,
+		fd_fdstat_set_flags: (): number => 0,
+		fd_fdstat_set_rights: (): number => 0,
+		fd_filestat_set_size: (): number => 0,
+		fd_filestat_set_times: (): number => 0,
+		fd_readdir: (): number => 0,
+		fd_renumber: (): number => 0,
+		fd_tell: (): number => 0,
+		path_create_directory: (): number => 0,
+		path_filestat_set_times: (): number => 0,
+		path_link: (): number => 0,
+		path_remove_directory: (): number => 0,
+		path_rename: (): number => 0,
+		path_symlink: (): number => 0,
+		path_unlink_file: (): number => 0,
+		sock_accept: (): number => 52,
+		sock_recv: (): number => 52,
+		sock_send: (): number => 52,
+		sock_shutdown: (): number => 52,
 	};
 
 	const importObject = {
