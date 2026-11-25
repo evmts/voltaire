@@ -16,6 +16,27 @@
   - Added reorg-aware VibeLang `effect function*` streams (`watchBlocks`, adaptive-chunking `backfillLogs`/`watchLogs`, and `watchTransactionStatus`).
   - Zero skipped tests: 11 test suites / 61 tests passing (including property & concurrency fuzzing).
 
+### Patch Changes
+
+- [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Ship complete npm metadata, a README and a LICENSE in every published package, and stop publishing test, benchmark and stale build files.
+
+  - `@tevm/voltaire`: add `homepage` and `bugs`; add `typesVersions` fallbacks for the 17 subpaths that lacked them (`ContractCode`, `InitCode`, `LogFilter`, `PrivateKey`, `PublicKey`, `signers`, `block`, `contract`, `transaction`, `stream`, `AesGcm`, `Bls12381`, `BN254`, `HMAC`, `Keystore`, `ModExp`, `X25519`); block `@tevm/voltaire/evm/system/lib`, which had types but no runtime module; drop compiled test declarations and stray `.js` files from `types/`.
+  - `voltaire-effect`: build the `voltaire-effect/jsonrpc` entry point, which the `exports` map declared but the build never emitted; correct `repository.directory` and `homepage`; stop publishing test and benchmark sources.
+  - `@tevm/zig`: add `homepage` and `bugs`; remove `files` entries that matched nothing; stop publishing benchmark sources.
+
+- [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Prepare for the Zig 0.17, TypeScript 7, and Effect 4 upgrades without changing the supported toolchain. `build.zig` now links through `root_module` (the `Step.Compile` helpers are removed in Zig 0.17) and follows `CARGO_TARGET_DIR`. JSDoc types that TypeScript 7 rejects are rewritten, so both packages typecheck on TypeScript 5.9.3 and 7.0.2. Migration guides: `docs/MIGRATION_ZIG_017.md`, `docs/TOOLCHAIN_UPGRADE_PLAN.md`, `packages/voltaire-effect/EFFECT_V4_MIGRATION.md`.
+
+- [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Update Noble and Scure cryptography dependencies and refresh WhatsABI, ABIType, Biome, viem, and ethers. Remove the unused Smithers development dependency and the BIP39 patch now that the Traditional Chinese wordlist export is fixed upstream.
+
+- [#396](https://github.com/evmts/voltaire/pull/396) [`df0a9e0`](https://github.com/evmts/voltaire/commit/df0a9e069f712109fcd6a66c7f1ef71ba44ec875) Thanks [@roninjin10](https://github.com/roninjin10)! - Document the ENS service, its provider requirements, and all resolution helpers in the documentation navigation and LLM discovery index.
+
+- [`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080) Thanks [@roninjin10](https://github.com/roninjin10)! - Expose the JavaScript HDWallet API from `@tevm/voltaire` and include its live
+  service in `CryptoLive`. Keep libwally mnemonic operations available through
+  `@tevm/voltaire/native`. Verify that Zig's blockchain module re-exports
+  `Blockchain.BlockTag`.
+- Updated dependencies [[`a7a7d94`](https://github.com/evmts/voltaire/commit/a7a7d949885a207fdcd1ac1662a352d402211080), [`3b6d41a`](https://github.com/evmts/voltaire/commit/3b6d41a9dc7e3a49207086007b93b13af91188fd)]:
+  - @tevm/voltaire@0.5.0
+
 ## 1.1.0
 
 ### Minor Changes
