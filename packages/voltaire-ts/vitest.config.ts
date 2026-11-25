@@ -9,12 +9,6 @@ export default defineConfig({
 			},
 		},
 		pool: "threads",
-		poolOptions: {
-			threads: {
-				maxThreads: 1,
-				minThreads: 1,
-			},
-		},
 		testTimeout: 30000,
 		hookTimeout: 30000,
 		include: [

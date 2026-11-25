@@ -84,6 +84,7 @@ node_modules
 /.sass-cache
 /connect.lock
 **/coverage/
+**/.vitest/
 /libpeerconnection.log
 npm-debug.log
 testem.log

@@ -49,50 +49,10 @@ export function parse(text) {
 			});
 		}
 
-		// Normalize address to lowercase to avoid checksum validation issues
-		// ox validates checksums strictly, but SIWE spec allows mixed case
-		const normalizedText = text.replace(/0x[0-9a-fA-F]{40}/, (match) =>
-			match.toLowerCase(),
-		);
-
-		// Extract multiline statement manually (ox doesn't support this)
-		let statement;
-		const statementLines = [];
-		let lineIdx = 2; // Start after domain and address lines
-
-		// Skip empty line after address
-		if (lines[lineIdx]?.trim() === "") {
-			lineIdx++;
-		}
-
-		// Collect statement lines until empty line or field with colon
-		while (
-			lineIdx < lines.length &&
-			lines[lineIdx]?.trim() !== "" &&
-			!lines[lineIdx]?.includes(":")
-		) {
-			statementLines.push(lines[lineIdx]);
-			lineIdx++;
-		}
-		if (statementLines.length > 0) {
-			statement = statementLines.join("\n");
-		}
-
-		// Use ox to parse the message
-		const oxMessage = OxSiwe.parseMessage(normalizedText);
-
-		// Validate address field is present
-		if (!oxMessage.address) {
+		// Validate address line is present before checking remaining fields
+		if (!lines[1] || !/^0x[0-9a-fA-F]{40}$/.test(lines[1])) {
 			throw new MissingFieldError("address");
 		}
-
-		// Convert address from hex to BrandedAddress
-		const address = Address.from(oxMessage.address);
-
-		// Extract original timestamp strings from text to preserve format
-		const issuedAtMatch = text.match(/Issued At:\s*(.+)/);
-		const expirationTimeMatch = text.match(/Expiration Time:\s*(.+)/);
-		const notBeforeMatch = text.match(/Not Before:\s*(.+)/);
 
 		// Validate required fields are actually present in the text
 		if (!text.includes("URI:")) {
@@ -121,6 +81,64 @@ export function parse(text) {
 				});
 			}
 		}
+
+		// Extract multiline statement manually (ox doesn't support this)
+		let statement;
+		const statementLines = [];
+		let lineIdx = 2; // Start after domain and address lines
+
+		// Skip empty line after address
+		if (lines[lineIdx]?.trim() === "") {
+			lineIdx++;
+		}
+
+		const statementStart = lineIdx;
+		// Collect statement lines until empty line or field with colon
+		while (
+			lineIdx < lines.length &&
+			lines[lineIdx]?.trim() !== "" &&
+			!lines[lineIdx]?.includes(":")
+		) {
+			statementLines.push(lines[lineIdx]);
+			lineIdx++;
+		}
+		const statementEnd = lineIdx;
+		if (statementLines.length > 0) {
+			statement = statementLines.join("\n");
+		}
+
+		// Collapse multiline statements to a single line for ox@1.x anchored parsing,
+		// then restore the original multiline statement below.
+		const textForOx =
+			statementLines.length > 1
+				? [
+						...lines.slice(0, statementStart),
+						statementLines.join(" "),
+						...lines.slice(statementEnd),
+					].join("\n")
+				: text;
+
+		// Normalize address to lowercase to avoid checksum validation issues
+		// ox validates checksums strictly, but SIWE spec allows mixed case
+		const normalizedText = textForOx.replace(/0x[0-9a-fA-F]{40}/, (match) =>
+			match.toLowerCase(),
+		);
+
+		// Use ox to parse the message
+		const oxMessage = OxSiwe.parseMessage(normalizedText);
+
+		// Validate address field is present
+		if (!oxMessage.address) {
+			throw new MissingFieldError("address");
+		}
+
+		// Convert address from hex to BrandedAddress
+		const address = Address.from(oxMessage.address);
+
+		// Extract original timestamp strings from text to preserve format
+		const issuedAtMatch = text.match(/Issued At:\s*(.+)/);
+		const expirationTimeMatch = text.match(/Expiration Time:\s*(.+)/);
+		const notBeforeMatch = text.match(/Not Before:\s*(.+)/);
 
 		// Convert Date objects to ISO strings, preserving original format when possible
 		/** @type {import('./SiweMessageType.js').SiweMessageType} */
