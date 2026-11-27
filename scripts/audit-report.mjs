@@ -137,6 +137,10 @@ function esc(value) {
     .replaceAll('"', "&quot;");
 }
 
+function renderInlineCode(value) {
+  return esc(value).replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
 function fmtBytes(bytes) {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} kB`;
@@ -289,7 +293,7 @@ function renderHtml(report) {
           return `<details class="audit-row" data-status="${a.failedCount > 0 ? "flagged" : "pass"}" data-search="${esc(`${cat.id} ${a.id} ${a.description} ${a.sampleFailures.map((f) => `${f.item} ${f.note}`).join(" ")}`.toLowerCase())}">
             <summary>
               <span class="shape ${band}" aria-hidden="true"></span>
-              <span class="audit-name"><strong>${esc(a.id)}</strong><span class="muted small"> ${esc(a.description)}</span></span>
+              <span class="audit-name"><strong>${esc(a.id)}</strong><span class="muted small"> ${renderInlineCode(a.description)}</span></span>
               <span class="audit-meta">
                 ${a.failedCount > 0 ? `<span class="chip poor">${a.failedCount}/${a.totalItems} flagged</span>` : `<span class="chip good">${a.totalItems} pass</span>`}
                 <span class="chip ${band}">${a.score === null ? "—" : a.score}</span>
@@ -313,7 +317,7 @@ function renderHtml(report) {
   const opportunitiesHtml =
     opportunities.length === 0
       ? `<p class="muted">No high-impact opportunities flagged above baseline.</p>`
-      : `<table class="data-table">
+      : `<div class="table-wrap"><table class="data-table">
           <thead><tr><th>Impact</th><th>Category</th><th>Metric</th><th>Current → Target</th></tr></thead>
           <tbody>${opportunities
             .slice(0, 15)
@@ -326,7 +330,7 @@ function renderHtml(report) {
               </tr>`,
             )
             .join("")}</tbody>
-        </table>`;
+        </table></div>`;
 
   const markdownSummary = [
     `### Voltaire Backpressure Audit Report (\`${revision.commit}\`)`,
@@ -344,7 +348,7 @@ function renderHtml(report) {
   const wasmHtml =
     wasm.length === 0
       ? `<p class="muted">No compiled WASM artifacts found on disk yet.</p>`
-      : `<table class="data-table">
+      : `<div class="table-wrap"><table class="data-table">
           <thead><tr><th>Artifact</th><th>Raw</th><th>Gzip</th><th>Budget</th><th>Status</th></tr></thead>
           <tbody>${wasm
             .map((w) => {
@@ -358,7 +362,7 @@ function renderHtml(report) {
               </tr>`;
             })
             .join("")}</tbody>
-        </table>`;
+        </table></div>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -382,9 +386,10 @@ header.topbar{border-bottom:1px solid var(--line);background:var(--surface);padd
 .btn{border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:6px 11px;border-radius:6px;font:12px/1.2 inherit;font-weight:600;text-decoration:none;cursor:pointer}
 .btn:hover{border-color:var(--focus);color:var(--focus)}
 main{max-width:1040px;margin:0 auto;padding:24px 20px 64px}
-.trust-banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:24px}
+.trust-banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 16px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:24px}
 .kv-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-.kv-val{font-size:13px;font-weight:600;margin-top:2px;word-break:break-word}
+.kv-val{font-size:13px;font-weight:600;margin-top:2px;overflow-wrap:break-word}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .gauges-hero{display:flex;flex-wrap:wrap;justify-content:center;gap:20px 32px;padding:20px 12px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:14px}
 .gauge{position:relative;display:flex;flex-direction:column;align-items:center;min-width:116px;text-decoration:none;color:inherit;padding:6px;border-radius:8px}
 .gauge:hover{background:color-mix(in srgb,var(--focus) 8%,transparent)}
@@ -451,9 +456,9 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-si
 <main>
   <section class="trust-banner" aria-label="Execution trust and shared object store posture">
     <div><div class="kv-label">Execution Trust</div><div class="kv-val"><span class="chip ${trustClass}">${esc(trust.label)}</span></div></div>
-    <div><div class="kv-label">Shared Object Store</div><div class="kv-val"><code>${esc(trust.cacheEndpoint)}</code> (${esc(trust.cacheAccess)})</div></div>
+    <div><div class="kv-label">Shared Object Store</div><div class="kv-val"><code>build.smithers.sh</code> (${esc(trust.cacheAccess)})</div></div>
     <div><div class="kv-label">Cache Poisoning Guard</div><div class="kv-val">${trust.canPopulateSharedCache ? "Write-authorized sandbox" : "Write blocked (untrusted)"}</div></div>
-    <div><div class="kv-label">Cloud MCP Endpoint</div><div class="kv-val"><code>${esc(trust.mcpEndpoint)}</code></div></div>
+    <div><div class="kv-label">Cloud MCP Endpoint</div><div class="kv-val"><a class="cat-link mono" href="${esc(trust.mcpEndpoint)}" target="_blank" rel="noreferrer">smithers.sh/evmts/voltaire/mcp</a></div></div>
   </section>
 
   <section class="gauges-hero" aria-label="Category scores">
@@ -523,14 +528,16 @@ let activeCat = "all";
 let activeStatus = "all";
 function applyFilters() {
   const q = (searchInput.value || "").trim().toLowerCase();
-  for (const s of sections) {
-    const catOk = activeCat === "all" || s.dataset.category === activeCat;
-    s.style.display = catOk ? "" : "none";
-  }
+  const hasRowFilter = activeStatus !== "all" || q.length > 0;
   for (const row of auditRows) {
     const statusOk = activeStatus === "all" || row.dataset.status === activeStatus;
     const textOk = !q || (row.dataset.search || "").includes(q);
     row.style.display = statusOk && textOk ? "" : "none";
+  }
+  for (const s of sections) {
+    const catOk = activeCat === "all" || s.dataset.category === activeCat;
+    const visibleRows = [...s.querySelectorAll("details.audit-row")].filter((r) => r.style.display !== "none").length;
+    s.style.display = catOk && (!hasRowFilter || visibleRows > 0) ? "" : "none";
   }
 }
 for (const pill of catPills) {

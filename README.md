@@ -1,21 +1,20 @@
-<div align="center">
-  <h1>Voltaire</h1>
-  <p><strong>Type-safe Ethereum primitives, cryptography, and EVM execution — written in Zig and TypeScript, with a C ABI for any language.</strong></p>
-  <p><a href="https://voltaire.tevm.sh"><img width="240" height="240" alt="Voltaire logo" src="https://github.com/user-attachments/assets/409b49cb-113b-4b76-989d-762f6294e26a" /></a></p>
-  <p><a href="https://www.npmjs.com/package/@tevm/voltaire"><img src="https://img.shields.io/npm/v/@tevm/voltaire.svg" alt="npm version" /></a> <a href="https://github.com/evmts/voltaire"><img src="https://img.shields.io/badge/zig-0.17.1-orange.svg" alt="Zig 0.17.1" /></a> <a href="https://github.com/evmts/voltaire/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/evmts/voltaire/ci.yml?label=CI" alt="CI status" /></a> <a href="https://github.com/evmts/voltaire/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" /></a></p>
-  <p><a href="https://voltaire.tevm.sh"><strong>Docs</strong></a> · <a href="https://playground.tevm.sh"><strong>Live Playground</strong></a> · <a href="https://smithers.sh/evmts/voltaire"><strong>Smithers Factory</strong></a> · <a href="https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"><strong>C FFI Recipes</strong></a></p>
-</div>
+# Voltaire
+
+**Type-safe Ethereum primitives, cryptography, and EVM execution — written in Zig and TypeScript, with a C ABI for any language.**
+
+[![npm version](https://img.shields.io/npm/v/@tevm/voltaire.svg)](https://www.npmjs.com/package/@tevm/voltaire) [![Zig 0.17.1](https://img.shields.io/badge/zig-0.17.1-orange.svg)](https://github.com/evmts/voltaire) [![CI status](https://img.shields.io/github/actions/workflow/status/evmts/voltaire/ci.yml?label=CI)](https://github.com/evmts/voltaire/actions/workflows/ci.yml) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/evmts/voltaire/blob/main/LICENSE)
+
+[**Docs**](https://voltaire.tevm.sh) · [**Live Playground**](https://playground.tevm.sh) · [**Smithers Factory**](https://smithers.sh/evmts/voltaire) · [**Engineering Wiki**](https://smithers.sh/evmts/voltaire/-/wiki) · [**C FFI Recipes**](https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md)
 
 ## Architecture
 
-Voltaire implements Ethereum primitives, cryptography, and EVM execution once in **Zig 0.17**, then compiles to **WebAssembly** and exports a stable **C ABI** (`primitives.h` / `libprimitives_c`) consumed by TypeScript/Bun and any language with a C FFI.
+Voltaire implements Ethereum primitives, cryptography, and EVM execution once in **Zig 0.17.1** (with `blst`, `c-kzg-4844`, and `arkworks`), then compiles to **WebAssembly** and exports a stable **C99 ABI** (`primitives.h` / `libprimitives_c`) consumed by TypeScript, Bun Native FFI, and any language with a C FFI.
 
-```text
-packages/voltaire-zig (Zig 0.17.1 Core + blst / c-kzg-4844 / arkworks)
-  ├── WebAssembly (.wasm) ──────────► @tevm/voltaire/wasm (Browser, Node, Bun, Deno)
-  └── C99 ABI (libprimitives_c) ────► @tevm/voltaire/native (Bun Native FFI)
-                                 └──► C / C++ / Rust / Go / Python / Swift
-```
+| Layer | Source / Output | Consumers |
+| --- | --- | --- |
+| **Core** | `packages/voltaire-zig` (Zig 0.17.1 + `blst` / `c-kzg-4844` / `arkworks`) | Native Zig packages (`@tevm/zig`), ZEVM |
+| **WebAssembly** | `primitives.wasm` + per-module `crypto/*.wasm` | `@tevm/voltaire/wasm` (Browser, Node, Bun, Deno) |
+| **C99 ABI** | `zig-out/include/primitives.h` + `libprimitives_c.{so,dylib,a}` | `@tevm/voltaire/native` (Bun FFI) and C / C++ / Rust / Go / Python / Swift |
 
 ## Published Packages
 
