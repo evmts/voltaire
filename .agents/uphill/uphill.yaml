@@ -1,0 +1,80 @@
+# Continuous metrics and hill climbing for evmts/voltaire.
+# Scripts run from the repository root and append metric lines to $UPHILL_METRICS.
+
+footprint:
+  run: bun .agents/uphill/metrics/footprint.ts
+  title: Footprint
+  description: Keep the WASM bundle, flagship primitive surfaces, and runtime dependencies minimal.
+  # Tracked primitives.wasm binary footprint (raw and gzipped).
+  # Raw target of 350 kB comes directly from .size-limit.json ("WASM ReleaseSmall - Full Bundle").
+  wasm-bundle-size:
+    weight: 2
+    poor: 1200kB
+    description: Keep `packages/voltaire-ts/src/wasm-loader/primitives.wasm` under 350 kB raw (200 kB gzipped) via ReleaseSmall and dead-code elimination (.size-limit.json).
+  # Gzipped production source bytes per flagship primitive/crypto surface (derived from .size-limit.json).
+  primitive-source-bytes:
+    poor: 40kB
+    description: Keep each flagship primitive and crypto surface small and tree-shakeable; isolate optional helpers and avoid bloat.
+  # Direct runtime dependencies per core package (TypeScript, Effect, and Rust Cargo.toml).
+  package-deps:
+    poor: 12
+    description: Keep direct runtime dependencies minimal across voltaire-ts, voltaire-effect, and Cargo.toml.
+
+zig-rust-safety:
+  run: bun .agents/uphill/metrics/zig-rust-safety.ts
+  title: Zig & Rust Safety
+  description: Eliminate panic paths, relative cross-module Zig imports, Rust unwraps, and oversized functions in crypto/EVM code.
+  # Production Zig code (outside inline test blocks) must not use @panic or `catch unreachable`.
+  zig-no-panic:
+    weight: 2
+    description: Never use `@panic(...)` or `catch unreachable` in production Zig code under `packages/voltaire-zig/src/`; return explicit error unions.
+  # CLAUDE.md: use named module imports (@import("primitives"), @import("crypto")), not cross-module "../" paths.
+  zig-module-imports:
+    description: Use named Zig module imports (`@import("primitives")`, `@import("crypto")`, `@import("precompiles")`) instead of relative `../` cross-module paths (CLAUDE.md).
+  # TigerStyle: keep Zig functions concise (<= 70 lines) in production code.
+  zig-function-length:
+    description: Keep production Zig functions at or under 70 lines (TigerStyle); decompose long crypto and EVM routines into focused helpers.
+  # Production Rust code (outside #[cfg(test)]) must not call .unwrap() or panic!().
+  rust-no-unwrap-panic:
+    weight: 2
+    description: Never call `.unwrap()` or `panic!()` in production Rust code; propagate Result/error codes cleanly across FFI boundaries.
+  # Tripwire count of unsafe blocks/functions in Rust files (no target; diffs surface in review).
+  rust-unsafe-blocks:
+    description: Keep Rust `unsafe` FFI blocks minimal, audited, and unchanged unless strictly required.
+
+ts-quality:
+  run: bun .agents/uphill/metrics/ts-quality.ts
+  title: TS & Effect Quality
+  description: Enforce Voltaire's zero-console library policy, strict typing, zero suppressions, and TigerStyle function limits.
+  # CLAUDE.md Console Policy: NO console.log/warn/error/debug in library src/ code.
+  console-policy:
+    weight: 2
+    description: Never call `console.log`, `console.warn`, `console.error`, or `console.debug` in library source code; throw typed errors instead (CLAUDE.md).
+  # Disallow explicit `: any` and `as any` in production TypeScript/VibeLang surfaces.
+  explicit-any:
+    weight: 2
+    description: "Never use `: any` or `as any` in production source; use branded types, generics, or `unknown` with validation."
+  # Disallow @ts-ignore, @ts-expect-error, and @ts-nocheck directives in production surfaces.
+  ts-suppressions:
+    weight: 2
+    description: Eliminate `@ts-ignore`, `@ts-expect-error`, and `@ts-nocheck` directives from production source (CLAUDE.md Type Error Policy).
+  # TigerStyle: keep TypeScript/VibeLang functions at or under 70 lines.
+  function-length:
+    description: Keep TypeScript and VibeLang functions at or under 70 lines (TigerStyle).
+
+architecture:
+  run: bun .agents/uphill/metrics/architecture.ts
+  title: Architecture & Testing
+  description: Maintain high test depth across Zig, Rust, TypeScript, and Effect packages, Zig/TS module parity, and valid docs links.
+  # Test-to-source line percentage per core language/subsystem (ambitious target: >= 70%).
+  test-ratio:
+    better: higher
+    poor: 20
+    weight: 2
+    description: Maintain at least a 70% test-to-source line ratio across every core Zig, Rust, TypeScript, and VibeLang subsystem.
+  # CLAUDE.md Architecture: core Zig modules must stay mirrored by name in voltaire-ts.
+  zig-ts-parity:
+    description: Keep core module directories in `packages/voltaire-zig/src/` mirrored by name in `packages/voltaire-ts/src/` (CLAUDE.md).
+  # Verify local Markdown links in top-level contributor documentation resolve cleanly.
+  docs-links:
+    description: Keep all relative Markdown links in `README.md`, `CLAUDE.md`, and `CONTRIBUTING.md` valid.

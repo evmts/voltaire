@@ -260,3 +260,6 @@ tevm-monorepo/
 .smithers/cache/
 .smithers/reports/
 .flows/
+
+# Uphill generated reports
+.uphill/
