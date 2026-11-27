@@ -4,6 +4,7 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param hex - Hex string to convert
  * @returns Uint256 value
+ * @throws {UintInvalidHexError} If hex string is invalid
  * @throws {UintNegativeError} If value is negative
  * @throws {UintOverflowError} If value exceeds maximum
  *

@@ -1,6 +1,6 @@
 export * from "./EventLog.js";
 export type * from "./EventLogConstructor.js";
-export type { EventLogType, EventLogType as BrandedEventLogType, } from "./EventLogType.js";
+export type { EventLogType, EventLogType as BrandedEventLogType, RpcLog, } from "./EventLogType.js";
 import { clone } from "./clone.js";
 import { copy } from "./copy.js";
 import { create } from "./create.js";

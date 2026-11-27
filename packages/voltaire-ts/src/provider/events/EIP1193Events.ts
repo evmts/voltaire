@@ -35,9 +35,7 @@ import type { ProviderRpcError } from "./ProviderRpcError.js";
  * };
  * ```
  */
-export interface EIP1193EventMap
-	// biome-ignore lint/suspicious/noExplicitAny: any required for proper event type variance
-	extends Record<string, (...args: any[]) => void> {
+export interface EIP1193EventMap {
 	/**
 	 * Emitted when Provider connects to a chain
 	 *
@@ -121,8 +119,7 @@ export interface EIP1193EventMap
  * @template TEventMap - Event map defining available events
  */
 export interface EIP1193EventEmitter<
-	// biome-ignore lint/suspicious/noExplicitAny: any required for proper event type variance
-	TEventMap extends Record<string, (...args: any[]) => void> = EIP1193EventMap,
+	TEventMap extends object = EIP1193EventMap,
 > {
 	/**
 	 * Register event listener
@@ -144,6 +141,10 @@ export interface EIP1193EventEmitter<
 	 * Emit event (internal use)
 	 * @internal
 	 */
-	// biome-ignore lint/suspicious/noExplicitAny: any required for proper event type variance
-	emit(eventName: keyof TEventMap, ...args: any[]): boolean;
+	emit<TEvent extends keyof TEventMap>(
+		eventName: TEvent,
+		...args: TEventMap[TEvent] extends (...args: infer TArgs) => void
+			? TArgs
+			: unknown[]
+	): boolean;
 }

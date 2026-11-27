@@ -3,8 +3,11 @@ import {
 	InvalidTransactionTypeError,
 } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/getEffectiveGasPrice.js";
+import type { TransactionEIP1559Type } from "./EIP1559/TransactionEIP1559Type.js";
 import * as EIP4844 from "./EIP4844/getEffectiveGasPrice.js";
+import type { TransactionEIP4844Type } from "./EIP4844/TransactionEIP4844Type.js";
 import * as EIP7702 from "./EIP7702/getEffectiveGasPrice.js";
+import type { TransactionEIP7702Type } from "./EIP7702/TransactionEIP7702Type.js";
 import {
 	isEIP1559,
 	isEIP2930,
@@ -44,27 +47,32 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 	}
 
 	if (isEIP1559(this)) {
-		// biome-ignore lint/suspicious/noExplicitAny: type narrowed by isEIP1559 guard
-		return EIP1559.getEffectiveGasPrice(this as any, baseFee);
+		return EIP1559.getEffectiveGasPrice(
+			this as unknown as TransactionEIP1559Type,
+			baseFee,
+		);
 	}
 
 	if (isEIP4844(this)) {
-		// biome-ignore lint/suspicious/noExplicitAny: type narrowed by isEIP4844 guard
-		return EIP4844.getEffectiveGasPrice(this as any, baseFee);
+		return EIP4844.getEffectiveGasPrice(
+			this as unknown as TransactionEIP4844Type,
+			baseFee,
+		);
 	}
 
 	if (isEIP7702(this)) {
-		// biome-ignore lint/suspicious/noExplicitAny: type narrowed by isEIP7702 guard
-		return EIP7702.getEffectiveGasPrice(this as any, baseFee);
+		return EIP7702.getEffectiveGasPrice(
+			this as unknown as TransactionEIP7702Type,
+			baseFee,
+		);
 	}
 
+	const unknownType = (this as { type?: unknown }).type;
 	throw new InvalidTransactionTypeError(
-		// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
-		`Unknown transaction type: ${(this as any).type}`,
+		`Unknown transaction type: ${String(unknownType)}`,
 		{
 			code: -32602,
-			// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
-			context: { type: (this as any).type },
+			context: { type: unknownType },
 			docsPath: "/primitives/transaction/get-gas-price#error-handling",
 		},
 	);

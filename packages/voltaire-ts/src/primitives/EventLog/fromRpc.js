@@ -1,15 +1,14 @@
 /**
  * @typedef {import('./EventLogType.js').EventLogType} BrandedEventLog
+ * @typedef {import('./EventLogType.js').RpcLog} RpcLog
  */
-
-import * as OxLog from "ox/Log";
 
 /**
  * Convert RPC log format to EventLog
  *
  * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
  * @since 0.0.0
- * @param {import('ox/Log').Rpc} rpcLog - RPC log object
+ * @param {RpcLog} rpcLog - RPC log object
  * @returns {BrandedEventLog} EventLog branded type
  * @throws {never}
  * @example
@@ -30,7 +29,30 @@ import * as OxLog from "ox/Log";
  * ```
  */
 export function fromRpc(rpcLog) {
-	return /** @type {BrandedEventLog} */ (
-		/** @type {any} */ (OxLog.fromRpc(rpcLog))
-	);
+	/** @type {Record<string, unknown>} */
+	const result = {
+		...rpcLog,
+		blockNumber:
+			rpcLog.blockNumber === null || rpcLog.blockNumber === undefined
+				? null
+				: BigInt(rpcLog.blockNumber),
+		logIndex:
+			rpcLog.logIndex === null || rpcLog.logIndex === undefined
+				? null
+				: Number(rpcLog.logIndex),
+		transactionIndex:
+			rpcLog.transactionIndex === null || rpcLog.transactionIndex === undefined
+				? null
+				: Number(rpcLog.transactionIndex),
+		removed: rpcLog.removed ?? false,
+	};
+
+	if ("blockTimestamp" in rpcLog) {
+		result.blockTimestamp =
+			rpcLog.blockTimestamp === null || rpcLog.blockTimestamp === undefined
+				? null
+				: BigInt(rpcLog.blockTimestamp);
+	}
+
+	return /** @type {BrandedEventLog} */ (/** @type {unknown} */ (result));
 }

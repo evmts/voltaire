@@ -57,4 +57,29 @@ export type Filter<TAddress extends BrandedAddress | BrandedAddress[] | undefine
     /** Block hash to filter by (alternative to fromBlock/toBlock) */
     blockHash?: HashType;
 };
+/**
+ * JSON-RPC Ethereum log format (Execution API specification)
+ */
+export type RpcLog = {
+    /** Contract address that emitted the log */
+    address: string;
+    /** Hash of block containing this log or null if pending */
+    blockHash?: string | null | undefined;
+    /** Hex-encoded block number or null if pending */
+    blockNumber: string | null;
+    /** Optional hex-encoded block timestamp or null if pending */
+    blockTimestamp?: string | null | undefined;
+    /** Hex-encoded event data */
+    data: string;
+    /** Hex-encoded log index in block or null if pending */
+    logIndex: string | null;
+    /** Array of hex-encoded event topics */
+    topics: string[];
+    /** Hash of transaction that generated the log or null if pending */
+    transactionHash?: string | null | undefined;
+    /** Hex-encoded transaction index in block or null if pending */
+    transactionIndex: string | null;
+    /** True if log was removed due to chain reorganization */
+    removed: boolean;
+};
 //# sourceMappingURL=EventLogType.d.ts.map

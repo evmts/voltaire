@@ -10,6 +10,7 @@
 /// transaction hashes, and smart contract operations.
 const std = @import("std");
 const builtin = @import("builtin");
+const build_options = @import("build_options");
 
 pub const KeccakError = error{
     InvalidInput,
@@ -20,10 +21,11 @@ pub const KeccakError = error{
     Unknown,
 };
 
-const c = if (builtin.target.cpu.arch != .wasm32) @import("keccak_c") else struct {};
+const use_rust_keccak = build_options.with_rust and builtin.target.cpu.arch != .wasm32;
+const c = if (use_rust_keccak) @import("keccak_c") else struct {};
 
 fn keccakResultToError(result: c_uint) KeccakError!void {
-    if (builtin.target.cpu.arch == .wasm32) return;
+    if (!use_rust_keccak) return;
 
     return switch (result) {
         c.KECCAK_SUCCESS => {},
@@ -33,14 +35,12 @@ fn keccakResultToError(result: c_uint) KeccakError!void {
     };
 }
 
-/// Assembly-optimized KECCAK256 hash function
+/// Optimized KECCAK256 hash function.
 ///
-/// This function uses the high-performance keccak-asm Rust crate which provides
-/// assembly-optimized implementations for different CPU architectures (x86_64, aarch64).
-/// Falls back to std library for WASM builds.
+/// Uses Rust `keccak-asm` when built with `-Dwith-rust=true` on native targets,
+/// and Zig's native `std.crypto.hash.sha3.Keccak256` otherwise (default & WASM).
 pub fn keccak256(data: []const u8, out_hash: *[32]u8) !void {
-    if (builtin.target.cpu.arch == .wasm32) {
-        // WASM: use standard library
+    if (!use_rust_keccak) {
         std.crypto.hash.sha3.Keccak256.hash(data, out_hash, .{});
         return;
     }
@@ -84,8 +84,7 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
         return; // Nothing to do
     }
 
-    if (builtin.target.cpu.arch == .wasm32) {
-        // WASM: use standard library
+    if (!use_rust_keccak) {
         for (inputs, outputs) |input, *output| {
             std.crypto.hash.sha3.Keccak256.hash(input, output, .{});
         }

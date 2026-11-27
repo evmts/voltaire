@@ -24,6 +24,13 @@ import { BITS, MAX, MIN, MODULO, SIZE } from "./constants.js";
  * ```
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidLengthError(`Int256 requires ${SIZE}-byte Uint8Array`, {
+			value: bytes,
+			expected: `${SIZE} bytes`,
+			docsPath: "/primitives/int256#from-bytes",
+		});
+	}
 	if (bytes.length !== SIZE) {
 		throw new InvalidLengthError(
 			`Int256 requires ${SIZE} bytes, got ${bytes.length}`,

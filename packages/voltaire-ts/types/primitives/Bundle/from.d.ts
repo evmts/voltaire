@@ -1,8 +1,4 @@
 /**
- * @typedef {import('./BundleType.js').BundleType} BundleType
- * @typedef {import('./BundleType.js').BundleLike} BundleLike
- */
-/**
  * Creates a Bundle from various input types
  *
  * @param {BundleLike} value - Bundle input

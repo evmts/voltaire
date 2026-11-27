@@ -1,8 +1,4 @@
 /**
- * @typedef {import('./StateProofType.js').StateProofType} StateProofType
- * @typedef {import('./StateProofType.js').StateProofLike} StateProofLike
- */
-/**
  * Creates a StateProof from an object with all required fields.
  *
  * @param {StateProofLike} proof - Object containing all StateProof fields

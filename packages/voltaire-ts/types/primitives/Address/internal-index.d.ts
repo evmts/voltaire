@@ -53,7 +53,7 @@ export declare const fromPublicKey: (xOrPublicKey: bigint | Uint8Array, y?: bigi
  *
  * For tree-shakeable version without auto-injected crypto, use `FromPrivateKey({ keccak256, derivePublicKey })` factory
  */
-export declare const fromPrivateKey: (privateKey: any) => import("./AddressType.js").AddressType;
+export declare const fromPrivateKey: (privateKey: Uint8Array | import("../PrivateKey/PrivateKeyType.js").PrivateKeyType) => import("./AddressType.js").AddressType;
 import * as Lowercase from "./LowercaseAddress.js";
 export { Lowercase };
 import * as Uppercase from "./UppercaseAddress.js";
@@ -97,7 +97,7 @@ export declare const BrandedAddress: {
     fromNumber: typeof fromNumber;
     fromPublicKey: (xOrPublicKey: bigint | Uint8Array, y?: bigint) => import("./AddressType.js").AddressType;
     FromPublicKey: typeof FromPublicKeyFactory;
-    fromPrivateKey: (privateKey: any) => import("./AddressType.js").AddressType;
+    fromPrivateKey: (privateKey: Uint8Array | import("../PrivateKey/PrivateKeyType.js").PrivateKeyType) => import("./AddressType.js").AddressType;
     FromPrivateKey: typeof FromPrivateKeyFactory;
     fromAbiEncoded: typeof fromAbiEncoded;
     toHex: typeof toHex;

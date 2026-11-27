@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
  * @since 0.0.0
- * @param {Array<Uint8Array | import('./RlpType.js').BrandedRlp | any[]>} items - Array of items to encode
+ * @param {Array<import('./RlpType.js').Encodable>} items - Array of items to encode
  * @returns {Uint8Array} RLP-encoded list
  * @throws {import('./RlpError.js').RlpEncodingError} If encoding fails
  * @example
@@ -17,12 +17,12 @@
  * // Simple list
  * const list = [new Uint8Array([1]), new Uint8Array([2])];
  * const encoded = Rlp.encodeList(list);
- * // => Uint8Array([0xc4, 0x01, 0x02])
+ * // => Uint8Array([0xc2, 0x01, 0x02])
  *
  * // Nested list
  * const nested = [new Uint8Array([1]), [new Uint8Array([2])]];
  * const encoded = Rlp.encodeList(nested);
  * ```
  */
-export function encodeList(items: Array<Uint8Array | import("./RlpType.js").BrandedRlp | any[]>): Uint8Array;
+export function encodeList(items: Array<import("./RlpType.js").Encodable>): Uint8Array;
 //# sourceMappingURL=encodeList.d.ts.map

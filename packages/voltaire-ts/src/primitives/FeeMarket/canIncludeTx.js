@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Check if transaction can be included in block (standard form)
  *
@@ -9,7 +7,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
- * @param {import('../TxFeeParams.js').TxFeeParams | import('../BlobTxFeeParams.js').BlobTxFeeParams} params - Transaction fee parameters
+ * @param {import('./TxFeeParams.js').TxFeeParams | import('./BlobTxFeeParams.js').BlobTxFeeParams} params - Transaction fee parameters
  * @returns {boolean} true if transaction meets minimum fee requirements
  * @throws {never}
  * @example

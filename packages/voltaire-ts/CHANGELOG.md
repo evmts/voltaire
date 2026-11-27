@@ -1,5 +1,15 @@
 # @tevm/voltaire
 
+## 0.6.0
+
+### Minor Changes
+
+- **Zero competitor / chain-registry runtime deps**: Removed `ox` and `@tevm/chains` from runtime `dependencies` (native pure-JS `Base64`, canonical `Rlp`, EIP-4361 `Siwe`, `EventLog` RPC, `EIP712.validate`, and self-contained `Chain` registry with 17 canonical EVM chains).
+- **Sub-350 kB real WASM backend (`@tevm/voltaire/wasm`)**: Reduced `primitives.wasm` from 1.25 MB to **336.7 kB raw (117.4 kB gzip)** by splitting the 788 KB KZG trusted setup into a lazy runtime loader (`kzgLoadTrustedSetupBytes` / lazy Node-Bun auto-load). `@tevm/voltaire/wasm` now executes real Zig WASM synchronously in Node/Bun (and after `await initWasm()` in browsers) instead of falling back to pure JS, and subpath WASM imports (`Keccak256/wasm`, `Blake2`, `Ripemd160`) load standalone 1.5–3.1 kB micro-WASMs.
+- **Synchronous Native Zig FFI (`@tevm/voltaire/native`) & cross-platform binary packaging**: Replaced the async-only Keccak native shim with synchronous drop-in Zig FFI across 13 crypto modules (`Keccak256`, `SHA256`, `Blake2`, `Ripemd160`, `Secp256k1`, `P256`, `Ed25519`, `X25519`, `AesGcm`, `KZG`, `BN254`, `Bls12381`, `ModExp`, 137 C ABI symbols), plus automated `@tevm/voltaire-<platform>` (`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `win32-x64`) and C99 ABI tarball release packaging.
+- **TypeScript soundness & API consistency (#67, #100, #300)**: Eliminated all 193 `@ts-nocheck`/`@ts-ignore`/`@ts-expect-error` suppressions and all 159 explicit `any` usages (Uphill TypeScript Quality 184/184 pass across `console-policy`, `explicit-any`, and `ts-suppressions`); standardized all `Uint8`–`Uint256` widths on checked-throw arithmetic by default with explicit `*Wrapping` / `*Checked` methods (#67); hardened `from()` input validation across all core primitives (#100); added viem-compatible `{ format: "viem" }` option to `Abi.decodeParameters` alongside `Abi.decodeAbiParameters` (#300).
+- **Ethereum Yellow Paper MPT fix & Spec Compliance**: Fixed inline `< 32`-byte child node RLP embedding in `Trie/hashNode.js`, added 1,000+ official Ethereum Execution Spec + Wycheproof compliance vectors (`spec-compliance.mdx`), added reproducible multi-workload benchmarks vs `viem`, `ox`, and `ethers` (`benchmarks.mdx`), upgraded `apps/playground` with 4 showcase demos, and added Context7 indexing (`context7.json`, #330).
+
 ## 0.5.1
 
 ### Patch Changes

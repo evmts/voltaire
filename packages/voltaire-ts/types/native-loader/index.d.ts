@@ -1,284 +1,65 @@
 /**
- * Unified native loader
- * Auto-detects Bun vs Node.js and uses appropriate FFI mechanism
+ * Unified native loader.
+ * Auto-detects Bun vs Node.js and uses the appropriate synchronous FFI loader.
  */
+import { type BunNativeSymbols } from "./bun-ffi.js";
+import { type NativeModule } from "./node-api.js";
+export type { BunNativeSymbols } from "./bun-ffi.js";
+export { bunFfiSymbols, getLoadedBunLibPath, loadBunNative, loadBunNativeSync, } from "./bun-ffi.js";
 export type { NativeModule } from "./node-api.js";
-export { getNativeExtension, getPlatform, isNativeSupported, type Platform, } from "./platform.js";
-export type { NativeErrorCode as NativeErrorCodeType } from "./types.js";
-export { getNativeErrorMessage, NativeErrorCode } from "./types.js";
+export { loadNodeNative, loadNodeNativeSync } from "./node-api.js";
+export { getNativeExtension, getNativeLibCandidates, getNativeLibPath, getNativeLibPrefix, getPlatform, isNativeSupported, type NativeExtension, type NativePathOptions, type Platform, resolveNativeLibPath, } from "./platform.js";
+export type { NativeErrorCode as NativeErrorCodeType, NativeRuntimeKind, } from "./types.js";
+export { getNativeErrorMessage, NativeError, NativeErrorCode, NativeLibraryNotFoundError, NativeUnsupportedPlatformError, NativeUnsupportedRuntimeError, } from "./types.js";
 export { loadForkWasm } from "./wasm.js";
 /**
- * Runtime environment detection
+ * Unified native library symbol table returned by {@link loadNativeSync}.
+ */
+export type NativeLibrary = BunNativeSymbols | NativeModule;
+/**
+ * Runtime environment detection for Bun.
  */
 export declare function isBun(): boolean;
+/**
+ * Runtime environment detection for Node.js.
+ */
 export declare function isNode(): boolean;
 /**
- * Load native library using appropriate loader
+ * Load native library synchronously using Bun FFI or Node-API.
+ * Zero `await` required — enables drop-in synchronous parity with `@tevm/voltaire`.
  */
-export declare function loadNative(): Promise<import("./node-api.js").NativeModule | import("bun:ffi").ConvertFns<{
-    readonly primitives_address_from_hex: {
-        readonly args: readonly ["cstring", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_address_to_hex: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_address_to_checksum_hex: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_address_is_zero: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "bool";
-    };
-    readonly primitives_address_equals: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "bool";
-    };
-    readonly primitives_keccak256: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_hash_to_hex: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_hash_from_hex: {
-        readonly args: readonly ["cstring", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_hash_equals: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "bool";
-    };
-    readonly primitives_hex_to_bytes: {
-        readonly args: readonly ["cstring", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly primitives_bytes_to_hex: {
-        readonly args: readonly ["ptr", "u64", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly primitives_secp256k1_recover_address: {
-        readonly args: readonly ["ptr", "ptr", "ptr", "u8", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly secp256k1Sign: {
-        readonly args: readonly ["ptr", "ptr", "ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly secp256k1Verify: {
-        readonly args: readonly ["ptr", "ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly secp256k1DerivePublicKey: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_sha256: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_ripemd160: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_blake2b: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_solidity_keccak256: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_solidity_sha256: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly primitives_abi_compute_selector: {
-        readonly args: readonly ["cstring", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_create: {
-        readonly args: readonly [];
-        readonly returns: "ptr";
-    };
-    readonly state_manager_create_with_fork: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "ptr";
-    };
-    readonly state_manager_destroy: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly state_manager_get_balance_sync: {
-        readonly args: readonly ["ptr", "cstring", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_get_nonce_sync: {
-        readonly args: readonly ["ptr", "cstring", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_get_code_len_sync: {
-        readonly args: readonly ["ptr", "cstring", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_get_code_sync: {
-        readonly args: readonly ["ptr", "cstring", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_get_storage_sync: {
-        readonly args: readonly ["ptr", "cstring", "cstring", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_set_balance: {
-        readonly args: readonly ["ptr", "cstring", "cstring"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_set_nonce: {
-        readonly args: readonly ["ptr", "cstring", "u64"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_set_code: {
-        readonly args: readonly ["ptr", "cstring", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_set_storage: {
-        readonly args: readonly ["ptr", "cstring", "cstring", "cstring"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_checkpoint: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_revert: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly state_manager_commit: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly state_manager_snapshot: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_revert_to_snapshot: {
-        readonly args: readonly ["ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly state_manager_clear_caches: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly state_manager_clear_fork_cache: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly fork_backend_create: {
-        readonly args: readonly ["ptr", "ptr", "cstring", "u64"];
-        readonly returns: "ptr";
-    };
-    readonly fork_backend_destroy: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly fork_backend_clear_cache: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly fork_backend_next_request: {
-        readonly args: readonly ["ptr", "ptr", "ptr", "u64", "ptr", "ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly fork_backend_continue: {
-        readonly args: readonly ["ptr", "u64", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_create: {
-        readonly args: readonly [];
-        readonly returns: "ptr";
-    };
-    readonly blockchain_create_with_fork: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "ptr";
-    };
-    readonly blockchain_destroy: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly blockchain_get_block_by_hash: {
-        readonly args: readonly ["ptr", "ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_get_block_by_number: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_get_canonical_hash: {
-        readonly args: readonly ["ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_get_head_block_number: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_put_block: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_set_canonical_head: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly blockchain_has_block: {
-        readonly args: readonly ["ptr", "ptr"];
-        readonly returns: "bool";
-    };
-    readonly blockchain_local_block_count: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "u64";
-    };
-    readonly blockchain_orphan_count: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "u64";
-    };
-    readonly blockchain_canonical_chain_length: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "u64";
-    };
-    readonly blockchain_is_fork_block: {
-        readonly args: readonly ["ptr", "u64"];
-        readonly returns: "bool";
-    };
-    readonly fork_block_cache_create: {
-        readonly args: readonly ["u64", "u64", "u64", "u64"];
-        readonly returns: "ptr";
-    };
-    readonly fork_block_cache_destroy: {
-        readonly args: readonly ["ptr"];
-        readonly returns: "void";
-    };
-    readonly fork_block_cache_next_request: {
-        readonly args: readonly ["ptr", "ptr", "ptr", "u64", "ptr", "ptr", "u64", "ptr"];
-        readonly returns: "i32";
-    };
-    readonly fork_block_cache_continue: {
-        readonly args: readonly ["ptr", "u64", "ptr", "u64"];
-        readonly returns: "i32";
-    };
-}>>;
+export declare function loadNativeSync(): NativeLibrary;
 /**
- * Check error code and throw if non-zero
+ * Load native library asynchronously (backwards-compatible wrapper over {@link loadNativeSync}).
+ */
+export declare function loadNative(): Promise<NativeLibrary>;
+/**
+ * Check whether the native library is currently loaded in this runtime.
+ */
+export declare function isNativeLoaded(): boolean;
+/**
+ * Unload any cached native library handle (useful in tests or reloading with a new path).
+ */
+export declare function unloadNative(): void;
+/**
+ * Check error code and throw a typed NativeError if non-zero.
  */
 export declare function checkError(code: number, operation: string): void;
 /**
- * Helper to allocate buffer for output
+ * Return a non-empty Uint8Array safe to pass as a non-null C pointer when `data.length === 0`.
+ * Always pass `data.length` (0) as the length argument alongside this buffer.
+ */
+export declare function safeBufferPtr(data: Uint8Array): Uint8Array;
+/**
+ * Encode a JavaScript string as a null-terminated UTF-8 buffer for C `const char*` calls.
+ */
+export declare function toCStringBuffer(str: string): Uint8Array;
+/**
+ * Helper to allocate buffer for output.
  */
 export declare function allocateOutput(size: number): Uint8Array;
 /**
- * Helper to allocate buffer for string output
+ * Helper to allocate buffer for string output.
  */
 export declare function allocateStringOutput(size: number): {
     buffer: Uint8Array;

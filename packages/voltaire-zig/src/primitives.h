@@ -824,11 +824,19 @@ int primitives_bytecode_detect_fusions(const uint8_t * code, size_t code_len, ui
 // ============================================================================
 
 /**
- * Load trusted setup from embedded data
- * Must be called before any KZG operations
+ * Load trusted setup from embedded data (native targets only).
+ * On wasm32, returns PRIMITIVES_ERROR_KZG_NOT_LOADED because the 788 KB setup
+ * is not embedded; call kzg_load_trusted_setup_bytes() instead.
  * Returns PRIMITIVES_SUCCESS on success
  */
 int kzg_load_trusted_setup(void);
+
+/**
+ * Load KZG trusted setup from raw trusted_setup.txt bytes at runtime.
+ * Supported on both wasm32 and native targets.
+ * Returns PRIMITIVES_SUCCESS on success, or negative error code on failure.
+ */
+int kzg_load_trusted_setup_bytes(const uint8_t * data, size_t len);
 
 /**
  * Free trusted setup
@@ -877,6 +885,103 @@ int kzg_verify_proof(const uint8_t * commitment, const uint8_t * z, const uint8_
  * Returns 1 if valid, 0 if invalid, negative on error
  */
 int kzg_verify_blob_proof(const uint8_t * blob, const uint8_t * commitment, const uint8_t * proof);
+
+// ============================================================================
+// BN254 Elliptic Curve API (EIP-196 / EIP-197, Native Only)
+// ============================================================================
+
+/**
+ * BN254 G1 point addition (EIP-196 ECADD).
+ * input: up to 128 bytes (right-padded with zeros if shorter, truncated if longer).
+ * out_buf: output buffer of at least 64 bytes (x || y, big-endian).
+ * Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+ */
+int primitives_bn254_ecadd(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BN254 G1 scalar multiplication (EIP-196 ECMUL).
+ * input: up to 96 bytes (x || y || scalar, right-padded with zeros if shorter).
+ * out_buf: output buffer of at least 64 bytes (x || y, big-endian).
+ * Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+ */
+int primitives_bn254_ecmul(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BN254 pairing check (EIP-197 ECPAIRING).
+ * input: multiple of 192 bytes (G1 || G2 pairs). Empty input yields true.
+ * out_buf: output buffer of at least 32 bytes (0x00..01 for true, 0x00..00 for false).
+ * Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+ */
+int primitives_bn254_ecpairing(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+// ============================================================================
+// Modular Exponentiation API (EIP-198, Native Only)
+// ============================================================================
+
+/**
+ * Big-integer modular exponentiation: base^exp mod modulus (big-endian bytes).
+ * out_buf must be at least mod_len bytes. Returns PRIMITIVES_ERROR_INVALID_INPUT if modulus is zero.
+ * Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+ */
+int primitives_modexp(const uint8_t * base, size_t base_len, const uint8_t * exp, size_t exp_len, const uint8_t * modulus, size_t mod_len, uint8_t * out_buf, size_t out_len);
+
+// ============================================================================
+// BLS12-381 Elliptic Curve API (EIP-2537 via blst, Native Only)
+// ============================================================================
+
+/**
+ * BLS12-381 G1 point addition (EIP-2537 BLS12_G1ADD).
+ * input: 256 bytes (two 128-byte G1 points). out_buf: >= 128 bytes.
+ */
+int primitives_bls12_381_g1_add(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 G1 scalar multiplication (single-pair EIP-2537 G1MSM).
+ * input: 160 bytes (128-byte G1 point || 32-byte scalar). out_buf: >= 128 bytes.
+ */
+int primitives_bls12_381_g1_mul(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 G1 multi-scalar multiplication (EIP-2537 BLS12_G1MSM).
+ * input: 160 * k bytes (k >= 1). out_buf: >= 128 bytes.
+ */
+int primitives_bls12_381_g1_msm(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 G2 point addition (EIP-2537 BLS12_G2ADD).
+ * input: 512 bytes (two 256-byte G2 points). out_buf: >= 256 bytes.
+ */
+int primitives_bls12_381_g2_add(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 G2 scalar multiplication (single-pair EIP-2537 G2MSM).
+ * input: 288 bytes (256-byte G2 point || 32-byte scalar). out_buf: >= 256 bytes.
+ */
+int primitives_bls12_381_g2_mul(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 G2 multi-scalar multiplication (EIP-2537 BLS12_G2MSM).
+ * input: 288 * k bytes (k >= 1). out_buf: >= 256 bytes.
+ */
+int primitives_bls12_381_g2_msm(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 pairing check (EIP-2537 BLS12_PAIRING_CHECK).
+ * input: 384 * k bytes (k >= 1). out_buf: >= 32 bytes (0x00..01 for true, 0x00..00 for false).
+ */
+int primitives_bls12_381_pairing(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 map Fp field element to G1 point (EIP-2537 BLS12_MAP_FP_TO_G1).
+ * input: 64 bytes. out_buf: >= 128 bytes.
+ */
+int primitives_bls12_381_map_fp_to_g1(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
+
+/**
+ * BLS12-381 map Fp2 field element to G2 point (EIP-2537 BLS12_MAP_FP2_TO_G2).
+ * input: 128 bytes. out_buf: >= 256 bytes.
+ */
+int primitives_bls12_381_map_fp2_to_g2(const uint8_t * input, size_t input_len, uint8_t * out_buf, size_t out_len);
 
 // ============================================================================
 // C API tests

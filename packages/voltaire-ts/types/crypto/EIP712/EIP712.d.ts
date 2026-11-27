@@ -49,11 +49,18 @@ export const _signTypedData: (typedData: import("./EIP712Type.js").TypedData, pr
 export const encodeData: (primaryType: string, data: import("./EIP712Type.js").Message, types: import("./EIP712Type.js").TypeDefinitions) => Uint8Array;
 export const encodeValue: (type: string, value: import("./EIP712Type.js").MessageValue, types: import("./EIP712Type.js").TypeDefinitions) => Uint8Array;
 export const hashDomain: (domain: import("./EIP712Type.js").Domain) => import("../../primitives/Hash/HashType.js").HashType;
-export let hashStruct: any;
+/** @type {(primaryType: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} */
+export let hashStruct: (primaryType: string, data: import("./EIP712Type.js").Message, types: import("./EIP712Type.js").TypeDefinitions) => import("../../primitives/Hash/index.js").HashType;
 export const hashType: (primaryType: string, types: import("./EIP712Type.js").TypeDefinitions) => import("../../primitives/Hash/HashType.js").HashType;
 export const hashTypedData: (typedData: import("./EIP712Type.js").TypedData) => import("../../primitives/Hash/HashType.js").HashType;
 export const recoverAddress: (signature: import("./EIP712Type.js").Signature, typedData: import("./EIP712Type.js").TypedData) => import("../../primitives/Address/AddressType.js").AddressType;
-export function signTypedData(typedData: any, privateKey: any): import("./EIP712Type.js").Signature;
+/**
+ * Wrapper for signTypedData to accept string or Uint8Array private keys
+ * @param {import('./EIP712Type.js').TypedData} typedData
+ * @param {string | Uint8Array} privateKey
+ * @returns {import('./EIP712Type.js').Signature}
+ */
+export function signTypedData(typedData: import("./EIP712Type.js").TypedData, privateKey: string | Uint8Array): import("./EIP712Type.js").Signature;
 export const verifyTypedData: (signature: import("./EIP712Type.js").Signature, typedData: import("./EIP712Type.js").TypedData, address: import("../../primitives/Address/AddressType.js").AddressType) => boolean;
 export { EncodeData, EncodeValue, encodeType, format, HashDomain, HashStruct, HashType, HashTypedData, RecoverAddress, SignTypedData, VerifyTypedData, validate };
 //# sourceMappingURL=EIP712.d.ts.map

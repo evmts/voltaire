@@ -1,4 +1,4 @@
-import { minus } from "./minus.js";
+import { MAX } from "./constants.js";
 
 /**
  * Subtract two Uint64 values with wrapping
@@ -19,5 +19,5 @@ import { minus } from "./minus.js";
  * ```
  */
 export function minusWrapping(a, b) {
-	return minus(a, b);
+	return /** @type {import('./Uint64Type.js').Uint64Type} */ ((a - b) & MAX);
 }

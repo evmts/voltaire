@@ -1,46 +1,38 @@
 /**
- * Native FFI bindings for Ethereum primitives
- * Uses Bun FFI or Node-API for maximum performance
- *
- * This entrypoint exports the same API as the main JS entrypoint (src/index.ts)
- * but with native-optimized implementations where available.
- *
- * Currently native implementations:
- * - Keccak256 (via Zig FFI)
+ * Native FFI bindings for Ethereum primitives and cryptography.
+ * Uses synchronous Bun FFI (`dlopen`) or Node-API (`createRequire`) for maximum
+ * performance with 1:1 synchronous API parity against `@tevm/voltaire`.
  */
 export { Address, BrandedAddress, Hash, BrandedHash, HashType, Hex, BrandedHex, Uint, BrandedUint, Uint8, BrandedUint8, Uint16, BrandedUint16, Uint32, BrandedUint32, Uint64, BrandedUint64, Uint128, BrandedUint128, Uint256, Int8, BrandedInt8, Int16, BrandedInt16, Int32, BrandedInt32, Int64, BrandedInt64, Int128, BrandedInt128, Int256, BrandedInt256, Wei, Gwei, Ether, BrandedWei, BrandedGwei, BrandedEther, Rlp, BrandedRlp, Ssz, Abi, BrandedAbi, Transaction, AccessList, BrandedAccessList, BlockAccessList, ExecutionPayloadBid, Authorization, BrandedAuthorization, Bytecode, BrandedBytecode, ContractCode, InitCode, RuntimeCode, Metadata, SourceMap, Opcode, BrandedOpcode, Gas, GasConstants, GasCosts, GasUsed, GasEstimate, GasRefund, StorageKey, BrandedStorageKey, State, Storage, Proxy, Blob, BrandedBlob, Chain, BrandedChain, FeeMarket, BrandedFeeMarket, Hardfork, ForkId, NetworkId, ProtocolVersion, PeerId, NodeInfo, PeerInfo, Slot, Epoch, ValidatorIndex, WithdrawalIndex, BeaconBlockRoot, Withdrawal, Block, BlockBody, BlockHeader, Uncle, EventLog, BrandedEventLog, FilterId, TopicFilter, LogFilter, BlockFilter, PendingTransactionFilter, ReturnData, RevertReason, ContractResult, EncodedData, DecodedData, CompilerVersion, License, TraceConfig, OpStep, StructLog, CallTrace, TraceResult, MemoryDump, StorageDiff, StateDiff, SyncStatus, ChainHead, Selector, FunctionSignature, EventSignature, ErrorSignature, TransactionHash, TransactionIndex, LogIndex, TransactionStatus, BlockHash, BlockNumber, Receipt, Siwe, BrandedSiwe, Ens, Permit, TransactionUrl, DomainSeparator, Domain, TypedData, SignedData, ContractSignature, StealthAddress, BinaryTree, BrandedBinaryTree, BloomFilter, BrandedBloomFilter, Base64, BrandedBase64, Bytes, BrandedBytes, Bytes1, BrandedBytes1, Bytes2, BrandedBytes2, Bytes3, BrandedBytes3, Bytes4, BrandedBytes4, Bytes5, BrandedBytes5, Bytes6, BrandedBytes6, Bytes7, BrandedBytes7, Bytes8, BrandedBytes8, Bytes16, BrandedBytes16, Bytes32, BrandedBytes32, Bytes64, BrandedBytes64, } from "../primitives/index.js";
 export * from "../primitives/errors/index.js";
-export { Keccak256 } from "../crypto/Keccak256/Keccak256.native.js";
-export { Secp256k1, EIP712, KZG, BN254, Bls12381, Ripemd160, SHA256, Blake2, Ed25519, AesGcm, ChaCha20Poly1305, ConstantTime, Bip39, Keystore, P256, X25519, ModExp, } from "../crypto/index.js";
+export { AesGcm, Blake2, Bls12381, BN254, Ed25519, Keccak256, KZG, ModExp, P256, Ripemd160, Secp256k1, SHA256, X25519, } from "./crypto/index.js";
+export { AesGcm as AesGcmNative, Blake2 as Blake2Native, Bls12381 as Bls12381Native, BN254 as BN254Native, Ed25519 as Ed25519Native, Keccak256 as Keccak256Native, Keccak256Hash as Keccak256HashNative, KZG as KZGNative, ModExp as ModExpNative, P256 as P256Native, Ripemd160 as Ripemd160Native, Secp256k1 as Secp256k1Native, SHA256 as SHA256Native, X25519 as X25519Native, } from "./crypto/index.js";
+export { Bip39, ChaCha20Poly1305, ConstantTime, EIP712, Keystore, } from "../crypto/index.js";
 export * as HDWallet from "../crypto/HDWallet/native.js";
 export type { Keccak256Hash } from "../crypto/Keccak256/Keccak256HashType.js";
-export type { Keccak256HashType, KzgBlobType, KzgCommitmentType, KzgProofType, Bls12381G1PointType, Bls12381G2PointType, Bls12381Fp2Type, Ripemd160Hash, Ripemd160HashType, SHA256Hash, SHA256HashType, Blake2Hash, Blake2HashType, } from "../crypto/index.js";
+export type { Blake2Hash, Blake2HashType, Bls12381Fp2Type, Bls12381G1PointType, Bls12381G2PointType, Keccak256HashType, KzgBlobType, KzgCommitmentType, KzgProofType, Ripemd160Hash, Ripemd160HashType, SHA256Hash, SHA256HashType, } from "../crypto/index.js";
 export * from "../standards/index.js";
 export * as wasm from "../wasm/index.js";
 export * as evm from "../evm/index.js";
 export * as precompiles from "../evm/precompiles/precompiles.js";
-export { loadNative, loadForkWasm, isBun, isNode, checkError, allocateOutput, allocateStringOutput, getPlatform, getNativeExtension, isNativeSupported, getNativeErrorMessage, NativeErrorCode, type Platform, type NativeErrorCodeType, } from "../native-loader/index.js";
-export { Keccak256Hash as Keccak256HashNative, Keccak256 as Keccak256Native, } from "../crypto/Keccak256/Keccak256.native.js";
-import { Address } from "../primitives/Address/index.js";
-import { Hex } from "../primitives/Hex/index.js";
-import { Uint } from "../primitives/Uint/Uint.js";
-import { Rlp } from "../primitives/Rlp/index.js";
+export { allocateOutput, allocateStringOutput, type BunNativeSymbols, bunFfiSymbols, checkError, getLoadedBunLibPath, getNativeErrorMessage, getNativeExtension, getNativeLibCandidates, getNativeLibPath, getNativeLibPrefix, getPlatform, isBun, isNativeLoaded, isNativeSupported, isNode, loadBunNative, loadBunNativeSync, loadForkWasm, loadNative, loadNativeSync, loadNodeNative, loadNodeNativeSync, NativeError, NativeErrorCode, type NativeErrorCodeType, type NativeExtension, type NativeLibrary, NativeLibraryNotFoundError, type NativeModule, type NativePathOptions, type NativeRuntimeKind, NativeUnsupportedPlatformError, NativeUnsupportedRuntimeError, type Platform, resolveNativeLibPath, safeBufferPtr, toCStringBuffer, unloadNative, } from "../native-loader/index.js";
 import { Abi } from "../primitives/Abi/Abi.js";
+import { Address } from "../primitives/Address/index.js";
 import { Blob } from "../primitives/Blob/index.js";
-import { Bytecode } from "../primitives/Bytecode/index.js";
-import { Chain } from "../primitives/Chain/index.js";
-import { Opcode } from "../primitives/Opcode/index.js";
 import { BloomFilter } from "../primitives/BloomFilter/index.js";
-import { Siwe } from "../primitives/Siwe/index.js";
+import { Bytecode } from "../primitives/Bytecode/index.js";
 import { Bytes } from "../primitives/Bytes/Bytes.js";
 import { Bytes32 } from "../primitives/Bytes/Bytes32/index.js";
-import { KZG } from "../crypto/KZG/index.js";
+import { Chain } from "../primitives/Chain/index.js";
+import { Hex } from "../primitives/Hex/index.js";
+import { Opcode } from "../primitives/Opcode/index.js";
+import { Rlp } from "../primitives/Rlp/index.js";
+import { Siwe } from "../primitives/Siwe/index.js";
+import { Uint } from "../primitives/Uint/Uint.js";
+import { KZG } from "./crypto/index.js";
 /**
- * Native API object - satisfies VoltaireAPI interface
- * This ensures compile-time errors if the native API doesn't have all required namespaces.
- *
- * Note: The actual Keccak256 export is the native async version from Keccak256.native.js,
- * but we use JS Keccak256 here for type checking since native methods are async.
+ * Native API object verified directly against `VoltaireAPI` using the REAL
+ * synchronous native crypto implementations (zero JS stand-in workarounds).
  */
 declare const _nativeAPI: {
     Address: typeof Address;
@@ -96,69 +88,70 @@ declare const _nativeAPI: {
     Wei: import("../primitives/Denomination/index.js").WeiConstructor;
     Gwei: import("../primitives/Denomination/index.js").GweiConstructor;
     Ether: import("../primitives/Denomination/index.js").EtherConstructor;
-    Keccak256: typeof import("../crypto/Keccak256/from.js").from & {
-        from: typeof import("../crypto/Keccak256/from.js").from;
-        fromString: typeof import("../crypto/Keccak256/hashString.js").hashString;
-        fromHex: typeof import("../crypto/Keccak256/hashHex.js").hashHex;
-        fromTopic: typeof import("../crypto/Keccak256/topic.js").topic;
-        hash: typeof import("../crypto/Keccak256/hash.js").hash;
-        hashString: typeof import("../crypto/Keccak256/hashString.js").hashString;
-        hashHex: typeof import("../crypto/Keccak256/hashHex.js").hashHex;
-        hashMultiple: typeof import("../crypto/Keccak256/hashMultiple.js").hashMultiple;
-        selector: typeof import("../crypto/Keccak256/selector.js").selector;
-        topic: typeof import("../crypto/Keccak256/topic.js").topic;
-        contractAddress: typeof import("../crypto/Keccak256/contractAddress.js").contractAddress;
-        create2Address: typeof import("../crypto/Keccak256/create2Address.js").create2Address;
+    Keccak256: typeof import("../crypto/Keccak256/Keccak256.native.js").from & {
+        from: typeof import("../crypto/Keccak256/Keccak256.native.js").from;
+        fromString: typeof import("../crypto/Keccak256/Keccak256.native.js").hashString;
+        fromHex: typeof import("../crypto/Keccak256/Keccak256.native.js").hashHex;
+        fromTopic: typeof import("../crypto/Keccak256/Keccak256.native.js").topic;
+        hash: typeof import("../crypto/Keccak256/Keccak256.native.js").hash;
+        hashString: typeof import("../crypto/Keccak256/Keccak256.native.js").hashString;
+        hashHex: typeof import("../crypto/Keccak256/Keccak256.native.js").hashHex;
+        hashMultiple: typeof import("../crypto/Keccak256/Keccak256.native.js").hashMultiple;
+        hashSync: typeof import("../crypto/Keccak256/Keccak256.native.js").hashSync;
+        selector: typeof import("../crypto/Keccak256/Keccak256.native.js").selector;
+        topic: typeof import("../crypto/Keccak256/Keccak256.native.js").topic;
+        contractAddress: typeof import("../crypto/Keccak256/Keccak256.native.js").contractAddress;
+        create2Address: typeof import("../crypto/Keccak256/Keccak256.native.js").create2Address;
         DIGEST_SIZE: number;
         RATE: number;
         STATE_SIZE: number;
     };
-    SHA256: typeof import("../crypto/SHA256/from.js").from & {
-        from: typeof import("../crypto/SHA256/from.js").from;
-        fromString: typeof import("../crypto/SHA256/hashString.js").hashString;
-        fromHex: typeof import("../crypto/SHA256/hashHex.js").hashHex;
-        hash: typeof import("../crypto/SHA256/hash.js").hash;
-        hashString: typeof import("../crypto/SHA256/hashString.js").hashString;
-        hashHex: typeof import("../crypto/SHA256/hashHex.js").hashHex;
-        toHex: typeof import("../crypto/SHA256/toHex.js").toHex;
-        create: typeof import("../crypto/SHA256/create.js").create;
+    SHA256: typeof import("./crypto/SHA256.native.js").from & {
+        from: typeof import("./crypto/SHA256.native.js").from;
+        fromString: typeof import("./crypto/SHA256.native.js").hashString;
+        fromHex: typeof import("./crypto/SHA256.native.js").hashHex;
+        hash: typeof import("./crypto/SHA256.native.js").hash;
+        hashString: typeof import("./crypto/SHA256.native.js").hashString;
+        hashHex: typeof import("./crypto/SHA256.native.js").hashHex;
+        toHex: typeof import("./crypto/SHA256.native.js").toHex;
+        create: typeof import("./crypto/SHA256.native.js").create;
         OUTPUT_SIZE: number;
         BLOCK_SIZE: number;
     };
-    Blake2: typeof import("../crypto/Blake2/from.js").from & {
-        from: typeof import("../crypto/Blake2/from.js").from;
-        fromString: typeof import("../crypto/Blake2/hashString.js").hashString;
-        hash: typeof import("../crypto/Blake2/hash.js").hash;
-        hashString: typeof import("../crypto/Blake2/hashString.js").hashString;
+    Blake2: typeof import("./crypto/Blake2.native.js").from & {
+        from: typeof import("./crypto/Blake2.native.js").from;
+        fromString: typeof import("./crypto/Blake2.native.js").hashString;
+        hash: typeof import("./crypto/Blake2.native.js").hash;
+        hashString: typeof import("./crypto/Blake2.native.js").hashString;
         SIZE: number;
     };
-    Ripemd160: typeof import("../crypto/Ripemd160/from.js").from & {
-        from: typeof import("../crypto/Ripemd160/from.js").from;
-        fromString: typeof import("../crypto/Ripemd160/hashString.js").hashString;
-        fromHex: typeof import("../crypto/Ripemd160/hashHex.js").hashHex;
-        hash: typeof import("../crypto/Ripemd160/hash.js").hash;
-        hashString: typeof import("../crypto/Ripemd160/hashString.js").hashString;
-        hashHex: typeof import("../crypto/Ripemd160/hashHex.js").hashHex;
+    Ripemd160: typeof import("./crypto/Ripemd160.native.js").from & {
+        from: typeof import("./crypto/Ripemd160.native.js").from;
+        fromString: typeof import("./crypto/Ripemd160.native.js").hashString;
+        fromHex: typeof import("./crypto/Ripemd160.native.js").hashHex;
+        hash: typeof import("./crypto/Ripemd160.native.js").hash;
+        hashString: typeof import("./crypto/Ripemd160.native.js").hashString;
+        hashHex: typeof import("./crypto/Ripemd160.native.js").hashHex;
         SIZE: number;
         HEX_SIZE: number;
     };
     Secp256k1: {
-        sign: typeof import("../crypto/Secp256k1/sign.js").sign;
-        signHash: typeof import("../crypto/Secp256k1/signHash.js").signHash;
-        verify: typeof import("../crypto/Secp256k1/verify.js").verify;
-        verifyHash: typeof import("../crypto/Secp256k1/verifyHash.js").verifyHash;
-        recoverPublicKey: typeof import("../crypto/Secp256k1/recoverPublicKey.js").recoverPublicKey;
-        recoverPublicKeyFromHash: typeof import("../crypto/Secp256k1/recoverPublicKeyFromHash.js").recoverPublicKeyFromHash;
-        derivePublicKey: typeof import("../crypto/Secp256k1/derivePublicKey.js").derivePublicKey;
-        isValidSignature: typeof import("../crypto/Secp256k1/isValidSignature.js").isValidSignature;
-        isValidPublicKey: typeof import("../crypto/Secp256k1/isValidPublicKey.js").isValidPublicKey;
-        isValidPrivateKey: typeof import("../crypto/Secp256k1/isValidPrivateKey.js").isValidPrivateKey;
-        randomPrivateKey: typeof import("../crypto/Secp256k1/randomPrivateKey.js").randomPrivateKey;
-        createKeyPair: typeof import("../crypto/Secp256k1/createKeyPair.js").createKeyPair;
-        ecdh: typeof import("../crypto/Secp256k1/ecdh.js").ecdh;
-        getSharedSecret: typeof import("../crypto/Secp256k1/ecdh.js").ecdh;
-        addPoints: typeof import("../crypto/Secp256k1/addPoints.js").addPoints;
-        scalarMultiply: typeof import("../crypto/Secp256k1/scalarMultiply.js").scalarMultiply;
+        sign: typeof import("./crypto/Secp256k1.native.js").sign;
+        signHash: typeof import("./crypto/Secp256k1.native.js").signHash;
+        verify: typeof import("./crypto/Secp256k1.native.js").verify;
+        verifyHash: typeof import("./crypto/Secp256k1.native.js").verifyHash;
+        recoverPublicKey: typeof import("./crypto/Secp256k1.native.js").recoverPublicKey;
+        recoverPublicKeyFromHash: typeof import("./crypto/Secp256k1.native.js").recoverPublicKeyFromHash;
+        derivePublicKey: typeof import("./crypto/Secp256k1.native.js").derivePublicKey;
+        isValidSignature: typeof import("./crypto/Secp256k1.native.js").isValidSignature;
+        isValidPublicKey: typeof import("./crypto/Secp256k1.native.js").isValidPublicKey;
+        isValidPrivateKey: typeof import("./crypto/Secp256k1.native.js").isValidPrivateKey;
+        randomPrivateKey: typeof import("./crypto/Secp256k1.native.js").randomPrivateKey;
+        createKeyPair: typeof import("./crypto/Secp256k1.native.js").createKeyPair;
+        ecdh: typeof import("./crypto/Secp256k1.native.js").ecdh;
+        getSharedSecret: typeof import("./crypto/Secp256k1.native.js").ecdh;
+        addPoints: typeof import("./crypto/Secp256k1.native.js").addPoints;
+        scalarMultiply: typeof import("./crypto/Secp256k1.native.js").scalarMultiply;
         Signature: typeof import("../crypto/Secp256k1/Signature/index.js");
         PublicKey: typeof import("../crypto/Secp256k1/PublicKey/index.js");
         PrivateKey: typeof import("../primitives/PrivateKey/index.js");
@@ -168,14 +161,14 @@ declare const _nativeAPI: {
         SIGNATURE_COMPONENT_SIZE: number;
     };
     Ed25519: {
-        keypairFromSeed: typeof import("../crypto/Ed25519/keypairFromSeed.js").keypairFromSeed;
-        sign: typeof import("../crypto/Ed25519/sign.js").sign;
-        verify: typeof import("../crypto/Ed25519/verify.js").verify;
-        derivePublicKey: typeof import("../crypto/Ed25519/derivePublicKey.js").derivePublicKey;
-        validateSecretKey: typeof import("../crypto/Ed25519/validateSecretKey.js").validateSecretKey;
-        validatePublicKey: typeof import("../crypto/Ed25519/validatePublicKey.js").validatePublicKey;
-        isValidPublicKey: typeof import("../crypto/Ed25519/isValidPublicKey.js").isValidPublicKey;
-        validateSeed: typeof import("../crypto/Ed25519/validateSeed.js").validateSeed;
+        keypairFromSeed: typeof import("./crypto/Ed25519.native.js").keypairFromSeed;
+        sign: typeof import("./crypto/Ed25519.native.js").sign;
+        verify: typeof import("./crypto/Ed25519.native.js").verify;
+        derivePublicKey: typeof import("./crypto/Ed25519.native.js").derivePublicKey;
+        validateSecretKey: typeof import("./crypto/Ed25519.native.js").validateSecretKey;
+        validatePublicKey: typeof import("./crypto/Ed25519.native.js").validatePublicKey;
+        isValidPublicKey: typeof import("./crypto/Ed25519.native.js").isValidPublicKey;
+        validateSeed: typeof import("./crypto/Ed25519.native.js").validateSeed;
         SECRET_KEY_SIZE: 32;
         PUBLIC_KEY_SIZE: 32;
         SIGNATURE_SIZE: 64;
@@ -183,15 +176,15 @@ declare const _nativeAPI: {
     };
     P256: import("../crypto/P256/P256Constructor.js").P256Constructor;
     X25519: {
-        derivePublicKey: typeof import("../crypto/X25519/derivePublicKey.js").derivePublicKey;
-        scalarmult: typeof import("../crypto/X25519/scalarmult.js").scalarmult;
-        keypairFromSeed: typeof import("../crypto/X25519/keypairFromSeed.js").keypairFromSeed;
-        generateSecretKey: typeof import("../crypto/X25519/generateSecretKey.js").generateSecretKey;
-        generateKeypair: typeof import("../crypto/X25519/generateKeypair.js").generateKeypair;
-        validateSecretKey: typeof import("../crypto/X25519/validateSecretKey.js").validateSecretKey;
-        validatePublicKey: typeof import("../crypto/X25519/validatePublicKey.js").validatePublicKey;
-        isValidPublicKey: typeof import("../crypto/X25519/isValidPublicKey.js").isValidPublicKey;
-        isWeakPublicKey: typeof import("../crypto/X25519/isWeakPublicKey.js").isWeakPublicKey;
+        derivePublicKey: typeof import("./crypto/X25519.native.js").derivePublicKey;
+        scalarmult: typeof import("./crypto/X25519.native.js").scalarmult;
+        keypairFromSeed: typeof import("./crypto/X25519.native.js").keypairFromSeed;
+        generateSecretKey: typeof import("./crypto/X25519.native.js").generateSecretKey;
+        generateKeypair: typeof import("./crypto/X25519.native.js").generateKeypair;
+        validateSecretKey: typeof import("./crypto/X25519.native.js").validateSecretKey;
+        validatePublicKey: typeof import("./crypto/X25519.native.js").validatePublicKey;
+        isValidPublicKey: typeof import("./crypto/X25519.native.js").isValidPublicKey;
+        isWeakPublicKey: typeof import("./crypto/X25519.native.js").isWeakPublicKey;
         SECRET_KEY_SIZE: 32;
         PUBLIC_KEY_SIZE: 32;
         SHARED_SECRET_SIZE: 32;
@@ -203,31 +196,43 @@ declare const _nativeAPI: {
         G1: typeof import("../crypto/bn254/G1/index.js");
         G2: typeof import("../crypto/bn254/G2/index.js");
         Pairing: typeof import("../crypto/bn254/Pairing/index.js");
-        serializeG1: typeof import("../crypto/bn254/serializeG1.js").serializeG1;
-        deserializeG1: typeof import("../crypto/bn254/deserializeG1.js").deserializeG1;
-        serializeG2: typeof import("../crypto/bn254/serializeG2.js").serializeG2;
-        deserializeG2: typeof import("../crypto/bn254/deserializeG2.js").deserializeG2;
+        serializeG1: typeof import("./crypto/BN254.native.js").serializeG1;
+        deserializeG1: typeof import("./crypto/BN254.native.js").deserializeG1;
+        serializeG2: typeof import("./crypto/BN254.native.js").serializeG2;
+        deserializeG2: typeof import("./crypto/BN254.native.js").deserializeG2;
+        ecadd: typeof import("./crypto/BN254.native.js").ecadd;
+        ecmul: typeof import("./crypto/BN254.native.js").ecmul;
+        ecpairing: typeof import("./crypto/BN254.native.js").ecpairing;
     };
     Bls12381: {
-        sign: typeof import("../crypto/Bls12381/sign.js").sign;
-        signPoint: typeof import("../crypto/Bls12381/sign.js").signPoint;
-        verify: typeof import("../crypto/Bls12381/verify.js").verify;
-        verifyPoint: typeof import("../crypto/Bls12381/verify.js").verifyPoint;
-        aggregate: typeof import("../crypto/Bls12381/aggregate.js").aggregate;
-        aggregatePublicKeys: typeof import("../crypto/Bls12381/aggregate.js").aggregatePublicKeys;
-        aggregateVerify: typeof import("../crypto/Bls12381/aggregateVerify.js").aggregateVerify;
-        batchVerify: typeof import("../crypto/Bls12381/aggregateVerify.js").batchVerify;
-        fastAggregateVerify: typeof import("../crypto/Bls12381/aggregateVerify.js").fastAggregateVerify;
-        derivePublicKey: typeof import("../crypto/Bls12381/derivePublicKey.js").derivePublicKey;
-        derivePublicKeyPoint: typeof import("../crypto/Bls12381/derivePublicKey.js").derivePublicKeyPoint;
-        randomPrivateKey: typeof import("../crypto/Bls12381/randomPrivateKey.js").randomPrivateKey;
-        isValidPrivateKey: typeof import("../crypto/Bls12381/randomPrivateKey.js").isValidPrivateKey;
+        sign: typeof import("./crypto/Bls12381.native.js").sign;
+        signPoint: typeof import("./crypto/Bls12381.native.js").signPoint;
+        verify: typeof import("./crypto/Bls12381.native.js").verify;
+        verifyPoint: typeof import("./crypto/Bls12381.native.js").verifyPoint;
+        aggregate: typeof import("./crypto/Bls12381.native.js").aggregate;
+        aggregatePublicKeys: typeof import("./crypto/Bls12381.native.js").aggregatePublicKeys;
+        aggregateVerify: typeof import("./crypto/Bls12381.native.js").aggregateVerify;
+        batchVerify: typeof import("./crypto/Bls12381.native.js").batchVerify;
+        fastAggregateVerify: typeof import("./crypto/Bls12381.native.js").fastAggregateVerify;
+        derivePublicKey: typeof import("./crypto/Bls12381.native.js").derivePublicKey;
+        derivePublicKeyPoint: typeof import("./crypto/Bls12381.native.js").derivePublicKeyPoint;
+        randomPrivateKey: typeof import("./crypto/Bls12381.native.js").randomPrivateKey;
+        isValidPrivateKey: typeof import("./crypto/Bls12381.native.js").isValidPrivateKey;
         Fp: typeof import("../crypto/Bls12381/Fp/index.js");
         Fp2: typeof import("../crypto/Bls12381/Fp2/index.js");
         Fr: typeof import("../crypto/Bls12381/Fr/index.js");
         G1: typeof import("../crypto/Bls12381/G1/index.js");
         G2: typeof import("../crypto/Bls12381/G2/index.js");
         Pairing: typeof import("../crypto/Bls12381/Pairing/index.js");
+        g1AddBytes: typeof import("./crypto/Bls12381.native.js").g1AddBytes;
+        g1MulBytes: typeof import("./crypto/Bls12381.native.js").g1MulBytes;
+        g1MsmBytes: typeof import("./crypto/Bls12381.native.js").g1MsmBytes;
+        g2AddBytes: typeof import("./crypto/Bls12381.native.js").g2AddBytes;
+        g2MulBytes: typeof import("./crypto/Bls12381.native.js").g2MulBytes;
+        g2MsmBytes: typeof import("./crypto/Bls12381.native.js").g2MsmBytes;
+        pairingBytes: typeof import("./crypto/Bls12381.native.js").pairingBytes;
+        mapFpToG1Bytes: typeof import("./crypto/Bls12381.native.js").mapFpToG1Bytes;
+        mapFp2ToG2Bytes: typeof import("./crypto/Bls12381.native.js").mapFp2ToG2Bytes;
     };
     KZG: typeof KZG;
     EIP712: {
@@ -255,17 +260,17 @@ declare const _nativeAPI: {
         format: typeof import("../crypto/EIP712/format.js").format;
         validate: typeof import("../crypto/EIP712/validate.js").validate;
     };
-    ModExp: typeof import("../crypto/ModExp/compute.js").modexp & {
-        modexp: typeof import("../crypto/ModExp/compute.js").modexp;
-        modexpBytes: typeof import("../crypto/ModExp/modexpBytes.js").modexpBytes;
-        calculateGas: typeof import("../crypto/ModExp/calculateGas.js").calculateGas;
+    ModExp: typeof import("./crypto/ModExp.native.js").modexp & {
+        modexp: typeof import("./crypto/ModExp.native.js").modexp;
+        modexpBytes: typeof import("./crypto/ModExp.native.js").modexpBytes;
+        calculateGas: typeof import("./crypto/ModExp.native.js").calculateGas;
     };
 };
 export { _nativeAPI as nativeAPI };
 export * as block from "../block/index.js";
 export * as contract from "../contract/index.js";
-export * as transaction from "../transaction/index.js";
 export * as stream from "../stream/index.js";
-export * as wallet from "../wallet/index.js";
+export * as transaction from "../transaction/index.js";
 export type { HardwareWallet } from "../wallet/hardware/HardwareWallet.js";
+export * as wallet from "../wallet/index.js";
 //# sourceMappingURL=index.d.ts.map

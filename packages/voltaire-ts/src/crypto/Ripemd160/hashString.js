@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ripemd160 as nobleRipemd160 } from "@noble/hashes/legacy.js";
 
 /**
@@ -19,5 +18,7 @@ import { ripemd160 as nobleRipemd160 } from "@noble/hashes/legacy.js";
 export function hashString(str) {
 	const encoder = new TextEncoder();
 	const bytes = encoder.encode(str);
-	return nobleRipemd160(bytes);
+	return /** @type {import('./Ripemd160HashType.js').Ripemd160Hash} */ (
+		nobleRipemd160(bytes)
+	);
 }

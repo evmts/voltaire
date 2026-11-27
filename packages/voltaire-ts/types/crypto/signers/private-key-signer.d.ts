@@ -1,7 +1,5 @@
-/**
- * WASM implementation of PrivateKeySigner
- * Provides wallet/signer functionality using WASM Zig primitives
- */
+import type { Any as TransactionAny } from "../../primitives/Transaction/types.js";
+import type { TypedData } from "../EIP712/index.js";
 /**
  * Options for creating a private key signer.
  *
@@ -26,9 +24,14 @@ export interface Signer {
     /** Sign a message with EIP-191 prefix */
     signMessage(message: string | Uint8Array): Promise<string>;
     /** Sign a transaction */
-    signTransaction(transaction: any): Promise<any>;
+    signTransaction(transaction: TransactionAny): Promise<TransactionAny & {
+        r: Uint8Array;
+        s: Uint8Array;
+        v?: bigint;
+        yParity?: number;
+    }>;
     /** Sign typed data according to EIP-712 */
-    signTypedData(typedData: any): Promise<string>;
+    signTypedData(typedData: TypedData): Promise<string>;
 }
 /**
  * WASM-based implementation of Ethereum private key signer.
@@ -155,7 +158,12 @@ export declare class PrivateKeySignerImpl implements Signer {
      * console.log(signedTx.yParity, signedTx.r, signedTx.s);
      * ```
      */
-    signTransaction(transaction: any): Promise<any>;
+    signTransaction(transaction: TransactionAny): Promise<TransactionAny & {
+        r: Uint8Array;
+        s: Uint8Array;
+        v?: bigint;
+        yParity?: number;
+    }>;
     /**
      * Signs typed structured data according to EIP-712.
      *
@@ -191,7 +199,7 @@ export declare class PrivateKeySignerImpl implements Signer {
      * console.log(signature); // '0x...'
      * ```
      */
-    signTypedData(typedData: any): Promise<string>;
+    signTypedData(typedData: TypedData): Promise<string>;
 }
 export default PrivateKeySignerImpl;
 //# sourceMappingURL=private-key-signer.d.ts.map

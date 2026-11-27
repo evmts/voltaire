@@ -1,1 +1,1 @@
-{"version":3,"file":"deserializeG1.d.ts","sourceRoot":"","sources":["../../../src/crypto/bn254/deserializeG1.js"],"names":[],"mappings":"AAIA;;;;;;;;;;;;;;;GAeG;AACH,qCAXW,UAAU,GACR,OAAO,kBAAkB,EAAE,WAAW,CAsClD"}
+{"version":3,"file":"deserializeG1.d.ts","sourceRoot":"","sources":["../../../src/crypto/bn254/deserializeG1.js"],"names":[],"mappings":"AAKA;;;;;;;;;;;;;;;GAeG;AACH,qCAXW,UAAU,GACR,OAAO,kBAAkB,EAAE,WAAW,CAsClD"}

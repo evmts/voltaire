@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { InvalidSignatureError } from "../../primitives/errors/index.js";
 import { SIGNATURE_COMPONENT_SIZE } from "./constants.js";
@@ -110,7 +109,7 @@ export function recoverPublicKey(signature, messageHash) {
 			code: "PUBLIC_KEY_RECOVERY_FAILED",
 			context: { signature, messageHash },
 			docsPath: "/crypto/secp256k1/recover-public-key#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

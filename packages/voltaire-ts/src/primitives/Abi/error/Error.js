@@ -1,5 +1,4 @@
 import { keccak256String as keccak256StringImpl } from "../../Hash/index.js";
-// @ts-nocheck
 import { decodeParams } from "./decodeParams.js";
 import { encodeParams } from "./encodeParams.js";
 import { GetSelector } from "./getSelector.js";

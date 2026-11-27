@@ -376,3 +376,160 @@ test "execute - ECRECOVER returns empty output for an invalid signature" {
     try testing.expectEqual(@as(u64, 3000), result.gas_used);
     try testing.expectEqual(@as(usize, 0), result.output.len);
 }
+
+fn runFirstVectorLine(
+    allocator: std.mem.Allocator,
+    address: Address,
+    vectors_txt: []const u8,
+    hardfork: Hardfork,
+) !void {
+    const testing = std.testing;
+    var lines = std.mem.splitScalar(u8, vectors_txt, '\n');
+    while (lines.next()) |raw| {
+        const line = std.mem.trim(u8, raw, " \t\r");
+        if (line.len == 0 or line[0] == '#') continue;
+        var parts = std.mem.splitScalar(u8, line, '|');
+        _ = parts.next() orelse return error.InvalidVectorFormat;
+        const in_hex = parts.next() orelse return error.InvalidVectorFormat;
+        const out_hex = parts.next() orelse return error.InvalidVectorFormat;
+        const gas_str = parts.next() orelse return error.InvalidVectorFormat;
+        if (std.mem.eql(u8, out_hex, "ERR")) continue;
+
+        const input = try allocator.alloc(u8, in_hex.len / 2);
+        defer allocator.free(input);
+        _ = try std.fmt.hexToBytes(input, in_hex);
+
+        const expected = try allocator.alloc(u8, out_hex.len / 2);
+        defer allocator.free(expected);
+        _ = try std.fmt.hexToBytes(expected, out_hex);
+
+        const expected_gas = try std.fmt.parseInt(u64, gas_str, 10);
+        const result = try execute(allocator, address, input, expected_gas, hardfork);
+        defer result.deinit(allocator);
+        try testing.expectEqual(expected_gas, result.gas_used);
+        try testing.expectEqualSlices(u8, expected, result.output);
+        return;
+    }
+    return error.NoValidVector;
+}
+
+test "EEST - full precompile dispatch 0x01..0x11 and 0x0100 with non-trivial vectors" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    const crypto = @import("crypto");
+
+    // 0x01 ECRECOVER (go-ethereum / EEST ValidKey high-s vector)
+    var ec_in: [128]u8 = undefined;
+    var ec_exp: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&ec_in, "18c547e4f7b0f325ad1e56f57e26c745b09a3e503d86e00e5255ff7f715d3d1c" ++
+        "000000000000000000000000000000000000000000000000000000000000001c" ++
+        "73b1693892219d736caba55bdb67216e485557ea6b6af75f37096c9aa6a5a75f" ++
+        "eeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549");
+    _ = try std.fmt.hexToBytes(&ec_exp, "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+    const ec_res = try execute(allocator, ECRECOVER_ADDRESS, &ec_in, 3000, .OSAKA);
+    defer ec_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 3000), ec_res.gas_used);
+    try testing.expectEqualSlices(u8, &ec_exp, ec_res.output);
+
+    // 0x02 SHA256 ("abc")
+    var sha_exp: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&sha_exp, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    const sha_res = try execute(allocator, SHA256_ADDRESS, "abc", 72, .OSAKA);
+    defer sha_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 72), sha_res.gas_used);
+    try testing.expectEqualSlices(u8, &sha_exp, sha_res.output);
+
+    // 0x03 RIPEMD160 ("abc", left-padded to 32 bytes)
+    var ripemd_exp: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&ripemd_exp, "0000000000000000000000008eb208f7e05d987a9b044a8e98c6b087f15a0bfc");
+    const ripemd_res = try execute(allocator, RIPEMD160_ADDRESS, "abc", 720, .OSAKA);
+    defer ripemd_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 720), ripemd_res.gas_used);
+    try testing.expectEqualSlices(u8, &ripemd_exp, ripemd_res.output);
+
+    // 0x04 IDENTITY (33 bytes -> 2 words -> 15 + 3*2 = 21 gas)
+    const id_in = "voltaire-eest-identity-precompile";
+    const id_res = try execute(allocator, IDENTITY_ADDRESS, id_in, 21, .OSAKA);
+    defer id_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 21), id_res.gas_used);
+    try testing.expectEqualSlices(u8, id_in, id_res.output);
+
+    // 0x05 MODEXP (2^3 mod 5 = 3; Berlin=200 gas, Osaka=500 gas)
+    var modexp_in = @as([99]u8, @splat(0));
+    modexp_in[31] = 1;
+    modexp_in[63] = 1;
+    modexp_in[95] = 1;
+    modexp_in[96] = 2;
+    modexp_in[97] = 3;
+    modexp_in[98] = 5;
+    const me_prague = try execute(allocator, MODEXP_ADDRESS, &modexp_in, 200, .PRAGUE);
+    defer me_prague.deinit(allocator);
+    try testing.expectEqual(@as(u64, 200), me_prague.gas_used);
+    try testing.expectEqualSlices(u8, &[_]u8{3}, me_prague.output);
+    const me_osaka = try execute(allocator, MODEXP_ADDRESS, &modexp_in, 500, .OSAKA);
+    defer me_osaka.deinit(allocator);
+    try testing.expectEqual(@as(u64, 500), me_osaka.gas_used);
+    try testing.expectEqualSlices(u8, &[_]u8{3}, me_osaka.output);
+
+    // 0x06..0x08 BN254 ECADD, ECMUL, ECPAIRING (official EIP-196/197 vectors)
+    try runFirstVectorLine(allocator, ECADD_ADDRESS, @embedFile("vectors/eip196_add.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, ECMUL_ADDRESS, @embedFile("vectors/eip196_mul.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, ECPAIRING_ADDRESS, @embedFile("vectors/eip197_pairing.txt"), .OSAKA);
+
+    // 0x09 BLAKE2F (RFC 7693 Appendix A / EIP-152 "abc" 12 rounds)
+    var b2_in = @as([213]u8, @splat(0));
+    std.mem.writeInt(u32, b2_in[0..4], 12, .big);
+    const iv = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+    for (iv, 0..) |word, i| {
+        std.mem.writeInt(u64, b2_in[4 + i * 8 ..][0..8], word, .little);
+    }
+    @memcpy(b2_in[68..71], "abc");
+    std.mem.writeInt(u64, b2_in[196..204], 3, .little);
+    b2_in[212] = 1;
+    var b2_exp: [64]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&b2_exp, "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d1" ++
+        "7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923");
+    const b2_res = try execute(allocator, BLAKE2F_ADDRESS, &b2_in, 12, .OSAKA);
+    defer b2_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 12), b2_res.gas_used);
+    try testing.expectEqualSlices(u8, &b2_exp, b2_res.output);
+
+    // 0x0A POINT_EVALUATION (EIP-4844 valid infinity commitment/proof)
+    try crypto.kzg_setup.init();
+    defer crypto.kzg_setup.deinit(allocator);
+    var pe_in = @as([192]u8, @splat(0));
+    pe_in[96] = 0xc0;
+    pe_in[144] = 0xc0;
+    std.crypto.hash.sha2.Sha256.hash(pe_in[96..144], pe_in[0..32], .{});
+    pe_in[0] = 0x01;
+    const pe_res = try execute(allocator, POINT_EVALUATION_ADDRESS, &pe_in, 50000, .OSAKA);
+    defer pe_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 50000), pe_res.gas_used);
+    try testing.expectEqual(@as(usize, 64), pe_res.output.len);
+    try testing.expectEqual(@as(u8, 0x10), pe_res.output[30]);
+
+    // 0x0B..0x11 EIP-2537 BLS12-381 official vectors
+    try runFirstVectorLine(allocator, BLS12_G1ADD_ADDRESS, @embedFile("vectors/eip2537_g1_add.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, BLS12_G1MSM_ADDRESS, @embedFile("vectors/eip2537_g1_msm.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, BLS12_G2ADD_ADDRESS, @embedFile("vectors/eip2537_g2_add.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, BLS12_G2MSM_ADDRESS, @embedFile("vectors/eip2537_g2_msm.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, BLS12_PAIRING_ADDRESS, @embedFile("vectors/eip2537_pairing.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, BLS12_MAP_FP_TO_G1_ADDRESS, @embedFile("vectors/eip2537_map_fp_to_g1.txt"), .OSAKA);
+    try runFirstVectorLine(allocator, BLS12_MAP_FP2_TO_G2_ADDRESS, @embedFile("vectors/eip2537_map_fp2_to_g2.txt"), .OSAKA);
+
+    // 0x0100 EIP-7951 P256VERIFY (Osaka+)
+    const p256_in = try firstValidP256Vector();
+    const p256_res = try execute(allocator, P256VERIFY_ADDRESS, &p256_in, p256verify.GAS, .OSAKA);
+    defer p256_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 6900), p256_res.gas_used);
+    try testing.expectEqualSlices(u8, &(@as([31]u8, @splat(0)) ++ [_]u8{1}), p256_res.output);
+}

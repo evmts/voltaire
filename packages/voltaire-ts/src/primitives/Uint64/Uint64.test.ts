@@ -320,16 +320,18 @@ describe("Uint64.plus", () => {
 		expect(Uint64.plus(a, b)).toBe(150n);
 	});
 
-	it("wraps on overflow", () => {
+	it("throws on overflow (and wraps with plusWrapping)", () => {
 		const a = Uint64.from(18446744073709551615n);
 		const b = Uint64.from(1n);
-		expect(Uint64.plus(a, b)).toBe(0n);
+		expect(() => Uint64.plus(a, b)).toThrow();
+		expect(Uint64.plusWrapping(a, b)).toBe(0n);
 	});
 
-	it("wraps correctly on large overflow", () => {
+	it("throws on large overflow (and wraps with plusWrapping)", () => {
 		const a = Uint64.from(18446744073709551615n);
 		const b = Uint64.from(10n);
-		expect(Uint64.plus(a, b)).toBe(9n);
+		expect(() => Uint64.plus(a, b)).toThrow();
+		expect(Uint64.plusWrapping(a, b)).toBe(9n);
 	});
 });
 
@@ -340,16 +342,18 @@ describe("Uint64.minus", () => {
 		expect(Uint64.minus(a, b)).toBe(50n);
 	});
 
-	it("wraps on underflow", () => {
+	it("throws on underflow (and wraps with minusWrapping)", () => {
 		const a = Uint64.from(0n);
 		const b = Uint64.from(1n);
-		expect(Uint64.minus(a, b)).toBe(18446744073709551615n);
+		expect(() => Uint64.minus(a, b)).toThrow();
+		expect(Uint64.minusWrapping(a, b)).toBe(18446744073709551615n);
 	});
 
-	it("wraps correctly on large underflow", () => {
+	it("throws on large underflow (and wraps with minusWrapping)", () => {
 		const a = Uint64.from(5n);
 		const b = Uint64.from(10n);
-		expect(Uint64.minus(a, b)).toBe(18446744073709551611n);
+		expect(() => Uint64.minus(a, b)).toThrow();
+		expect(Uint64.minusWrapping(a, b)).toBe(18446744073709551611n);
 	});
 });
 
@@ -360,10 +364,11 @@ describe("Uint64.times", () => {
 		expect(Uint64.times(a, b)).toBe(200n);
 	});
 
-	it("wraps on overflow", () => {
+	it("throws on overflow (and wraps with timesWrapping)", () => {
 		const a = Uint64.from(18446744073709551615n);
 		const b = Uint64.from(2n);
-		expect(Uint64.times(a, b)).toBe(18446744073709551614n);
+		expect(() => Uint64.times(a, b)).toThrow();
+		expect(Uint64.timesWrapping(a, b)).toBe(18446744073709551614n);
 	});
 
 	it("returns zero when multiplied by zero", () => {
@@ -730,7 +735,8 @@ describe("Uint64 boundary testing", () => {
 	it("handles MAX correctly", () => {
 		const max = Uint64.from(18446744073709551615n);
 		expect(max).toBe(18446744073709551615n);
-		expect(Uint64.plus(max, Uint64.ONE)).toBe(0n);
+		expect(() => Uint64.plus(max, Uint64.ONE)).toThrow();
+		expect(Uint64.plusWrapping(max, Uint64.ONE)).toBe(0n);
 	});
 
 	it("handles MAX-1 correctly", () => {

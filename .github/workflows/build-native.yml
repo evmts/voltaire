@@ -1,4 +1,4 @@
-# Zig 0.15.x requires the macOS 15 SDK; revisit when upgrading Zig.
+# Cross-platform native Zig FFI + C99 ABI shared library builds
 name: Build Native Bindings
 
 on:
@@ -20,24 +20,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS ARM (M1/M2) - macos-15 is now ARM
+          # macOS ARM (Apple Silicon)
           - os: macos-15
             platform: darwin-arm64
             zig-target: aarch64-macos
-          # macOS Intel builds the x64 library and its dependencies natively.
+          # macOS Intel (x86_64)
           - os: macos-15-intel
             platform: darwin-x64
             zig-target: x86_64-macos
-          # Linux x64 - ubuntu-latest is x64
+          # Linux x86_64
           - os: ubuntu-latest
             platform: linux-x64
-            zig-target: x86_64-linux
-          # Windows x64
+            zig-target: x86_64-linux-gnu
+          # Linux ARM64 (native ARM64 runner)
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            zig-target: aarch64-linux-gnu
+          # Windows x86_64
           - os: windows-latest
             platform: win32-x64
             zig-target: x86_64-windows
-          # NOTE: linux-arm64 requires ARM runners or cross-compilation
-          # Disabled until ARM runners available
 
     steps:
       - name: Checkout repository
@@ -52,27 +54,12 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
-      - name: Cache Cargo dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-${{ matrix.platform }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache Zig dependencies
         uses: actions/cache@v4
@@ -85,19 +72,70 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Rust dependencies
-        run: cargo build --release
-        env:
-          CARGO_TARGET_DIR: target
-
-      - name: Build libwally-core dependency
+      - name: Build native shared library and C99 ABI header
         shell: bash
         run: |
-          cd packages/voltaire-zig/lib/libwally-core
-          zig build install
+          set -euo pipefail
+          zig build build-native-${{ matrix.platform }} -Dwith-c-api=true
+          zig build -Dwith-c-api=true -Doptimize=ReleaseFast
 
-      - name: Build native library
-        run: zig build build-native-${{ matrix.platform }} -Dwith-c-api=true
+      - name: Stage C99 header and pkg-config manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLATFORM="${{ matrix.platform }}"
+          STAGE_DIR="zig-out/native/${PLATFORM}"
+          VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('packages/voltaire-ts/package.json', 'utf8')).version")
+
+          case "${PLATFORM}" in
+            win32-*)
+              EXT="dll"
+              PREFIX=""
+              LIBS_PRIVATE="-lws2_32 -lbcrypt"
+              ;;
+            darwin-*)
+              EXT="dylib"
+              PREFIX="lib"
+              LIBS_PRIVATE="-lpthread -lm"
+              ;;
+            *)
+              EXT="so"
+              PREFIX="lib"
+              LIBS_PRIVATE="-lpthread -ldl -lm"
+              ;;
+          esac
+
+          mkdir -p "${STAGE_DIR}/include" "${STAGE_DIR}/lib/pkgconfig"
+
+          # Stage C99 ABI header
+          if [ -f "zig-out/include/primitives.h" ]; then
+            cp "zig-out/include/primitives.h" "${STAGE_DIR}/include/primitives.h"
+          else
+            cp "packages/voltaire-zig/src/primitives.h" "${STAGE_DIR}/include/primitives.h"
+          fi
+
+          # Stage libprimitives_c alongside libvoltaire_native
+          if [ -f "zig-out/lib/${PREFIX}primitives_c.${EXT}" ]; then
+            cp "zig-out/lib/${PREFIX}primitives_c.${EXT}" "${STAGE_DIR}/lib/${PREFIX}primitives_c.${EXT}"
+          else
+            cp "${STAGE_DIR}/${PREFIX}voltaire_native.${EXT}" "${STAGE_DIR}/lib/${PREFIX}primitives_c.${EXT}"
+          fi
+
+          # Generate relocatable pkg-config file
+          cat > "${STAGE_DIR}/lib/pkgconfig/voltaire.pc" <<EOF
+          prefix=\${pcfiledir}/../..
+          exec_prefix=\${prefix}
+          libdir=\${exec_prefix}/lib
+          includedir=\${prefix}/include
+
+          Name: voltaire
+          Description: Voltaire Ethereum primitives and cryptography C99 ABI library
+          URL: https://voltaire.tevm.sh/
+          Version: ${VERSION}
+          Libs: -L\${libdir} -lprimitives_c
+          Libs.private: ${LIBS_PRIVATE}
+          Cflags: -I\${includedir}
+          EOF
 
       - name: Verify build output
         shell: bash
@@ -108,8 +146,9 @@ jobs:
             darwin-*) ext=dylib ;;
             *) ext=so ;;
           esac
-          # Fails the job when the library is missing.
           ls -lh zig-out/native/${{ matrix.platform }}/*.$ext
+          ls -lh zig-out/native/${{ matrix.platform }}/include/primitives.h
+          ls -lh zig-out/native/${{ matrix.platform }}/lib/pkgconfig/voltaire.pc
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
@@ -120,42 +159,56 @@ jobs:
           retention-days: 7
 
   package-natives:
-    name: Package native binaries
+    name: Package native binaries and C99 ABI tarballs
     needs: build-native
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
 
-      - name: List downloaded artifacts
-        run: |
-          echo "Downloaded artifacts:"
-          ls -R artifacts/
-
       - name: Organize native binaries
         run: |
+          set -euo pipefail
           mkdir -p native
-          for platform in darwin-arm64 darwin-x64 linux-x64 win32-x64; do
+          for platform in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win32-x64; do
             if [ -d "artifacts/native-$platform" ]; then
               mkdir -p "native/$platform"
               cp -r "artifacts/native-$platform/"* "native/$platform/"
             fi
           done
-
-      - name: List organized natives
-        run: |
-          echo "Organized native binaries:"
           ls -R native/
 
-      - name: Upload combined artifact
+      - name: Package npm platform packages and C99 ABI release tarballs
+        run: |
+          node scripts/package-native-platforms.mjs \
+            --input-dir native \
+            --out-dir dist-native \
+            --verify
+          ls -lh dist-native/c-abi/
+          cat dist-native/c-abi/SHA256SUMS.txt
+
+      - name: Upload combined native artifact
         uses: actions/upload-artifact@v4
         with:
           name: native-all-platforms
           path: native/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload packaged platform packages and C99 ABI tarballs
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-release-packages
+          path: dist-native/
           if-no-files-found: error
           retention-days: 30

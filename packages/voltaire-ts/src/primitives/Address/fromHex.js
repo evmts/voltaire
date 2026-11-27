@@ -16,7 +16,11 @@ import { InvalidHexFormatError, InvalidHexStringError } from "./errors.js";
  * ```
  */
 export function fromHex(hex) {
-	if (!hex.startsWith("0x") || hex.length !== HEX_SIZE) {
+	if (
+		typeof hex !== "string" ||
+		!hex.startsWith("0x") ||
+		hex.length !== HEX_SIZE
+	) {
 		throw new InvalidHexFormatError("Invalid hex format for address", {
 			value: hex,
 		});

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Get a specific ABI item by name and optional type
  *
@@ -21,10 +19,12 @@
  * ```
  */
 export function getItem(abi, name, type) {
-	return abi.find(
-		(item) =>
-			"name" in item &&
-			item.name === name &&
-			(type === undefined || item.type === type),
+	return /** @type {Extract<TAbi[number], { name: TName }> | undefined} */ (
+		abi.find(
+			(item) =>
+				"name" in item &&
+				item.name === name &&
+				(type === undefined || item.type === type),
+		)
 	);
 }

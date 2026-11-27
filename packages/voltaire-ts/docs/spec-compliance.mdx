@@ -1,0 +1,116 @@
+---
+title: Spec Compliance
+description: Live Ethereum hardfork, precompile, EIP, and Wycheproof compliance matrix verified by Voltaire's automated conformance suites.
+---
+
+Voltaire verifies its TypeScript and Zig implementations against published Ethereum Execution Spec Tests (EEST), go-ethereum precompile fixtures, NIST/RFC cryptographic vectors, and Project Wycheproof edge cases across every Ethereum hardfork from Frontier through Osaka (Fusaka) and Amsterdam (Glamsterdam).
+
+<Note>
+Every entry below is backed by executable tests in [`src/spec-compliance.test.ts`](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/spec-compliance.test.ts) and the dedicated precompile vector suites under `packages/voltaire-ts/src/evm/precompiles/`.
+</Note>
+
+## Ethereum Hardfork Matrix
+
+Voltaire sets `Hardfork.DEFAULT = Hardfork.OSAKA` and maintains strict chronological ordering and feature gating from Frontier through Amsterdam.
+
+| Hardfork | Upgrade / Meta | Key Verified EIPs & Surfaces | Status |
+|----------|----------------|------------------------------|--------|
+| **Frontier** | Genesis | Legacy Type 0 tx, `0x01`–`0x04` precompiles, Keccak-256 (pre-NIST `0x01`), Yellow Paper MPT roots | Verified |
+| **Homestead / Spurious Dragon** | EIP-2 / EIP-155 | secp256k1 low-`s` canonicalization (`s <= n/2`), EIP-155 replay-protected `v = chainId * 2 + 35 + yParity` | Verified |
+| **Byzantium** | EIP-196 / 197 / 198 | `MODEXP` (`0x05`), BN254 `ecAdd` (`0x06`), `ecMul` (`0x07`), `ecPairing` (`0x08`) | Verified |
+| **Istanbul** | EIP-152 / 1108 | `BLAKE2F` (`0x09`) compression precompile, BN254 gas repricing (`150` / `6,000` / `45,000 + 34,000*k`) | Verified |
+| **Berlin** | EIP-2565 / 2929 / 2930 | Type 1 access-list transactions (`0x01`), ModExp Berlin pricing (`min 200` gas), cold/warm access costs | Verified |
+| **London** | EIP-1559 / 3529 | Type 2 dynamic-fee transactions (`0x02`), base fee market, reduced gas refunds | Verified |
+| **Merge / Shanghai** | EIP-3675 / 3855 / 3860 | Post-merge fork checks (`isPostMerge`), `PUSH0` (`0x5f`), initcode size limit | Verified |
+| **Cancun** | EIP-4844 / 1153 | Type 3 blob transactions (`0x03`), `POINT_EVALUATION` (`0x0a`), blob schedule (`target=3, max=6, updateFraction=3_338_477`), transient storage | Verified |
+| **Prague (Pectra)** | EIP-2537 / 7691 / 7702 | BLS12-381 7-op precompiles (`0x0b`–`0x11`), blob schedule (`target=6, max=9, updateFraction=5_007_716`), Type 4 set-code transactions (`0x04`) & `Authorization` (`0x05` magic) | Verified |
+| **Osaka (Fusaka)** | EIP-7594 / 7823 / 7825 / 7883 / 7892 / 7918 / 7934 / 7939 / 7951 | `P256VERIFY` (`0x100`, `6,900` gas), ModExp `1024`-byte operand cap & `500` min gas, tx gas limit cap (`2^24 = 16,777,216`), BPO1 (`10/15`) & BPO2 (`14/21`) schedules, EIP-7918 reserve price (`BLOB_BASE_COST = 8,192`), `CLZ` (`0x1e`, `5` gas), `8 MiB` RLP block cap | Verified |
+| **Amsterdam (Glamsterdam)** | EIP-7732 / 7928 / 8037 / 8038 | `BlockAccessList` canonical RLP & hash (EIP-7928), ePBS `ExecutionPayloadBid` & `SignedExecutionPayloadBid` (EIP-7732), state gas & access repricing constants (EIP-8037/8038) | Verified |
+
+## EVM Precompile Conformance (`0x01`..`0x11` + `0x100`)
+
+All 18 Ethereum execution precompiles are implemented with hardfork activation checks (`isPrecompile` / `execute`), exact gas accounting, and exceptional-halt semantics (halting precompiles consume all forwarded gas and return empty output).
+
+| Address | Name | Activation Fork | Gas Schedule | Vector Source & Coverage |
+|---------|------|-----------------|--------------|--------------------------|
+| `0x01` | `ECRECOVER` | Frontier | `3,000` | Valid recovery, high-`s` acceptance, invalid `v` word, `r`/`s` out-of-range, short input padding, OOG |
+| `0x02` | `SHA256` | Frontier | `60 + 12 * words` | FIPS 180-4 empty, `"abc"`, multi-block, OOG |
+| `0x03` | `RIPEMD160` | Frontier | `600 + 120 * words` | ISO/IEC 10118-3 vectors, 12-byte left zero-padding, OOG |
+| `0x04` | `IDENTITY` | Frontier | `15 + 3 * words` | Empty, aligned, unaligned word ceiling, OOG |
+| `0x05` | `MODEXP` | Byzantium | EIP-2565 (`min 200`) / EIP-7883 Osaka (`min 500`) | EIP-198/2565 arithmetic, truncated modulus padding, EIP-7823 `1024`-byte Osaka cap, EIP-7883 long-exponent gas (`253,952`) |
+| `0x06` | `BN254_ADD` | Byzantium | `500` (Byzantium) / `150` (Istanbul+) | 16 official go-ethereum `bn256Add.json` vectors + off-curve halt |
+| `0x07` | `BN254_MUL` | Byzantium | `40,000` (Byzantium) / `6,000` (Istanbul+) | 19 official go-ethereum `bn256ScalarMul.json` vectors + zero scalar |
+| `0x08` | `BN254_PAIRING` | Byzantium | `100,000 + 80,000*k` / `45,000 + 34,000*k` (Istanbul+) | 14 official go-ethereum `bn256Pairing.json` vectors (up to 10-pair checks) + subgroup/length halts |
+| `0x09` | `BLAKE2F` | Istanbul | `rounds * 1` | Official EIP-152 / RFC 7693 12-round `"abc"` vector, invalid final flag (`f = 2`), invalid length, OOG |
+| `0x0a` | `POINT_EVALUATION` | Cancun | `50,000` | Exact `192`-byte length check, `kzg_to_versioned_hash` (`0x01 \|\| sha256(c)[1:]`) consensus check, infinity commitment hash, OOG (full pairing verification when native `c-kzg` is present) |
+| `0x0b` | `BLS12_G1_ADD` | Prague | `375` | 9 success + 7 failure EIP-2537 official vectors |
+| `0x0c` | `BLS12_G1_MSM` | Prague | `k * 12,000 * discount(k) / 1000` | 14 success + 8 failure EIP-2537 vectors + 149-entry MSM discount table |
+| `0x0d` | `BLS12_G2_ADD` | Prague | `600` | 9 success + 7 failure EIP-2537 official vectors |
+| `0x0e` | `BLS12_G2_MSM` | Prague | `k * 22,500 * discount(k) / 1000` | 15 success + 8 failure EIP-2537 vectors + 149-entry MSM discount table |
+| `0x0f` | `BLS12_PAIRING` | Prague | `32,600 * k + 37,700` | 15 success + 25 failure EIP-2537 vectors (including subgroup & non-canonical `Fp`/`Fp2` checks) |
+| `0x10` | `BLS12_MAP_FP_TO_G1` | Prague | `5,500` | 5 success + 5 failure EIP-2537 official vectors |
+| `0x11` | `BLS12_MAP_FP2_TO_G2` | Prague | `23,800` | 5 success + 5 failure EIP-2537 official vectors |
+| `0x100` | `P256_VERIFY` | Osaka | `6,900` | All 782 official go-ethereum / Wycheproof `p256Verify.json` vectors, high-`s` & `h ≡ 0` acceptance, non-reverting invalid inputs |
+
+## Wycheproof & Cryptographic Edge-Case Coverage
+
+Voltaire's cryptography modules reject malleability, torsion, and invalid-curve edge cases tested by Google's Project Wycheproof and standard NIST/RFC suites:
+
+| Primitive | Standard / Vector Suite | Verified Edge Cases |
+|-----------|-------------------------|---------------------|
+| **secp256k1** | Wycheproof ECDSA + EIP-2 | Low-`s` canonical enforcement (`s <= n/2`), zero & overflow scalars (`0`, `n`, `n + 1`, `2^256 - 1`), point-at-infinity `(0, 0)`, off-curve points, `x >= p`, public-key recovery |
+| **P-256 (secp256r1)** | Wycheproof `ecdsa_secp256r1_sha256` (782 vectors) + SEC 1 v2 | Point-at-infinity `(0, 0)`, off-curve points, non-canonical coordinates `x >= p` / `y >= p`, invalid SEC1 prefixes (`0x06`/`0x07`), zero/overflow scalars, high-`s` acceptance per EIP-7951 |
+| **Ed25519** | RFC 8032 Section 7.1 + Wycheproof EdDSA | RFC 8032 exact keypair & signature vectors, rejection of all 8 Curve25519 small-order torsion points (orders 1, 2, 4, 8), non-canonical `y >= 2^255 - 19`, signature scalar `S >= L` |
+| **SHA-256** | FIPS 180-4 | Empty, `"abc"`, multi-block 448-bit padding boundary |
+| **Keccak-256** | Ethereum Yellow Paper | Pre-NIST `0x01` domain padding (`""`, `"abc"`, `"testing"`), distinct from SHA3-256 |
+| **RIPEMD-160** | ISO/IEC 10118-3 | Empty, `"a"`, `"abc"`, `"message digest"`, `"abcdefghijklmnopqrstuvwxyz"` |
+| **BLAKE2b** | RFC 7693 Appendix A | BLAKE2b-512 and BLAKE2b-256 (`""`, `"abc"`) |
+
+## Application Standards & Proof Primitives
+
+| Standard | Description | Verified Vectors |
+|----------|-------------|------------------|
+| **EIP-55** | Mixed-case checksummed Ethereum addresses | Official 8-address EIP-55 test vector set + invalid case-flip rejection |
+| **EIP-191** | Signed data standard (`0x00`, `0x01`, `0x45` personal sign) | Prefix framing, personal-message digest, secp256k1 signature recovery |
+| **EIP-712** | Typed structured data hashing & signing | Official `"Ether Mail"` domain separator, `Mail` struct hash, final digest (`0xbe609aee...`) |
+| **EIP-1186** | Merkle Patricia Trie account/storage proofs | Empty trie root (`0x56e81f17...`), Yellow Paper leaf root, 32-byte state-trie inclusion proofs, non-inclusion proofs, tampered-node rejection |
+| **EIP-1191** | Chain-ID-specific checksummed addresses | Official RSK Mainnet (chain `30`) & Testnet (chain `31`) domain-separated checksum vectors |
+| **ERC-8010** | Pre-delegation EIP-7702 signature wrapper | Wrap/unwrap round-trip with `0x8010...8010` 32-byte magic trailer, optional initializer (`to`/`data`), malformed envelope rejection |
+
+## Running the Compliance Suite Locally
+
+Run the unified EEST + Wycheproof compliance suite:
+
+```bash
+pnpm --filter @tevm/voltaire exec vitest run src/spec-compliance.test.ts
+```
+
+Run the full precompile and hardfork vector suites alongside it:
+
+```bash
+pnpm --filter @tevm/voltaire exec vitest run \
+  src/spec-compliance.test.ts \
+  src/evm/precompiles/bn254_precompiles.test.ts \
+  src/evm/precompiles/eip2537.vectors.test.ts \
+  src/evm/precompiles/p256verify.test.ts \
+  src/evm/precompiles/modexp.osaka.test.ts \
+  src/primitives/FeeMarket/BlobSchedule.test.ts \
+  src/primitives/BlockAccessList/BlockAccessList.test.ts \
+  src/primitives/ExecutionPayloadBid/ExecutionPayloadBid.test.ts \
+  src/evm/bitwise/0x1e_CLZ.test.ts
+```
+
+Run the Zig core compliance tests as well:
+
+```bash
+zig build test
+```
+
+## Related
+
+- [Osaka (Fusaka) hardfork](/primitives/hardfork/osaka)
+- [Hardfork timeline](/primitives/hardfork/hardforks)
+- [EVM precompiles](/evm/precompiles)
+- [P256VERIFY precompile](/evm/precompiles/p256verify)
+- [Blob schedules](/primitives/feemarket/blob-schedules)
+- [Block Access List (EIP-7928)](/primitives/block-access-list)

@@ -1,33 +1,32 @@
 /**
- * RIPEMD160 Hash Function (WASM Implementation)
+ * RIPEMD160 Hash Function (Standalone 1.5 kB Micro-WASM Implementation)
  *
- * WebAssembly-based implementation using Zig ripemd160 module.
- * Provides the same interface as the Noble-based implementation.
+ * Instantiates the standalone `ripemd160.wasm` (1.5 kB, zero imports) directly
+ * without loading the unified `primitives.wasm` monolith.
+ * Auto-initializes synchronously in Node/Bun on first call; in browsers, call
+ * `await Ripemd160Wasm.load()` (or `await Ripemd160Wasm.init()`) before hashing.
  *
  * @example
  * ```typescript
  * import { Ripemd160Wasm } from './ripemd160.wasm.js';
  *
- * // Load WASM first
- * await Ripemd160Wasm.load();
- *
- * // Hash bytes
+ * // Node/Bun: auto-loads 1.5 kB micro-WASM synchronously on first call
+ * // Browser: await Ripemd160Wasm.load();
  * const hash = Ripemd160Wasm.hash(data);
- *
- * // Hash string
  * const hash2 = Ripemd160Wasm.hashString("hello");
  * ```
  */
 
-// WASM instance and memory
-let wasmInstance: WebAssembly.Instance | null = null;
-let wasmMemory: WebAssembly.Memory | null = null;
-let memoryOffset = 0;
+import {
+	createScratch,
+	type Scratch,
+	scratchAlloc,
+	WASM_PAGE_SIZE,
+} from "../wasm-loader/scratch.js";
 
-/**
- * WASM exports interface
- */
-interface WasmExports {
+export type Ripemd160WasmInput = string | URL | Uint8Array | ArrayBuffer;
+
+interface Ripemd160MicroExports {
 	memory: WebAssembly.Memory;
 	ripemd160Hash: (
 		inputPtr: number,
@@ -36,171 +35,135 @@ interface WasmExports {
 	) => number;
 }
 
-/**
- * Load WASM module
- */
-async function loadWasm(): Promise<void> {
-	if (wasmInstance) return; // Already loaded
+interface NodeFsSync {
+	readFileSync: (path: string | URL) => Uint8Array;
+}
 
-	// Minimal WASI shim
-	const wasi = {
-		args_get: () => 0,
-		args_sizes_get: (argcPtr: number, argvBufSizePtr: number): number => {
-			if (!wasmMemory) return -1;
-			const view = new DataView(wasmMemory.buffer);
-			view.setUint32(argcPtr, 0, true);
-			view.setUint32(argvBufSizePtr, 0, true);
-			return 0;
-		},
-		environ_get: () => 0,
-		environ_sizes_get: (
-			environCountPtr: number,
-			environBufSizePtr: number,
-		): number => {
-			if (!wasmMemory) return -1;
-			const view = new DataView(wasmMemory.buffer);
-			view.setUint32(environCountPtr, 0, true);
-			view.setUint32(environBufSizePtr, 0, true);
-			return 0;
-		},
-		fd_write: () => 0,
-		fd_fdstat_get: () => 0,
-		fd_filestat_get: () => 0,
-		fd_seek: () => 0,
-		fd_close: () => 0,
-		fd_read: () => 0,
-		fd_pread: () => 0,
-		fd_pwrite: () => 0,
-		clock_res_get: (_id: number, resPtr: number) => {
-			if (!wasmMemory) return -1;
-			const view = new DataView(wasmMemory.buffer);
-			view.setBigUint64(resPtr, 1_000_000n, true);
-			return 0;
-		},
-		clock_time_get: (_id: number, _precision: bigint, timePtr: number) => {
-			if (!wasmMemory) return -1;
-			if (typeof timePtr === "number") {
-				const view = new DataView(wasmMemory.buffer);
-				view.setBigUint64(timePtr, BigInt(Date.now()) * 1_000_000n, true);
-			}
-			return 0;
-		},
-		random_get: () => 0,
-		proc_exit: (code: number): never => {
-			throw new Error(`WASI proc_exit(${code})`);
-		},
-		sched_yield: () => 0,
-		poll_oneoff: () => 0,
-		path_filestat_get: () => 0,
-		path_open: () => 0,
-		path_readlink: () => 0,
-		fd_prestat_get: () => 0,
-		fd_prestat_dir_name: () => 0,
-		fd_datasync: () => 0,
-		fd_sync: () => 0,
-	};
+interface ProcessWithBuiltin {
+	getBuiltinModule?: (id: string) => unknown;
+}
 
-	const importObject = {
-		env: {},
-		wasi_snapshot_preview1: wasi,
-	};
+let wasmExports: Ripemd160MicroExports | null = null;
+let wasmMemory: WebAssembly.Memory | null = null;
+let scratch: Scratch | null = null;
+let memoryOffset = 0;
 
-	// Load WASM file (support both Node.js and browser)
-	// One `new URL(..., import.meta.url)` literal for every runtime: bundlers
-	// and the @tevm/voltaire build rewrite it to the shipped dist/wasm asset.
-	const wasmPath = new URL("../../wasm/crypto/ripemd160.wasm", import.meta.url);
-	let buffer: ArrayBuffer;
-	if (wasmPath.protocol === "file:") {
-		// Node.js/Bun environment
-		const fs = await import("node:fs/promises");
-		const fileBuffer = await fs.readFile(wasmPath);
-		buffer = fileBuffer.buffer.slice(
-			fileBuffer.byteOffset,
-			fileBuffer.byteOffset + fileBuffer.byteLength,
+const utf8Encoder = new TextEncoder();
+
+function getDefaultWasmUrl(): URL {
+	// Resolves via packages/voltaire-ts/wasm symlink in dev;
+	// tsup rewrites `wasm/crypto/ripemd160.wasm` to dist/wasm/crypto/ripemd160.wasm.
+	return new URL("../../wasm/crypto/ripemd160.wasm", import.meta.url);
+}
+
+function getNodeFsSync(): NodeFsSync | null {
+	const proc = (globalThis as { process?: ProcessWithBuiltin }).process;
+	if (typeof proc?.getBuiltinModule !== "function") {
+		return null;
+	}
+	const mod = proc.getBuiltinModule("node:fs") as
+		| Partial<NodeFsSync>
+		| undefined;
+	return mod && typeof mod.readFileSync === "function"
+		? (mod as NodeFsSync)
+		: null;
+}
+
+function toArrayBuffer(bytes: Uint8Array | ArrayBuffer): ArrayBuffer {
+	if (bytes instanceof ArrayBuffer) return bytes;
+	if (
+		bytes.buffer instanceof ArrayBuffer &&
+		bytes.byteOffset === 0 &&
+		bytes.byteLength === bytes.buffer.byteLength
+	) {
+		return bytes.buffer;
+	}
+	const copy = new Uint8Array(bytes.byteLength);
+	copy.set(bytes);
+	return copy.buffer;
+}
+
+function bindInstance(instance: WebAssembly.Instance): void {
+	const exports = instance.exports as unknown as Ripemd160MicroExports;
+	if (!exports.memory || typeof exports.ripemd160Hash !== "function") {
+		throw new Error(
+			"Invalid ripemd160.wasm module: missing memory or ripemd160Hash export",
 		);
-	} else {
-		// Browser environment
-		const response = await fetch(wasmPath);
-		if (!response.ok) {
-			throw new Error(
-				`Failed to fetch ${wasmPath.href}: ${response.status} ${response.statusText}`,
-			);
-		}
-		buffer = await response.arrayBuffer();
 	}
-	const wasmModule = await WebAssembly.instantiate(buffer, importObject);
-
-	wasmInstance = wasmModule.instance;
-	const exports = wasmInstance.exports as unknown as WasmExports;
+	wasmExports = exports;
 	wasmMemory = exports.memory;
-
-	if (!wasmMemory) {
-		throw new Error("WASM module does not export memory");
-	}
-
-	// Initialize memory offset (start at 64KB to be safe)
-	memoryOffset = 64 * 1024;
+	scratch = createScratch(wasmMemory, WASM_PAGE_SIZE);
+	memoryOffset = scratch.base;
 }
 
-/**
- * Allocate memory in WASM
- */
-function malloc(size: number): number {
-	if (!wasmMemory) {
-		throw new Error("WASM not initialized");
+async function loadBytesAsync(
+	source: Ripemd160WasmInput,
+): Promise<ArrayBuffer> {
+	if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+		return toArrayBuffer(source);
 	}
-
-	// Align to 8 bytes
-	const aligned = (size + 7) & ~7;
-	const ptr = memoryOffset;
-	memoryOffset += aligned;
-
-	// Grow memory if needed
-	const pagesNeeded = Math.ceil(memoryOffset / 65536);
-	const currentPages = wasmMemory.buffer.byteLength / 65536;
-
-	if (pagesNeeded > currentPages) {
-		const pagesToGrow = pagesNeeded - currentPages;
-		try {
-			wasmMemory.grow(pagesToGrow);
-		} catch (_e) {
-			throw new Error(
-				`Out of memory: failed to grow WASM memory from ${currentPages} to ${pagesNeeded} pages`,
-			);
-		}
+	const isFileUrl =
+		(source instanceof URL && source.protocol === "file:") ||
+		(typeof source === "string" && source.startsWith("file://"));
+	const isLocalPath =
+		typeof source === "string" &&
+		!/^https?:\/\//i.test(source) &&
+		getNodeFsSync() !== null;
+	if (isFileUrl || isLocalPath) {
+		const fs = await import("node:fs/promises");
+		const target =
+			typeof source === "string" && source.startsWith("file://")
+				? new URL(source)
+				: source;
+		return toArrayBuffer(await fs.readFile(target));
 	}
-
-	return ptr;
+	const response = await fetch(source);
+	if (response.ok === false) {
+		throw new Error(
+			`Failed to fetch ripemd160.wasm: ${response.status} ${response.statusText}`,
+		);
+	}
+	return response.arrayBuffer();
 }
 
-/**
- * Write bytes to WASM memory
- */
-function writeBytes(data: Uint8Array, ptr: number): void {
-	if (!wasmMemory) {
-		throw new Error("WASM not initialized");
+function loadBytesSync(source: Ripemd160WasmInput): ArrayBuffer {
+	if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+		return toArrayBuffer(source);
 	}
-	const memory = new Uint8Array(wasmMemory.buffer);
-	memory.set(data, ptr);
+	if (
+		(source instanceof URL && source.protocol !== "file:") ||
+		(typeof source === "string" && /^https?:\/\//i.test(source))
+	) {
+		throw new Error(
+			"WASM not loaded. Call await Ripemd160Wasm.load() first in browser environments.",
+		);
+	}
+	const fs = getNodeFsSync();
+	if (!fs) {
+		throw new Error(
+			"WASM not loaded. Call await Ripemd160Wasm.load() first in browser environments.",
+		);
+	}
+	const target =
+		typeof source === "string" && source.startsWith("file://")
+			? new URL(source)
+			: source;
+	return toArrayBuffer(fs.readFileSync(target));
 }
 
-/**
- * Read bytes from WASM memory
- */
-function readBytes(ptr: number, length: number): Uint8Array {
-	if (!wasmMemory) {
-		throw new Error("WASM not initialized");
+function ensureReady(): {
+	exports: Ripemd160MicroExports;
+	memory: WebAssembly.Memory;
+	scratch: Scratch;
+} {
+	if (!wasmExports || !wasmMemory || !scratch) {
+		Ripemd160Wasm.loadSync();
 	}
-	const memory = new Uint8Array(wasmMemory.buffer);
-	return memory.slice(ptr, ptr + length);
+	if (!wasmExports || !wasmMemory || !scratch) {
+		throw new Error("WASM not loaded. Call Ripemd160Wasm.load() first.");
+	}
+	return { exports: wasmExports, memory: wasmMemory, scratch };
 }
-
-/**
- * Reset memory allocator (currently unused)
- */
-// function _resetMemory(): void {
-//   memoryOffset = 64 * 1024;
-// }
 
 // ============================================================================
 // Ripemd160Wasm Namespace
@@ -208,70 +171,116 @@ function readBytes(ptr: number, length: number): Uint8Array {
 
 export namespace Ripemd160Wasm {
 	/**
-	 * Load WASM module (must be called before using other functions)
+	 * Load standalone 1.5 kB RIPEMD160 micro-WASM asynchronously.
 	 */
-	export async function load(): Promise<void> {
-		await loadWasm();
+	export async function load(wasmInput?: Ripemd160WasmInput): Promise<void> {
+		if (wasmExports && wasmInput === undefined) return;
+		const source = wasmInput ?? getDefaultWasmUrl();
+		const bytes = await loadBytesAsync(source);
+		const { instance } = await WebAssembly.instantiate(bytes, {});
+		bindInstance(instance);
 	}
 
 	/**
-	 * Compute RIPEMD160 hash (20 bytes)
+	 * Alias for `load()` to match `Keccak256Wasm.init()` / `Blake2Wasm.init()`.
+	 */
+	export async function init(wasmInput?: Ripemd160WasmInput): Promise<void> {
+		await load(wasmInput);
+	}
+
+	/**
+	 * Load standalone 1.5 kB RIPEMD160 micro-WASM synchronously.
+	 */
+	export function loadSync(wasmInput?: Ripemd160WasmInput): void {
+		if (wasmExports && wasmInput === undefined) return;
+		const source = wasmInput ?? getDefaultWasmUrl();
+		const bytes = loadBytesSync(source);
+		const mod = new WebAssembly.Module(bytes);
+		bindInstance(new WebAssembly.Instance(mod, {}));
+	}
+
+	/**
+	 * Alias for `loadSync()`.
+	 */
+	export function initSync(wasmInput?: Ripemd160WasmInput): void {
+		loadSync(wasmInput);
+	}
+
+	/**
+	 * Check whether the standalone RIPEMD160 micro-WASM is loaded.
+	 */
+	export function isReady(): boolean {
+		return wasmExports !== null;
+	}
+
+	/**
+	 * Unload the standalone RIPEMD160 micro-WASM instance (primarily for testing).
+	 */
+	export function reset(): void {
+		wasmExports = null;
+		wasmMemory = null;
+		scratch = null;
+		memoryOffset = 0;
+	}
+
+	/**
+	 * Compute RIPEMD160 hash (20 bytes) using standalone 1.5 kB micro-WASM.
 	 *
 	 * @param data - Input data (Uint8Array or string)
 	 * @returns 20-byte hash
-	 *
-	 * @example
-	 * ```typescript
-	 * const hash = Ripemd160Wasm.hash(data);
-	 * // Uint8Array(20)
-	 * ```
 	 */
 	export function hash(data: Uint8Array | string): Uint8Array {
-		if (typeof data === "string") {
-			return hashString(data);
-		}
-
+		const input = typeof data === "string" ? utf8Encoder.encode(data) : data;
+		const { exports, memory, scratch: region } = ensureReady();
 		const savedOffset = memoryOffset;
 		try {
-			if (!wasmInstance) {
-				throw new Error("WASM not loaded. Call Ripemd160Wasm.load() first.");
-			}
+			const inputAlloc = scratchAlloc(region, memoryOffset, input.length);
+			memoryOffset = inputAlloc.next;
+			const outputAlloc = scratchAlloc(region, memoryOffset, 20);
+			memoryOffset = outputAlloc.next;
 
-			const exports = wasmInstance.exports as unknown as WasmExports;
-			const inputPtr = malloc(data.length);
-			const outputPtr = malloc(20);
-
-			writeBytes(data, inputPtr);
-			const result = exports.ripemd160Hash(inputPtr, data.length, outputPtr);
-
+			new Uint8Array(memory.buffer).set(input, inputAlloc.ptr);
+			const result = exports.ripemd160Hash(
+				inputAlloc.ptr,
+				input.length,
+				outputAlloc.ptr,
+			);
 			if (result !== 0) {
 				throw new Error("RIPEMD160 hash computation failed");
 			}
-
-			return readBytes(outputPtr, 20);
+			return new Uint8Array(memory.buffer).slice(
+				outputAlloc.ptr,
+				outputAlloc.ptr + 20,
+			);
 		} finally {
 			memoryOffset = savedOffset;
 		}
 	}
 
 	/**
-	 * Compute RIPEMD160 hash of UTF-8 string
+	 * Compute RIPEMD160 hash of UTF-8 string.
 	 *
 	 * @param str - Input string
 	 * @returns 20-byte hash
-	 *
-	 * @example
-	 * ```typescript
-	 * const hash = Ripemd160Wasm.hashString("hello");
-	 * // Uint8Array(20)
-	 * ```
 	 */
 	export function hashString(str: string): Uint8Array {
-		const encoder = new TextEncoder();
-		const bytes = encoder.encode(str);
+		return hash(utf8Encoder.encode(str));
+	}
+
+	/**
+	 * Compute RIPEMD160 hash of hex string (with or without 0x prefix).
+	 *
+	 * @param hex - Hex string
+	 * @returns 20-byte hash
+	 */
+	export function hashHex(hex: string): Uint8Array {
+		const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+		const bytes = new Uint8Array(normalized.length / 2);
+		for (let i = 0; i < bytes.length; i++) {
+			bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		}
 		return hash(bytes);
 	}
 }
 
-// Re-export namespace as default
 export default Ripemd160Wasm;

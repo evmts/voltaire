@@ -1,8 +1,10 @@
 export * from "./errors.js";
 export type { BranchNode, EmptyNode, ExtensionNode, LeafNode, Trie as TrieType, TrieNode, TrieProof, } from "./TrieType.js";
+import { decode as rlpDecode } from "../Rlp/decode.js";
+import { encode as rlpEncode } from "../Rlp/encode.js";
 import type { TrieProof, Trie as TrieTypeInternal } from "./TrieType.js";
-type RlpEncodeFn = (data: any) => Uint8Array;
-type RlpDecodeFn = (bytes: Uint8Array, stream?: boolean) => any;
+type RlpEncodeFn = typeof rlpEncode;
+type RlpDecodeFn = typeof rlpDecode;
 type HashNodeDeps = {
     keccak256: (data: Uint8Array) => Uint8Array;
     rlpEncode: RlpEncodeFn;

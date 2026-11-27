@@ -1,4 +1,6 @@
-import * as OxBase64 from "ox/Base64";
+import { decode } from "./decode.js";
+
+const textDecoder = new TextDecoder();
 
 /**
  * Decode base64 string to UTF-8 string
@@ -13,5 +15,5 @@ import * as OxBase64 from "ox/Base64";
  * ```
  */
 export function decodeToString(encoded) {
-	return OxBase64.toString(encoded);
+	return textDecoder.decode(decode(encoded));
 }

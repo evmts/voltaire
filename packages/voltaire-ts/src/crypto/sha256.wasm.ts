@@ -32,6 +32,7 @@ export namespace Sha256Wasm {
 	 * ```
 	 */
 	export function hash(data: Uint8Array): Uint8Array {
+		loader.ensureWasmLoaded();
 		return loader.sha256(data);
 	}
 
@@ -48,6 +49,7 @@ export namespace Sha256Wasm {
 	 * ```
 	 */
 	export function hashString(str: string): Uint8Array {
+		loader.ensureWasmLoaded();
 		const encoder = new TextEncoder();
 		const data = encoder.encode(str);
 		return loader.sha256(data);
@@ -66,6 +68,7 @@ export namespace Sha256Wasm {
 	 * ```
 	 */
 	export function hashHex(hex: string): Uint8Array {
+		loader.ensureWasmLoaded();
 		const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 		const bytes = new Uint8Array(normalized.length / 2);
 		for (let i = 0; i < bytes.length; i++) {
@@ -123,6 +126,7 @@ export namespace Sha256Wasm {
 			 * Finalize and get hash
 			 */
 			digest(): Uint8Array {
+				loader.ensureWasmLoaded();
 				// Concatenate all chunks
 				const combined = new Uint8Array(totalLength);
 				let offset = 0;

@@ -1,5 +1,14 @@
 # @tevm/zig
 
+## 0.5.0
+
+### Minor Changes
+
+- **Zero-Rust-by-default Zig 0.17.1 package**: `zig build` and `zig build test` now compile and pass with only Zig 0.17.1 (pure-Zig BN254, C `blst` BLS12-381, C `c-kzg-4844`, Zig ARMv8.2/portable Keccak, and Zig 0.17 `wally.zig` amalgamation). Optional Rust `arkworks`/`keccak-asm` wrappers remain available behind `-Dwith-rust=true`. Renamed `build.zig.zon` package to `.name = .voltaire` at `"0.5.0"` with `zig fetch --save` quick-start docs.
+- **Zero production panic paths**: Eliminated all `@panic` and `catch unreachable` paths across production Zig source (Uphill `zig-no-panic`: 151/151 pass).
+- **Sub-350 kB WASM & expanded C99 ABI**: Omitted the 788 KB embedded KZG setup on `wasm32`, shrinking `wasm/primitives.wasm` from 1.25 MB to **336.7 kB raw / 117.4 kB gzip** (`primitives-fast.wasm` 5.9 MB → 590.7 kB; `blake2.wasm` 31 kB → 1.8 kB). Added `kzg_load_trusted_setup_bytes` and 14 native-only BN254/ModExp/BLS12-381 C99 ABI exports in `c_api.zig` / `primitives.h`.
+- **Canonical MPT deletion collapse & EEST/Wycheproof vectors**: Landed `collapse_extension` + `collapse_branch` deletion collapse in `primitives/trie.zig` and added inline EEST precompile (`0x01`–`0x11`, `0x0100`) and Wycheproof secp256k1/P-256 test vectors.
+
 ## 0.4.0
 
 ### Minor Changes

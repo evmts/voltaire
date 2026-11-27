@@ -1,5 +1,4 @@
 import * as constants from "./constants.js";
-// @ts-nocheck
 import { parse } from "./parse.js";
 
 /**

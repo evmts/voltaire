@@ -15,10 +15,10 @@ export function HashNode(deps: HashNodeDeps): (node: import("./TrieType.js").Tri
  * RLP-encode a trie node to its serialized form.
  *
  * @param {import('./TrieType.js').TrieNode} node
- * @param {(data: any) => Uint8Array} rlpEncode
+ * @param {(data: Uint8Array | Uint8Array[]) => Uint8Array} rlpEncode
  * @returns {Uint8Array}
  */
-export function encodeNode(node: import("./TrieType.js").TrieNode, rlpEncode: (data: any) => Uint8Array): Uint8Array;
+export function encodeNode(node: import("./TrieType.js").TrieNode, rlpEncode: (data: Uint8Array | Uint8Array[]) => Uint8Array): Uint8Array;
 export type HashNodeDeps = {
     keccak256: (data: Uint8Array) => Uint8Array;
     rlpEncode: (data: any) => Uint8Array;

@@ -1,15 +1,15 @@
 /**
- * Add Uint32 value with wrapping
+ * Add two Uint32 values with overflow checking
  *
- * Overflow mode: wrapping. `plusWrapping` is the explicit name for this behavior
- * and `plusChecked` throws instead of wrapping. Both exist on every Uint size.
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * `plusChecked` is an explicit alias and `plusWrapping` wraps mod 2^32.
  *
  * @see https://voltaire.tevm.sh/primitives/uint32 for Uint32 documentation
  * @since 0.0.0
  * @param {import('./Uint32Type.js').Uint32Type} uint - First operand
  * @param {import('./Uint32Type.js').Uint32Type} b - Second operand
- * @returns {import('./Uint32Type.js').Uint32Type} Sum (uint + b) mod 2^32
- * @throws {never}
+ * @returns {import('./Uint32Type.js').Uint32Type} Sum (uint + b)
+ * @throws {Uint32OverflowError} If the result exceeds 2^32 - 1
  * @example
  * ```javascript
  * import * as Uint32 from './primitives/Uint32/index.js';

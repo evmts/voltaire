@@ -24,8 +24,11 @@ export function from(value) {
 	if (typeof value === "string") {
 		return fromHex(value);
 	}
-	// Already BrandedInt8
-	return value;
+	throw new InvalidFormatError(`Cannot convert ${typeof value} to Int8`, {
+		value,
+		expected: "number, bigint, or hex string",
+		docsPath: "/primitives/int8#from",
+	});
 }
 
 /**
@@ -78,6 +81,13 @@ export function fromNumber(value) {
  * @throws {IntegerUnderflowError} If value is below INT8_MIN
  */
 export function fromBigint(value) {
+	if (typeof value !== "bigint") {
+		throw new InvalidFormatError(`Int8: expected bigint, got ${typeof value}`, {
+			value,
+			expected: "bigint",
+			docsPath: "/primitives/int8#from-bigint",
+		});
+	}
 	if (value > BigInt(INT8_MAX)) {
 		throw new IntegerOverflowError(
 			`Int8: value ${value} exceeds maximum ${INT8_MAX}`,
@@ -108,6 +118,13 @@ export function fromBigint(value) {
  * @throws {InvalidFormatError} If hex string is invalid
  */
 export function fromHex(hex) {
+	if (typeof hex !== "string") {
+		throw new InvalidFormatError(`Int8: invalid hex string ${hex}`, {
+			value: hex,
+			expected: "1-2 hex characters",
+			docsPath: "/primitives/int8#from-hex",
+		});
+	}
 	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!/^[0-9a-fA-F]{1,2}$/.test(cleaned)) {
 		throw new InvalidFormatError(`Int8: invalid hex string ${hex}`, {
@@ -129,6 +146,13 @@ export function fromHex(hex) {
  * @throws {InvalidLengthError} If bytes length is not 1
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidLengthError("Int8: expected 1-byte Uint8Array", {
+			value: bytes,
+			expected: "1 byte",
+			docsPath: "/primitives/int8#from-bytes",
+		});
+	}
 	if (bytes.length !== 1) {
 		throw new InvalidLengthError(`Int8: expected 1 byte, got ${bytes.length}`, {
 			value: bytes,

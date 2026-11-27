@@ -1,5 +1,4 @@
 import { format } from "./format.js";
-// @ts-nocheck
 import { parse } from "./parse.js";
 
 /**

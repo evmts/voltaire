@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BLS12-381 Signature Aggregation
  *
@@ -60,7 +59,9 @@ export function aggregate(signatures) {
 		// Return as bytes
 		return aggSig.toBytes();
 	} catch (error) {
-		throw new SignatureError(`Signature aggregation failed: ${error.message}`);
+		throw new SignatureError(
+			`Signature aggregation failed: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 }
 
@@ -108,6 +109,8 @@ export function aggregatePublicKeys(publicKeys) {
 		// Return as bytes
 		return aggPk.toBytes();
 	} catch (error) {
-		throw new SignatureError(`Public key aggregation failed: ${error.message}`);
+		throw new SignatureError(
+			`Public key aggregation failed: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 }

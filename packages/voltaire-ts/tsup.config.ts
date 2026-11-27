@@ -76,6 +76,17 @@ async function copyWasmAssets(): Promise<void> {
 		mkdirSync(path.dirname(target), { recursive: true });
 		copyFileSync(path.join(wasmSourceDir, asset), target);
 	}
+	// Stage the KZG trusted setup separately from primitives.wasm so non-KZG
+	// bundles stay under 350 kB while Node/Bun KZG.loadTrustedSetup() still
+	// works out of the box on demand.
+	const kzgSetupSrc = path.join(
+		packageDir,
+		"../voltaire-zig/lib/c-kzg-4844/src/trusted_setup.txt",
+	);
+	if (existsSync(kzgSetupSrc)) {
+		mkdirSync(distWasmDir, { recursive: true });
+		copyFileSync(kzgSetupSrc, path.join(distWasmDir, "kzg-trusted-setup.txt"));
+	}
 }
 
 // Pure JS entry points - no native FFI dependencies

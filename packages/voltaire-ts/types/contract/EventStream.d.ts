@@ -1,16 +1,4 @@
 /**
- * @template {import('../primitives/Abi/event/EventType.js').EventType} TEvent
- * @typedef {import('./EventStreamType.js').EventStreamConstructorOptions<TEvent>} EventStreamConstructorOptions
- */
-/**
- * @template {import('../primitives/Abi/event/EventType.js').EventType} TEvent
- * @typedef {import('./EventStreamType.js').EventStream<TEvent>} EventStreamInstance
- */
-/**
- * @typedef {import('./EventStreamType.js').BackfillOptions} BackfillOptions
- * @typedef {import('./EventStreamType.js').WatchOptions} WatchOptions
- */
-/**
  * Create an EventStream for streaming contract events.
  *
  * EventStream provides robust event streaming with:

@@ -8,6 +8,30 @@ const INT32_MIN = -2147483648;
 const INT32_MAX = 2147483647;
 
 /**
+ * Validate numeric value is within Int32 bounds [INT32_MIN, INT32_MAX]
+ *
+ * @param {number | bigint} value
+ * @returns {number}
+ */
+function assertInt32Range(value) {
+	if (value > INT32_MAX) {
+		throw new IntegerOverflowError(`Int32 value exceeds maximum: ${value}`, {
+			value,
+			max: INT32_MAX,
+			type: "int32",
+		});
+	}
+	if (value < INT32_MIN) {
+		throw new IntegerUnderflowError(`Int32 value is below minimum: ${value}`, {
+			value,
+			min: INT32_MIN,
+			type: "int32",
+		});
+	}
+	return Number(value);
+}
+
+/**
  * Create Int32 from various input types
  *
  * @param {number | bigint | string} value - Value to convert
@@ -23,50 +47,28 @@ const INT32_MAX = 2147483647;
  * const c = Int32.from(-2147483648n);
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inherently complex algorithm
 export function from(value) {
 	let num;
 
 	if (typeof value === "number") {
-		// Check bounds BEFORE truncation to detect overflow
-		if (value > INT32_MAX) {
-			throw new IntegerOverflowError(`Int32 value exceeds maximum: ${value}`, {
+		if (Number.isNaN(value)) {
+			throw new InvalidFormatError("Cannot convert NaN to Int32", {
 				value,
-				max: INT32_MAX,
-				type: "int32",
+				expected: "finite number",
+				docsPath: "/primitives/int32#from",
 			});
 		}
-		if (value < INT32_MIN) {
-			throw new IntegerUnderflowError(
-				`Int32 value is below minimum: ${value}`,
-				{
-					value,
-					min: INT32_MIN,
-					type: "int32",
-				},
-			);
-		}
-		num = value;
+		num = assertInt32Range(value);
 	} else if (typeof value === "bigint") {
-		if (value > BigInt(INT32_MAX)) {
-			throw new IntegerOverflowError(`Int32 value exceeds maximum: ${value}`, {
+		num = assertInt32Range(value);
+	} else if (typeof value === "string") {
+		if (value.trim() === "") {
+			throw new InvalidFormatError(`Cannot convert string to Int32: ${value}`, {
 				value,
-				max: INT32_MAX,
-				type: "int32",
+				expected: "valid numeric string",
+				docsPath: "/primitives/int32#from",
 			});
 		}
-		if (value < BigInt(INT32_MIN)) {
-			throw new IntegerUnderflowError(
-				`Int32 value is below minimum: ${value}`,
-				{
-					value,
-					min: INT32_MIN,
-					type: "int32",
-				},
-			);
-		}
-		num = Number(value);
-	} else if (typeof value === "string") {
 		const parsed = Number(value);
 		if (Number.isNaN(parsed)) {
 			throw new InvalidFormatError(`Cannot convert string to Int32: ${value}`, {
@@ -75,25 +77,7 @@ export function from(value) {
 				docsPath: "/primitives/int32#from",
 			});
 		}
-		// Check bounds BEFORE truncation to detect overflow
-		if (parsed > INT32_MAX) {
-			throw new IntegerOverflowError(`Int32 value exceeds maximum: ${parsed}`, {
-				value: parsed,
-				max: INT32_MAX,
-				type: "int32",
-			});
-		}
-		if (parsed < INT32_MIN) {
-			throw new IntegerUnderflowError(
-				`Int32 value is below minimum: ${parsed}`,
-				{
-					value: parsed,
-					min: INT32_MIN,
-					type: "int32",
-				},
-			);
-		}
-		num = parsed;
+		num = assertInt32Range(parsed);
 	} else {
 		throw new InvalidFormatError(`Cannot convert ${typeof value} to Int32`, {
 			value,

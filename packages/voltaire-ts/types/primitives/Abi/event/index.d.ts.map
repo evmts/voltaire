@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../src/primitives/Abi/event/index.js"],"names":[],"mappings":";;AAoBA,oFAEG;AACH,2GAGG;6BAd0B,mBAAmB;4BACpB,kBAAkB;0BAFpB,gBAAgB;6BAGb,mBAAmB"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../../src/primitives/Abi/event/index.js"],"names":[],"mappings":";;AAkBA,oFAEG;AACH,2GAGG;6BAd0B,mBAAmB;4BACpB,kBAAkB;0BAFpB,gBAAgB;6BAGb,mBAAmB"}

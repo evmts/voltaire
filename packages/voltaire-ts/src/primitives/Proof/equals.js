@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./ProofType.js').ProofType} ProofType
  */
@@ -38,7 +36,7 @@ export function equals(a, b) {
 		const proofA = a.proof[i];
 		const proofB = b.proof[i];
 
-		if (proofA.length !== proofB.length) {
+		if (!proofA || !proofB || proofA.length !== proofB.length) {
 			return false;
 		}
 

@@ -28,11 +28,14 @@ export function from(value) {
 	let bigintValue;
 
 	if (typeof value === "string") {
-		if (value.startsWith("0x") || value.startsWith("0X")) {
-			bigintValue = BigInt(value);
-		} else {
-			bigintValue = BigInt(value);
+		if (!/^0[xX][0-9a-fA-F]+$/.test(value) && !/^-?[0-9]+$/.test(value)) {
+			throw new InvalidFormatError(`Invalid Int128 string: ${value}`, {
+				value,
+				expected: "decimal or 0x-prefixed hex string",
+				docsPath: "/primitives/int128#from",
+			});
 		}
+		bigintValue = BigInt(value);
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
 			throw new InvalidFormatError(
@@ -45,8 +48,14 @@ export function from(value) {
 			);
 		}
 		bigintValue = BigInt(value);
-	} else {
+	} else if (typeof value === "bigint") {
 		bigintValue = value;
+	} else {
+		throw new InvalidFormatError(`Cannot convert ${typeof value} to Int128`, {
+			value,
+			expected: "bigint, integer number, or decimal/hex string",
+			docsPath: "/primitives/int128#from",
+		});
 	}
 
 	if (bigintValue > MAX) {

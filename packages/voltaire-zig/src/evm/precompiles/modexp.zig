@@ -732,3 +732,100 @@ test "modexp - right pads partially supplied modulus bytes" {
     try testing.expectEqual(@as(u8, 0), result.output[30]);
     try testing.expectEqual(@as(u8, 1), result.output[31]);
 }
+
+test "EEST - EIP-7823 ModExp 1024-byte operand bounds (Osaka vs Prague)" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Simultaneous max-allowed 1024-byte base, exp, and mod succeeds on Osaka.
+    // Value: 2^3 mod 5 = 3, zero-padded to 1024 bytes for each operand.
+    const max_len: usize = 1024;
+    const full = try allocator.alloc(u8, 96 + 3 * max_len);
+    defer allocator.free(full);
+    @memset(full, 0);
+    std.mem.writeInt(u256, full[0..32], max_len, .big);
+    std.mem.writeInt(u256, full[32..64], max_len, .big);
+    std.mem.writeInt(u256, full[64..96], max_len, .big);
+    full[96 + max_len - 1] = 2;
+    full[96 + 2 * max_len - 1] = 3;
+    full[96 + 3 * max_len - 1] = 5;
+
+    // max_len=1024 -> words=128 -> complexity=2*128^2=32768;
+    // exp_head is 32 zero bytes, exp_len=1024 -> iterations=16*(1024-32)=15872;
+    // gas = 32768 * 15872 = 520_093_696.
+    const expected_gas: u64 = 520_093_696;
+    const res = try execute(allocator, full, expected_gas, .OSAKA);
+    defer res.deinit(allocator);
+    try testing.expectEqual(expected_gas, res.gas_used);
+    try testing.expectEqual(max_len, res.output.len);
+    try testing.expectEqual(@as(u8, 3), res.output[max_len - 1]);
+    try testing.expect(std.mem.allEqual(u8, res.output[0 .. max_len - 1], 0));
+
+    // Any operand length > 1024 halts with InvalidInput on Osaka EVEN with 0 gas
+    // (EIP-7823 length validation runs before gas calculation and empty-output shortcuts).
+    for ([_]usize{ 0, 32, 64 }) |offset| {
+        for ([_]u256{ 1025, 1 << 32, std.math.maxInt(u64), std.math.maxInt(u256) }) |oversize| {
+            var header = @as([96]u8, @splat(0));
+            std.mem.writeInt(u256, header[offset..][0..32], oversize, .big);
+            try testing.expectError(error.InvalidInput, execute(allocator, &header, 0, .OSAKA));
+            try testing.expectError(error.InvalidInput, execute(allocator, &header, 100_000_000, .OSAKA));
+        }
+    }
+
+    // Prague still permits 1025-byte lengths (e.g. base_len=0, mod_len=0, exp_len=1025 -> 200 gas).
+    var prague_header = @as([96]u8, @splat(0));
+    std.mem.writeInt(u256, prague_header[32..64], 1025, .big);
+    const prague_res = try execute(allocator, &prague_header, 200, .PRAGUE);
+    defer prague_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 200), prague_res.gas_used);
+    try testing.expectEqual(@as(usize, 0), prague_res.output.len);
+}
+
+test "EEST - EIP-7883 ModExp gas schedule boundaries and complexity jump" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // 1. max_len = 32 vs max_len = 33 complexity jump with exp_len = 64, exp_head = 0xff..ff:
+    //    Prague (EIP-2565): adj_exp = 8*(64-32) + 255 = 511
+    //      max_len=32 -> words=4 -> mult=16 -> gas = 16*511/3 = 2725
+    //      max_len=33 -> words=5 -> mult=25 -> gas = 25*511/3 = 4258
+    //    Osaka (EIP-7883): adj_exp = 16*(64-32) + 255 = 767
+    //      max_len=32 -> mult=16        -> gas = 16*767 = 12272
+    //      max_len=33 -> mult=2*5^2=50  -> gas = 50*767 = 38350
+    const Case = struct { max_len: usize, prague_gas: u64, osaka_gas: u64 };
+    const cases = [_]Case{
+        .{ .max_len = 32, .prague_gas = 2725, .osaka_gas = 12272 },
+        .{ .max_len = 33, .prague_gas = 4258, .osaka_gas = 38350 },
+    };
+    for (cases) |c| {
+        const exp_len: usize = 64;
+        const buf = try allocator.alloc(u8, 96 + c.max_len + exp_len + c.max_len);
+        defer allocator.free(buf);
+        @memset(buf, 0);
+        std.mem.writeInt(u256, buf[0..32], c.max_len, .big);
+        std.mem.writeInt(u256, buf[32..64], exp_len, .big);
+        std.mem.writeInt(u256, buf[64..96], c.max_len, .big);
+        @memset(buf[96 + c.max_len .. 96 + c.max_len + 32], 0xff);
+
+        try testing.expectError(error.OutOfGas, execute(allocator, buf, c.prague_gas - 1, .PRAGUE));
+        const p_res = try execute(allocator, buf, c.prague_gas, .PRAGUE);
+        defer p_res.deinit(allocator);
+        try testing.expectEqual(c.prague_gas, p_res.gas_used);
+
+        try testing.expectError(error.OutOfGas, execute(allocator, buf, c.osaka_gas - 1, .OSAKA));
+        const o_res = try execute(allocator, buf, c.osaka_gas, .OSAKA);
+        defer o_res.deinit(allocator);
+        try testing.expectEqual(c.osaka_gas, o_res.gas_used);
+    }
+
+    // 2. Floor transition just above 500: max_len=128 (words=16 -> complexity=2*256=512), exp_len=1, exp=1 -> 512 gas.
+    var floor_buf = @as([96 + 128 + 1 + 128]u8, @splat(0));
+    std.mem.writeInt(u256, floor_buf[0..32], 128, .big);
+    std.mem.writeInt(u256, floor_buf[32..64], 1, .big);
+    std.mem.writeInt(u256, floor_buf[64..96], 128, .big);
+    floor_buf[96 + 128] = 1;
+    try testing.expectError(error.OutOfGas, execute(allocator, &floor_buf, 511, .OSAKA));
+    const floor_res = try execute(allocator, &floor_buf, 512, .OSAKA);
+    defer floor_res.deinit(allocator);
+    try testing.expectEqual(@as(u64, 512), floor_res.gas_used);
+}

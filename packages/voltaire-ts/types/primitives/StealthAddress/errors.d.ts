@@ -1,8 +1,20 @@
 /**
+ * @typedef {{
+ *   code?: number | string;
+ *   context?: Record<string, unknown>;
+ *   docsPath?: string;
+ *   cause?: unknown;
+ * }} StealthAddressErrorOptions
+ */
+/**
  * Base error for StealthAddress operations
  */
 export class StealthAddressError extends PrimitiveError {
-    constructor(message: any, options?: {});
+    /**
+     * @param {string} message
+     * @param {StealthAddressErrorOptions} [options]
+     */
+    constructor(message: string, options?: StealthAddressErrorOptions);
 }
 /**
  * Invalid stealth meta-address format or length
@@ -29,5 +41,11 @@ export class InvalidAnnouncementError extends StealthAddressError {
  */
 export class StealthAddressGenerationError extends StealthAddressError {
 }
+export type StealthAddressErrorOptions = {
+    code?: number | string;
+    context?: Record<string, unknown>;
+    docsPath?: string;
+    cause?: unknown;
+};
 import { PrimitiveError } from "../errors/index.js";
 //# sourceMappingURL=errors.d.ts.map

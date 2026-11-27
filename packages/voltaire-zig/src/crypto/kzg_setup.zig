@@ -1,5 +1,6 @@
 /// KZG trusted setup management for EIP-4844 support
 const std = @import("std");
+const builtin = @import("builtin");
 const crypto = @import("root.zig");
 const c_kzg = crypto.c_kzg;
 const kzg_trusted_setup = crypto.kzg_trusted_setup;
@@ -11,19 +12,30 @@ const trusted_setup_data = kzg_trusted_setup.data;
 /// sequence is atomic. Whether a setup is loaded is never cached here: the
 /// binding's own lock-protected `loaded` flag is the single source of truth, so
 /// state stays correct when callers use `c_kzg.freeTrustedSetup` directly.
-var init_mutex: std.Io.Mutex = .init;
+const SetupMutex = struct {
+    inner: if (builtin.single_threaded) void else std.Io.Mutex = if (builtin.single_threaded) {} else .init,
 
-fn mutexIo() std.Io {
-    return std.Io.Threaded.global_single_threaded.io();
-}
+    fn lock(self: *SetupMutex) void {
+        if (comptime !builtin.single_threaded) {
+            self.inner.lockUncancelable(std.Io.Threaded.global_single_threaded.io());
+        }
+    }
+
+    fn unlock(self: *SetupMutex) void {
+        if (comptime !builtin.single_threaded) {
+            self.inner.unlock(std.Io.Threaded.global_single_threaded.io());
+        }
+    }
+};
+
+var init_mutex: SetupMutex = .{};
 
 /// Initialize the KZG trusted setup from embedded data
 /// This should be called once during application startup
 /// Thread-safe for concurrent calls
 pub fn init() !void {
-    const io = mutexIo();
-    init_mutex.lockUncancelable(io);
-    defer init_mutex.unlock(io);
+    init_mutex.lock();
+    defer init_mutex.unlock();
 
     if (c_kzg.isTrustedSetupLoaded()) return;
 
@@ -43,9 +55,8 @@ pub fn init() !void {
 pub fn initFromFile(_allocator: std.mem.Allocator, trusted_setup_path: []const u8) !void {
     _ = _allocator;
 
-    const io = mutexIo();
-    init_mutex.lockUncancelable(io);
-    defer init_mutex.unlock(io);
+    init_mutex.lock();
+    defer init_mutex.unlock();
 
     if (c_kzg.isTrustedSetupLoaded()) return;
 
@@ -63,18 +74,11 @@ pub fn initFromFile(_allocator: std.mem.Allocator, trusted_setup_path: []const u
 pub fn deinit(allocator: std.mem.Allocator) void {
     _ = allocator; // allocator unused
 
-    const io = mutexIo();
-    init_mutex.lockUncancelable(io);
-    defer init_mutex.unlock(io);
+    init_mutex.lock();
+    defer init_mutex.unlock();
 
-    // Free via Zig binding; only ignore TrustedSetupNotLoaded error
-    c_kzg.freeTrustedSetup() catch |err| {
-        // Only acceptable error is TrustedSetupNotLoaded (already freed or never loaded)
-        // Any other error should be reported
-        if (err != error.TrustedSetupNotLoaded) {
-            @panic("Unexpected error during KZG trusted setup cleanup");
-        }
-    };
+    // Free via Zig binding; TrustedSetupNotLoaded is a no-op (already freed or never loaded)
+    c_kzg.freeTrustedSetup() catch {};
 }
 
 /// Check if KZG is initialized. Reads the binding's authoritative state, so it

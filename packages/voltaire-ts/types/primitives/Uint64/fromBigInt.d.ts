@@ -5,6 +5,7 @@
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint64Type.js').Uint64Type} Uint64 value
+ * @throws {Uint64NotIntegerError} If value is not a bigint
  * @throws {Uint64NegativeError} If value is negative
  * @throws {Uint64OverflowError} If value exceeds maximum
  * @example

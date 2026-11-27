@@ -1,9 +1,9 @@
 /**
- * Create Uint8 from number or string
+ * Create Uint8 from number, bigint, or string
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {number | string} value - number or decimal/hex string
+ * @param {number | bigint | string} value - number, bigint, or decimal/hex string
  * @returns {import('./Uint8Type.js').Uint8Type} Uint8 value
  * @throws {InvalidFormatError} If value is not a valid integer
  * @throws {IntegerUnderflowError} If value is negative
@@ -16,5 +16,5 @@
  * const c = Uint8.from("0xff");
  * ```
  */
-export function from(value: number | string): import("./Uint8Type.js").Uint8Type;
+export function from(value: number | bigint | string): import("./Uint8Type.js").Uint8Type;
 //# sourceMappingURL=from.d.ts.map

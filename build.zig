@@ -1,6 +1,25 @@
 const std = @import("std");
 const lib_build = @import("packages/voltaire-zig/lib/c_libs.zig");
 
+const RustCrypto = struct {
+    lib_path: std.Build.LazyPath,
+    build_step: *std.Build.Step,
+};
+
+fn linkOptionalRustCrypto(
+    b: *std.Build,
+    compile: *std.Build.Step.Compile,
+    target: std.Build.ResolvedTarget,
+    rust_crypto: ?RustCrypto,
+) void {
+    if (rust_crypto) |rc| {
+        compile.root_module.addObjectFile(rc.lib_path);
+        linkRustCryptoDeps(compile.root_module, target);
+        compile.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
+        compile.step.dependOn(rc.build_step);
+    }
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -9,27 +28,37 @@ pub fn build(b: *std.Build) void {
     // Optional: build C API (requires libwally-core with secp256k1 sources)
     // Default to false until libwally-core dependency is fixed
     const with_c_api = b.option(bool, "with-c-api", "Build C API library (requires libwally-core)") orelse false;
+    // Optional: link Rust arkworks/keccak-asm crypto_wrappers (default: false — zero-Rust build!)
+    const with_rust = b.option(bool, "with-rust", "Link optional Rust arkworks/keccak-asm crypto_wrappers (default: false)") orelse false;
+
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "with_rust", with_rust);
+    const build_options_mod = build_options.createModule();
 
     // STEP 1: Verify vendored dependencies exist
     lib_build.checkVendoredDeps(b);
 
-    // STEP 2: Verify Cargo is installed for Rust dependencies
-    lib_build.checkCargoInstalled(b);
+    // STEP 2-3 (opt-in only): Build Rust crate (crypto_wrappers: bn254 + keccak FFI)
+    const rust_crypto: ?RustCrypto = if (with_rust) blk: {
+        lib_build.checkCargoInstalled(b);
+        const cargo_build_step = lib_build.createCargoBuildStep(b, optimize, target);
+        // Exported modules must carry the Cargo dependency, including when this
+        // package is consumed by another build rather than built on its own.
+        const rust_crypto_files = b.addWriteFiles();
+        rust_crypto_files.step.dependOn(cargo_build_step);
+        const lib_path = rust_crypto_files.addCopyFile(
+            lib_build.Bn254Lib.getRustLibraryPath(b, target),
+            if (target.result.os.tag == .windows and target.result.abi == .msvc) "crypto_wrappers.lib" else "libcrypto_wrappers.a",
+        );
+        break :blk .{
+            .lib_path = lib_path,
+            .build_step = cargo_build_step,
+        };
+    } else null;
 
-    // STEP 3: Build Rust crate (crypto_wrappers: bn254 + keccak FFI)
-    const cargo_build_step = lib_build.createCargoBuildStep(b, optimize, target);
-
-    // Build crypto C/Rust libraries that primitives + crypto depend on
+    // Build crypto C libraries that primitives + crypto depend on (compiled directly by Zig)
     const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
-    // Exported modules must carry the Cargo dependency, including when this
-    // package is consumed by another build rather than built on its own.
-    const rust_crypto_files = b.addWriteFiles();
-    rust_crypto_files.step.dependOn(cargo_build_step);
-    const rust_crypto_lib_path = rust_crypto_files.addCopyFile(
-        lib_build.Bn254Lib.getRustLibraryPath(b, target),
-        if (target.result.os.tag == .windows and target.result.abi == .msvc) "crypto_wrappers.lib" else "libcrypto_wrappers.a",
-    );
 
     // Install crypto libraries
     b.installArtifact(blst_lib);
@@ -45,8 +74,11 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
-    addCryptoCImports(b, crypto_mod, target, optimize);
-    crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib")); // For keccak_wrapper.h
+    crypto_mod.addImport("build_options", build_options_mod);
+    if (with_rust) {
+        addCryptoCImports(b, crypto_mod, target, optimize);
+        crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib")); // For keccak_wrapper.h
+    }
 
     // z-ens-normalize module
     const z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
@@ -56,13 +88,10 @@ pub fn build(b: *std.Build) void {
     const z_ens_normalize_mod = z_ens_normalize_dep.module("z_ens_normalize");
 
     // libwally-core library (optional - only needed for C API)
-    const libwally_core_lib = if (with_c_api) blk: {
-        const libwally_core_dep = b.lazyDependency("libwally_core", .{
-            .target = target,
-            .optimize = optimize,
-        }) orelse break :blk null;
-        break :blk libwally_core_dep.artifact("wallycore");
-    } else null;
+    const libwally_core_lib = if (with_c_api)
+        lib_build.WallyLib.createWallyLibrary(b, target, optimize)
+    else
+        null;
 
     // Primitives module - export for external packages (includes Hardfork)
     const primitives_mod = b.addModule("primitives", .{
@@ -117,10 +146,7 @@ pub fn build(b: *std.Build) void {
     });
     blockchain_tests.root_module.linkLibrary(c_kzg_lib);
     blockchain_tests.root_module.linkLibrary(blst_lib);
-    blockchain_tests.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(blockchain_tests.root_module, target);
-    blockchain_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    blockchain_tests.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, blockchain_tests, target, rust_crypto);
     blockchain_tests.root_module.link_libc = true;
 
     // Primitives tests
@@ -130,10 +156,7 @@ pub fn build(b: *std.Build) void {
     });
     primitives_tests.root_module.linkLibrary(c_kzg_lib);
     primitives_tests.root_module.linkLibrary(blst_lib);
-    primitives_tests.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(primitives_tests.root_module, target);
-    primitives_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    primitives_tests.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, primitives_tests, target, rust_crypto);
     primitives_tests.root_module.link_libc = true;
 
     // Crypto tests
@@ -143,10 +166,7 @@ pub fn build(b: *std.Build) void {
     });
     crypto_tests.root_module.linkLibrary(c_kzg_lib);
     crypto_tests.root_module.linkLibrary(blst_lib);
-    crypto_tests.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(crypto_tests.root_module, target);
-    crypto_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    crypto_tests.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, crypto_tests, target, rust_crypto);
     crypto_tests.root_module.link_libc = true;
 
     // Precompiles module - export for external packages
@@ -164,10 +184,7 @@ pub fn build(b: *std.Build) void {
     });
     precompiles_tests.root_module.linkLibrary(c_kzg_lib);
     precompiles_tests.root_module.linkLibrary(blst_lib);
-    precompiles_tests.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(precompiles_tests.root_module, target);
-    precompiles_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    precompiles_tests.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, precompiles_tests, target, rust_crypto);
     precompiles_tests.root_module.link_libc = true;
 
     const run_primitives_tests = b.addRunArtifact(primitives_tests);
@@ -200,10 +217,7 @@ pub fn build(b: *std.Build) void {
     });
     primitives_extra_tests.root_module.linkLibrary(c_kzg_lib);
     primitives_extra_tests.root_module.linkLibrary(blst_lib);
-    primitives_extra_tests.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(primitives_extra_tests.root_module, target);
-    primitives_extra_tests.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    primitives_extra_tests.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, primitives_extra_tests, target, rust_crypto);
     primitives_extra_tests.root_module.link_libc = true;
 
     const run_primitives_extra_tests = b.addRunArtifact(primitives_extra_tests);
@@ -235,10 +249,7 @@ pub fn build(b: *std.Build) void {
     });
     keccak256_example.root_module.linkLibrary(c_kzg_lib);
     keccak256_example.root_module.linkLibrary(blst_lib);
-    keccak256_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(keccak256_example.root_module, target);
-    keccak256_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    keccak256_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, keccak256_example, target, rust_crypto);
     keccak256_example.root_module.link_libc = true;
 
     const run_keccak256_example = b.addRunArtifact(keccak256_example);
@@ -259,10 +270,7 @@ pub fn build(b: *std.Build) void {
     });
     abi_example.root_module.linkLibrary(c_kzg_lib);
     abi_example.root_module.linkLibrary(blst_lib);
-    abi_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(abi_example.root_module, target);
-    abi_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    abi_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, abi_example, target, rust_crypto);
     abi_example.root_module.link_libc = true;
 
     const run_abi_example = b.addRunArtifact(abi_example);
@@ -284,10 +292,7 @@ pub fn build(b: *std.Build) void {
     });
     secp256k1_example.root_module.linkLibrary(c_kzg_lib);
     secp256k1_example.root_module.linkLibrary(blst_lib);
-    secp256k1_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(secp256k1_example.root_module, target);
-    secp256k1_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    secp256k1_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, secp256k1_example, target, rust_crypto);
     secp256k1_example.root_module.link_libc = true;
 
     const run_secp256k1_example = b.addRunArtifact(secp256k1_example);
@@ -308,10 +313,7 @@ pub fn build(b: *std.Build) void {
     });
     address_example.root_module.linkLibrary(c_kzg_lib);
     address_example.root_module.linkLibrary(blst_lib);
-    address_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(address_example.root_module, target);
-    address_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    address_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, address_example, target, rust_crypto);
     address_example.root_module.link_libc = true;
 
     const run_address_example = b.addRunArtifact(address_example);
@@ -332,10 +334,7 @@ pub fn build(b: *std.Build) void {
     });
     hex_example.root_module.linkLibrary(c_kzg_lib);
     hex_example.root_module.linkLibrary(blst_lib);
-    hex_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(hex_example.root_module, target);
-    hex_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    hex_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, hex_example, target, rust_crypto);
     hex_example.root_module.link_libc = true;
 
     const run_hex_example = b.addRunArtifact(hex_example);
@@ -356,10 +355,7 @@ pub fn build(b: *std.Build) void {
     });
     rlp_example.root_module.linkLibrary(c_kzg_lib);
     rlp_example.root_module.linkLibrary(blst_lib);
-    rlp_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(rlp_example.root_module, target);
-    rlp_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    rlp_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, rlp_example, target, rust_crypto);
     rlp_example.root_module.link_libc = true;
 
     const run_rlp_example = b.addRunArtifact(rlp_example);
@@ -381,10 +377,7 @@ pub fn build(b: *std.Build) void {
     });
     eip712_example.root_module.linkLibrary(c_kzg_lib);
     eip712_example.root_module.linkLibrary(blst_lib);
-    eip712_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(eip712_example.root_module, target);
-    eip712_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    eip712_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, eip712_example, target, rust_crypto);
     eip712_example.root_module.link_libc = true;
 
     const run_eip712_example = b.addRunArtifact(eip712_example);
@@ -406,10 +399,7 @@ pub fn build(b: *std.Build) void {
     });
     transaction_example.root_module.linkLibrary(c_kzg_lib);
     transaction_example.root_module.linkLibrary(blst_lib);
-    transaction_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(transaction_example.root_module, target);
-    transaction_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    transaction_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, transaction_example, target, rust_crypto);
     transaction_example.root_module.link_libc = true;
 
     const run_transaction_example = b.addRunArtifact(transaction_example);
@@ -431,10 +421,7 @@ pub fn build(b: *std.Build) void {
     });
     eip4844_example.root_module.linkLibrary(c_kzg_lib);
     eip4844_example.root_module.linkLibrary(blst_lib);
-    eip4844_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(eip4844_example.root_module, target);
-    eip4844_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    eip4844_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, eip4844_example, target, rust_crypto);
     eip4844_example.root_module.link_libc = true;
 
     const run_eip4844_example = b.addRunArtifact(eip4844_example);
@@ -456,10 +443,7 @@ pub fn build(b: *std.Build) void {
     });
     eip7702_example.root_module.linkLibrary(c_kzg_lib);
     eip7702_example.root_module.linkLibrary(blst_lib);
-    eip7702_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(eip7702_example.root_module, target);
-    eip7702_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    eip7702_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, eip7702_example, target, rust_crypto);
     eip7702_example.root_module.link_libc = true;
 
     const run_eip7702_example = b.addRunArtifact(eip7702_example);
@@ -481,10 +465,7 @@ pub fn build(b: *std.Build) void {
     });
     abi_workflow_example.root_module.linkLibrary(c_kzg_lib);
     abi_workflow_example.root_module.linkLibrary(blst_lib);
-    abi_workflow_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(abi_workflow_example.root_module, target);
-    abi_workflow_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    abi_workflow_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, abi_workflow_example, target, rust_crypto);
     abi_workflow_example.root_module.link_libc = true;
 
     const run_abi_workflow_example = b.addRunArtifact(abi_workflow_example);
@@ -506,10 +487,7 @@ pub fn build(b: *std.Build) void {
     });
     sig_recovery_example.root_module.linkLibrary(c_kzg_lib);
     sig_recovery_example.root_module.linkLibrary(blst_lib);
-    sig_recovery_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(sig_recovery_example.root_module, target);
-    sig_recovery_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    sig_recovery_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, sig_recovery_example, target, rust_crypto);
     sig_recovery_example.root_module.link_libc = true;
 
     const run_sig_recovery_example = b.addRunArtifact(sig_recovery_example);
@@ -531,10 +509,7 @@ pub fn build(b: *std.Build) void {
     });
     bls_operations_example.root_module.linkLibrary(c_kzg_lib);
     bls_operations_example.root_module.linkLibrary(blst_lib);
-    bls_operations_example.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(bls_operations_example.root_module, target);
-    bls_operations_example.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-    bls_operations_example.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, bls_operations_example, target, rust_crypto);
     bls_operations_example.root_module.link_libc = true;
 
     const run_bls_operations_example = b.addRunArtifact(bls_operations_example);
@@ -605,11 +580,8 @@ pub fn build(b: *std.Build) void {
         c_api_lib.root_module.addImport("blockchain", blockchain_mod);
         c_api_lib.root_module.linkLibrary(c_kzg_lib);
         c_api_lib.root_module.linkLibrary(blst_lib);
-        c_api_lib.root_module.addObjectFile(rust_crypto_lib_path);
-        linkRustCryptoDeps(c_api_lib.root_module, target);
+        linkOptionalRustCrypto(b, c_api_lib, target, rust_crypto);
         c_api_lib.root_module.linkLibrary(libwally_core_lib.?);
-        c_api_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-        c_api_lib.step.dependOn(cargo_build_step);
         c_api_lib.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_lib.root_module.link_libc = true;
 
@@ -631,11 +603,8 @@ pub fn build(b: *std.Build) void {
         c_api_shared.root_module.addImport("blockchain", blockchain_mod);
         c_api_shared.root_module.linkLibrary(c_kzg_lib);
         c_api_shared.root_module.linkLibrary(blst_lib);
-        c_api_shared.root_module.addObjectFile(rust_crypto_lib_path);
-        linkRustCryptoDeps(c_api_shared.root_module, target);
+        linkOptionalRustCrypto(b, c_api_shared, target, rust_crypto);
         c_api_shared.root_module.linkLibrary(libwally_core_lib.?);
-        c_api_shared.root_module.addIncludePath(b.path("packages/voltaire-zig/lib")); // For Rust FFI headers
-        c_api_shared.step.dependOn(cargo_build_step);
         c_api_shared.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_shared.root_module.link_libc = true;
 
@@ -668,6 +637,29 @@ pub fn build(b: *std.Build) void {
 
         const c_example_step = b.step("example-c", "Run the C API example");
         c_example_step.dependOn(&run_c_example.step);
+
+        // C API inline unit tests (includes KZG dynamic setup, BN254, ModExp, BLS12-381 exports)
+        const c_api_test_mod = b.createModule(.{
+            .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        c_api_test_mod.addImport("primitives", primitives_mod);
+        c_api_test_mod.addImport("crypto", crypto_mod);
+        c_api_test_mod.addImport("state-manager", state_manager_mod);
+        c_api_test_mod.addImport("blockchain", blockchain_mod);
+        const c_api_tests = b.addTest(.{
+            .name = "c-api-tests",
+            .root_module = c_api_test_mod,
+        });
+        c_api_tests.root_module.linkLibrary(c_kzg_lib);
+        c_api_tests.root_module.linkLibrary(blst_lib);
+        linkOptionalRustCrypto(b, c_api_tests, target, rust_crypto);
+        c_api_tests.root_module.linkLibrary(libwally_core_lib.?);
+        c_api_tests.root_module.link_libc = true;
+        const run_c_api_tests = b.addRunArtifact(c_api_tests);
+        const test_c_api_step = b.step("test-c-api", "Run C API inline unit tests");
+        test_c_api_step.dependOn(&run_c_api_tests.step);
     }
 
     // State Manager FFI library (shared library for TypeScript/Bun native-loader)
@@ -686,10 +678,7 @@ pub fn build(b: *std.Build) void {
         state_manager_lib.root_module.addImport("state-manager", state_manager_mod);
         state_manager_lib.root_module.linkLibrary(c_kzg_lib);
         state_manager_lib.root_module.linkLibrary(blst_lib);
-        state_manager_lib.root_module.addObjectFile(rust_crypto_lib_path);
-        linkRustCryptoDeps(state_manager_lib.root_module, target);
-        state_manager_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-        state_manager_lib.step.dependOn(cargo_build_step);
+        linkOptionalRustCrypto(b, state_manager_lib, target, rust_crypto);
         state_manager_lib.root_module.link_libc = true;
 
         b.installArtifact(state_manager_lib);
@@ -710,20 +699,17 @@ pub fn build(b: *std.Build) void {
         blockchain_lib.root_module.addImport("blockchain", blockchain_mod);
         blockchain_lib.root_module.linkLibrary(c_kzg_lib);
         blockchain_lib.root_module.linkLibrary(blst_lib);
-        blockchain_lib.root_module.addObjectFile(rust_crypto_lib_path);
-        linkRustCryptoDeps(blockchain_lib.root_module, target);
-        blockchain_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-        blockchain_lib.step.dependOn(cargo_build_step);
+        linkOptionalRustCrypto(b, blockchain_lib, target, rust_crypto);
         blockchain_lib.root_module.link_libc = true;
 
         b.installArtifact(blockchain_lib);
     }
 
-    // NOTE: WASM builds are supported with all features!
-    // - Rust crypto_wrappers: built with portable features (tiny-keccak + arkworks pure Rust)
+    // NOTE: WASM builds are supported with all features (zero-Rust by default)!
     // - blst: built with __BLST_PORTABLE__ and __BLST_NO_ASM__ (C-only, no assembly)
-    // - c-kzg-4844: works in WASM as pure C
+    // - c-kzg-4844: works in WASM as pure C (trusted_setup.txt omitted from wasm32 binary)
     // - All Zig crypto: fully compatible
+    // - Optional Rust crypto_wrappers: only built if -Dwith-rust=true
     // C API library is skipped for WASM (dynamic linking not supported)
     // For JavaScript/TypeScript: use native libprimitives_c with FFI, or compile to WASM for browser
 
@@ -733,8 +719,8 @@ pub fn build(b: *std.Build) void {
         const ts_native_target = b.resolveTargetQuery(.{});
 
         // Cross-platform native builds for distribution
-        addCrossPlatformNativeBuilds(b, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
-        _ = addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        addCrossPlatformNativeBuilds(b, with_rust, build_options_mod, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto);
+        _ = addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto);
     }
 
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
@@ -744,8 +730,11 @@ pub fn build(b: *std.Build) void {
         .os_tag = .wasi,
     });
 
-    // Create WASM-specific cargo build step (needs --target wasm32-unknown-unknown)
-    const wasm_cargo_build_step = lib_build.createCargoBuildStep(b, .ReleaseSmall, wasm_target);
+    // Optional WASM-specific cargo build step (only when -Dwith-rust=true)
+    const wasm_rust_crypto: ?RustCrypto = if (with_rust) .{
+        .lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, wasm_target),
+        .build_step = lib_build.createCargoBuildStep(b, .ReleaseSmall, wasm_target),
+    } else null;
 
     // Build WASM-targeted versions of crypto libraries (native libs won't link to WASM)
     const wasm_blst_lib = lib_build.BlstLib.createBlstLibrary(b, wasm_target, .ReleaseSmall);
@@ -759,19 +748,32 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("packages/voltaire-zig/src/crypto/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
+        .single_threaded = true,
+        .strip = true,
     });
     wasm_crypto_mod.addImport("c_kzg", wasm_c_kzg_mod);
-    addCryptoCImports(b, wasm_crypto_mod, wasm_target, .ReleaseSmall);
-    wasm_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
+    wasm_crypto_mod.addImport("build_options", build_options_mod);
+    if (with_rust) {
+        addCryptoCImports(b, wasm_crypto_mod, wasm_target, .ReleaseSmall);
+        wasm_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
+    }
+
+    const wasm_z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
+        .target = wasm_target,
+        .optimize = .ReleaseSmall,
+    });
+    const wasm_z_ens_normalize_mod = wasm_z_ens_normalize_dep.module("z_ens_normalize");
 
     // Create WASM-targeted primitives module
     const wasm_primitives_mod = b.addModule("primitives_wasm", .{
         .root_source_file = b.path("packages/voltaire-zig/src/primitives/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
+        .single_threaded = true,
+        .strip = true,
     });
     wasm_primitives_mod.addImport("crypto", wasm_crypto_mod);
-    wasm_primitives_mod.addImport("z_ens_normalize", z_ens_normalize_mod);
+    wasm_primitives_mod.addImport("z_ens_normalize", wasm_z_ens_normalize_mod);
 
     // Circular dep: crypto needs primitives
     wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
@@ -780,6 +782,8 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("packages/voltaire-zig/src/state-manager/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
+        .single_threaded = true,
+        .strip = true,
     });
     wasm_state_manager_mod.addImport("primitives", wasm_primitives_mod);
     wasm_state_manager_mod.addImport("crypto", wasm_crypto_mod);
@@ -788,25 +792,24 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("packages/voltaire-zig/src/blockchain/root.zig"),
         .target = wasm_target,
         .optimize = .ReleaseSmall,
+        .single_threaded = true,
+        .strip = true,
     });
     wasm_blockchain_mod.addImport("primitives", wasm_primitives_mod);
 
-    // Get WASM-specific Rust library path (built with portable features)
-    const wasm_rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, wasm_target);
-
-    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_state_manager_mod, wasm_blockchain_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
+    addTypeScriptWasmBuild(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_state_manager_mod, wasm_blockchain_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto);
 
     // Individual crypto WASM modules for treeshaking
-    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
+    addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto);
 
     // Benchmark executables for WASM size and performance measurement (optional)
     if (with_benches) {
         const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
-        buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto);
 
         // zbench performance benchmarks colocated with source code
         const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
-        buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, state_manager_mod, blockchain_mod, jsonrpc_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, state_manager_mod, blockchain_mod, jsonrpc_mod, c_kzg_lib, blst_lib, rust_crypto);
     }
 
     // TypeScript comparisons benchmark runner (generates BENCHMARKS.md files)
@@ -832,8 +835,7 @@ fn buildBenchmarks(
     precompiles_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
-    rust_crypto_lib_path: std.Build.LazyPath,
-    cargo_build_step: *std.Build.Step,
+    rust_crypto: ?RustCrypto,
 ) void {
     // Try to open bench directory
     var bench_dir = std.Io.Dir.cwd().openDir(b.graph.io, "packages/voltaire-zig/bench", .{ .iterate = true }) catch return;
@@ -872,10 +874,7 @@ fn buildBenchmarks(
         });
         bench_exe.root_module.linkLibrary(c_kzg_lib);
         bench_exe.root_module.linkLibrary(blst_lib);
-        bench_exe.root_module.addObjectFile(rust_crypto_lib_path);
-        linkRustCryptoDeps(bench_exe.root_module, target);
-        bench_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-        bench_exe.step.dependOn(cargo_build_step);
+        linkOptionalRustCrypto(b, bench_exe, target, rust_crypto);
         bench_exe.root_module.link_libc = true;
         b.installArtifact(bench_exe);
     }
@@ -894,8 +893,7 @@ fn buildZBenchmarks(
     jsonrpc_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
-    rust_crypto_lib_path: std.Build.LazyPath,
-    cargo_build_step: *std.Build.Step,
+    rust_crypto: ?RustCrypto,
 ) void {
     // Import zbench dependency
     const zbench_dep = b.dependency("zbench", .{
@@ -949,10 +947,7 @@ fn buildZBenchmarks(
         });
         bench_exe.root_module.linkLibrary(c_kzg_lib);
         bench_exe.root_module.linkLibrary(blst_lib);
-        bench_exe.root_module.addObjectFile(rust_crypto_lib_path);
-        linkRustCryptoDeps(bench_exe.root_module, target);
-        bench_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-        bench_exe.step.dependOn(cargo_build_step);
+        linkOptionalRustCrypto(b, bench_exe, target, rust_crypto);
         bench_exe.root_module.link_libc = true;
         b.installArtifact(bench_exe);
 
@@ -983,17 +978,12 @@ fn addTypeScriptNativeBuild(
     blockchain_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
-    rust_crypto_lib_path: std.Build.LazyPath,
-    cargo_build_step: *std.Build.Step,
+    rust_crypto: ?RustCrypto,
 ) *std.Build.Step {
     const build_ts_native_step = b.step("build-ts-native", "Build native TypeScript FFI bindings with ReleaseFast");
 
-    // Build libwally-core via dependency system
-    const libwally_core_dep = b.lazyDependency("libwally_core", .{
-        .target = ts_target,
-        .optimize = .ReleaseFast,
-    }) orelse return build_ts_native_step;
-    const libwally_core_lib = libwally_core_dep.artifact("wallycore");
+    // Build libwally-core directly from vendored amalgamation (Zig 0.17 compatible)
+    const libwally_core_lib = lib_build.WallyLib.createWallyLibrary(b, ts_target, .ReleaseFast);
 
     // Native TypeScript FFI library with ReleaseFast optimization
     const ts_native_lib = b.addLibrary(.{
@@ -1011,12 +1001,9 @@ fn addTypeScriptNativeBuild(
     ts_native_lib.root_module.addImport("blockchain", blockchain_mod);
     ts_native_lib.root_module.linkLibrary(c_kzg_lib);
     ts_native_lib.root_module.linkLibrary(blst_lib);
-    ts_native_lib.root_module.addObjectFile(rust_crypto_lib_path);
-    linkRustCryptoDeps(ts_native_lib.root_module, ts_target);
+    linkOptionalRustCrypto(b, ts_native_lib, ts_target, rust_crypto);
     ts_native_lib.root_module.linkLibrary(libwally_core_lib);
-    ts_native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
     ts_native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
-    ts_native_lib.step.dependOn(cargo_build_step);
     ts_native_lib.root_module.link_libc = true;
 
     // Install to native/ directory
@@ -1037,8 +1024,7 @@ fn addTypeScriptWasmBuild(
     blockchain_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
-    rust_crypto_lib_path: std.Build.LazyPath,
-    cargo_build_step: *std.Build.Step,
+    rust_crypto: ?RustCrypto,
 ) void {
     // WASM TypeScript executable with ReleaseSmall optimization
     // Note: WASM must be built as executable, not library (no dynamic linking in WASM)
@@ -1048,15 +1034,17 @@ fn addTypeScriptWasmBuild(
             .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall, // Minimal size for WASM
+            .single_threaded = true,
+            .strip = true,
         }),
     });
+    ts_wasm_exe.link_gc_sections = true;
+    ts_wasm_exe.lto = .full;
     ts_wasm_exe.root_module.addImport("primitives", primitives_mod);
     ts_wasm_exe.root_module.addImport("crypto", crypto_mod);
     ts_wasm_exe.root_module.linkLibrary(c_kzg_lib);
     ts_wasm_exe.root_module.linkLibrary(blst_lib);
-    ts_wasm_exe.root_module.addObjectFile(rust_crypto_lib_path);
-    ts_wasm_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-    ts_wasm_exe.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, ts_wasm_exe, wasm_target, rust_crypto);
     ts_wasm_exe.entry = .disabled; // WASM reactor (no main)
     ts_wasm_exe.rdynamic = true; // Export all symbols
 
@@ -1084,16 +1072,18 @@ fn addTypeScriptWasmBuild(
             .root_source_file = b.path("packages/voltaire-zig/src/state-manager/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall,
+            .single_threaded = true,
+            .strip = true,
         }),
     });
+    state_manager_wasm_exe.link_gc_sections = true;
+    state_manager_wasm_exe.lto = .full;
     state_manager_wasm_exe.root_module.addImport("primitives", primitives_mod);
     state_manager_wasm_exe.root_module.addImport("crypto", crypto_mod);
     state_manager_wasm_exe.root_module.addImport("state-manager", state_manager_mod);
     state_manager_wasm_exe.root_module.linkLibrary(c_kzg_lib);
     state_manager_wasm_exe.root_module.linkLibrary(blst_lib);
-    state_manager_wasm_exe.root_module.addObjectFile(rust_crypto_lib_path);
-    state_manager_wasm_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-    state_manager_wasm_exe.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, state_manager_wasm_exe, wasm_target, rust_crypto);
     state_manager_wasm_exe.entry = .disabled; // WASM reactor (no main)
     state_manager_wasm_exe.rdynamic = true;
 
@@ -1115,15 +1105,17 @@ fn addTypeScriptWasmBuild(
             .root_source_file = b.path("packages/voltaire-zig/src/blockchain/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall,
+            .single_threaded = true,
+            .strip = true,
         }),
     });
+    blockchain_wasm_exe.link_gc_sections = true;
+    blockchain_wasm_exe.lto = .full;
     blockchain_wasm_exe.root_module.addImport("primitives", primitives_mod);
     blockchain_wasm_exe.root_module.addImport("blockchain", blockchain_mod);
     blockchain_wasm_exe.root_module.linkLibrary(c_kzg_lib);
     blockchain_wasm_exe.root_module.linkLibrary(blst_lib);
-    blockchain_wasm_exe.root_module.addObjectFile(rust_crypto_lib_path);
-    blockchain_wasm_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-    blockchain_wasm_exe.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, blockchain_wasm_exe, wasm_target, rust_crypto);
     blockchain_wasm_exe.entry = .disabled; // WASM reactor (no main)
     blockchain_wasm_exe.rdynamic = true;
 
@@ -1146,15 +1138,16 @@ fn addTypeScriptWasmBuild(
             .root_source_file = b.path("packages/voltaire-zig/src/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseFast, // Maximum performance for benchmarking
+            .single_threaded = true,
+            .strip = true,
         }),
     });
+    ts_wasm_fast_exe.link_gc_sections = true;
     ts_wasm_fast_exe.root_module.addImport("primitives", primitives_mod);
     ts_wasm_fast_exe.root_module.addImport("crypto", crypto_mod);
     ts_wasm_fast_exe.root_module.linkLibrary(c_kzg_lib);
     ts_wasm_fast_exe.root_module.linkLibrary(blst_lib);
-    ts_wasm_fast_exe.root_module.addObjectFile(rust_crypto_lib_path);
-    ts_wasm_fast_exe.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
-    ts_wasm_fast_exe.step.dependOn(cargo_build_step);
+    linkOptionalRustCrypto(b, ts_wasm_fast_exe, wasm_target, rust_crypto);
     ts_wasm_fast_exe.entry = .disabled; // WASM reactor (no main)
     ts_wasm_fast_exe.rdynamic = true;
 
@@ -1356,14 +1349,15 @@ fn addTypeScriptSteps(b: *std.Build) void {
 /// Note: Each platform builds ALL dependencies from scratch to ensure correct architecture
 fn addCrossPlatformNativeBuilds(
     b: *std.Build,
+    with_rust: bool,
+    build_options_mod: *std.Build.Module,
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
     state_manager_mod: *std.Build.Module,
     blockchain_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
-    rust_crypto_lib_path: std.Build.LazyPath,
-    cargo_build_step: *std.Build.Step,
+    rust_crypto: ?RustCrypto,
 ) void {
     // These params are kept for API compatibility but not used for cross-compilation
     // Cross-compilation requires rebuilding all libraries for each target
@@ -1373,8 +1367,7 @@ fn addCrossPlatformNativeBuilds(
     _ = blockchain_mod;
     _ = c_kzg_lib;
     _ = blst_lib;
-    _ = rust_crypto_lib_path;
-    _ = cargo_build_step;
+    _ = rust_crypto;
 
     // Define target platforms for cross-compilation
     const platforms = [_]struct {
@@ -1403,8 +1396,10 @@ fn addCrossPlatformNativeBuilds(
         // Build ALL crypto libraries for this specific target
         const target_blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, .ReleaseFast);
         const target_c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, .ReleaseFast, target_blst_lib);
-        const target_rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, target);
-        const target_cargo_build_step = lib_build.createCargoBuildStep(b, .ReleaseFast, target);
+        const target_rust_crypto: ?RustCrypto = if (with_rust) .{
+            .lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, target),
+            .build_step = lib_build.createCargoBuildStep(b, .ReleaseFast, target),
+        } else null;
 
         // Create target-specific c_kzg module
         const target_c_kzg_mod = createCKzgModule(b, b.fmt("c_kzg_{s}", .{platform.name}), target, .ReleaseFast, target_c_kzg_lib, target_blst_lib);
@@ -1416,8 +1411,11 @@ fn addCrossPlatformNativeBuilds(
             .optimize = .ReleaseFast,
         });
         target_crypto_mod.addImport("c_kzg", target_c_kzg_mod);
-        addCryptoCImports(b, target_crypto_mod, target, .ReleaseFast);
-        target_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
+        target_crypto_mod.addImport("build_options", build_options_mod);
+        if (with_rust) {
+            addCryptoCImports(b, target_crypto_mod, target, .ReleaseFast);
+            target_crypto_mod.addIncludePath(b.path("packages/voltaire-zig/lib"));
+        }
 
         // z-ens-normalize module for this target
         const z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
@@ -1455,12 +1453,9 @@ fn addCrossPlatformNativeBuilds(
         });
         target_blockchain_mod.addImport("primitives", target_primitives_mod);
 
-        // Build libwally-core for this target
-        if (b.lazyDependency("libwally_core", .{
-            .target = target,
-            .optimize = .ReleaseFast,
-        })) |libwally_core_dep| {
-            const libwally_core_lib = libwally_core_dep.artifact("wallycore");
+        // Build libwally-core for this target directly from vendored amalgamation
+        {
+            const libwally_core_lib = lib_build.WallyLib.createWallyLibrary(b, target, .ReleaseFast);
 
             // Build shared library with ReleaseFast
             const native_lib = b.addLibrary(.{
@@ -1478,12 +1473,9 @@ fn addCrossPlatformNativeBuilds(
             native_lib.root_module.addImport("blockchain", target_blockchain_mod);
             native_lib.root_module.linkLibrary(target_c_kzg_lib);
             native_lib.root_module.linkLibrary(target_blst_lib);
-            native_lib.root_module.addObjectFile(target_rust_crypto_lib_path);
-            linkRustCryptoDeps(native_lib.root_module, target);
+            linkOptionalRustCrypto(b, native_lib, target, target_rust_crypto);
             native_lib.root_module.linkLibrary(libwally_core_lib);
-            native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib"));
             native_lib.root_module.addIncludePath(b.path("packages/voltaire-zig/lib/libwally-core/include"));
-            native_lib.step.dependOn(target_cargo_build_step);
             native_lib.root_module.link_libc = true;
 
             // Install to native/{platform}/ directory
@@ -1514,15 +1506,13 @@ fn addCryptoWasmBuilds(
     crypto_mod: *std.Build.Module,
     c_kzg_lib: *std.Build.Step.Compile,
     blst_lib: *std.Build.Step.Compile,
-    rust_crypto_lib_path: std.Build.LazyPath,
-    cargo_build_step: *std.Build.Step,
+    rust_crypto: ?RustCrypto,
 ) void {
     _ = primitives_mod;
     _ = crypto_mod;
     _ = c_kzg_lib;
     _ = blst_lib;
-    _ = rust_crypto_lib_path;
-    _ = cargo_build_step;
+    _ = rust_crypto;
 
     // Define crypto modules to compile to WASM
     // Note: Only including modules that are self-contained without heavy dependencies
@@ -1554,8 +1544,11 @@ fn addCryptoWasmBuilds(
                     .root_source_file = b.path(module.source),
                     .target = wasm_target,
                     .optimize = .ReleaseSmall, // Minimize WASM size
+                    .single_threaded = true,
+                    .strip = true,
                 }),
             });
+            wasm_exe.link_gc_sections = true;
 
             // Configure for WASM reactor pattern (no main() required)
             wasm_exe.entry = .disabled; // No entry point needed for WASM reactor
@@ -1617,16 +1610,21 @@ fn createCKzgModule(
     });
     blst_c.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/blst/bindings"));
 
+    const is_wasm = target.result.cpu.arch == .wasm32 or target.result.cpu.arch == .wasm64;
     const c_kzg_mod = b.addModule(name, .{
         .root_source_file = b.path("packages/voltaire-zig/lib/c_kzg_root.zig"),
         .target = target,
         .optimize = optimize,
+        .single_threaded = if (is_wasm) true else null,
+        .strip = if (is_wasm) true else null,
     });
     c_kzg_mod.addImport("ckzg_c", ckzg_c.createModule());
     c_kzg_mod.addImport("blst_c", blst_c.createModule());
-    c_kzg_mod.addAnonymousImport("trusted_setup.txt", .{
-        .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/trusted_setup.txt"),
-    });
+    if (target.result.cpu.arch != .wasm32) {
+        c_kzg_mod.addAnonymousImport("trusted_setup.txt", .{
+            .root_source_file = b.path("packages/voltaire-zig/lib/c-kzg-4844/bindings/zig/trusted_setup.txt"),
+        });
+    }
     c_kzg_mod.linkLibrary(c_kzg_lib);
     c_kzg_mod.linkLibrary(blst_lib);
     c_kzg_mod.addIncludePath(b.path("packages/voltaire-zig/lib/c-kzg-4844/src"));

@@ -7,11 +7,11 @@ import {
 } from "./errors.js";
 
 /**
- * Create Uint16 from number or string
+ * Create Uint16 from number, bigint, or string
  *
  * @see https://voltaire.tevm.sh/primitives/uint16 for Uint16 documentation
  * @since 0.0.0
- * @param {number | string} value - number or decimal/hex string
+ * @param {number | bigint | string} value - number, bigint, or decimal/hex string
  * @returns {import('./Uint16Type.js').Uint16Type} Uint16 value
  * @throws {Uint16InvalidHexError} If string is invalid
  * @throws {Uint16NotIntegerError} If value is not an integer
@@ -26,6 +26,22 @@ import {
  * ```
  */
 export function from(value) {
+	if (typeof value === "bigint") {
+		if (value < 0n) {
+			throw new Uint16NegativeError(
+				`Uint16 value cannot be negative: ${value}`,
+				{ value },
+			);
+		}
+		if (value > BigInt(MAX)) {
+			throw new Uint16OverflowError(
+				`Uint16 value exceeds maximum (65535): ${value}`,
+				{ value },
+			);
+		}
+		return /** @type {import('./Uint16Type.js').Uint16Type} */ (Number(value));
+	}
+
 	let numValue;
 
 	if (typeof value === "string") {

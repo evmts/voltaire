@@ -17,7 +17,7 @@ import { isTestnet } from "./isTestnet.js";
 import { supportsHardfork } from "./supportsHardfork.js";
 
 /**
- * @typedef {import('./ChainType.js').Chain} Chain
+ * @typedef {import('./ChainType.js').Chain} ChainType
  * @typedef {import('./ChainConstructor.js').ChainConstructor} ChainConstructor
  */
 
@@ -26,14 +26,16 @@ import { supportsHardfork } from "./supportsHardfork.js";
  *
  * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
  * @since 0.0.0
- * @param {Parameters<typeof from>[0]} chain
- * @returns {Chain}
+ * @param {ChainType} chain - Chain configuration object
+ * @returns {ChainType} Chain instance
  * @throws {never}
  * @example
  * ```javascript
- * import { mainnet } from '@tevm/chains';
  * import * as Chain from './primitives/Chain/index.js';
- * const chain = Chain.Chain(mainnet);
+ * const mainnet = Chain.fromId(1);
+ * if (mainnet) {
+ *   const chain = Chain.Chain(mainnet);
+ * }
  * ```
  */
 export function Chain(chain) {
@@ -43,14 +45,20 @@ export function Chain(chain) {
 }
 
 // Static constructors
-/** @param {Parameters<typeof from>[0]} chain */
+/**
+ * @param {ChainType} chain
+ * @returns {ChainType}
+ */
 Chain.from = (chain) => {
 	const result = from(chain);
 	Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 };
 
-/** @param {Parameters<typeof fromId>[0]} id */
+/**
+ * @param {number} id
+ * @returns {ChainType | undefined}
+ */
 Chain.fromId = (id) => {
 	const result = fromId(id);
 	if (result) Object.setPrototypeOf(result, Chain.prototype);

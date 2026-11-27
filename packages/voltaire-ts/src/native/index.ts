@@ -1,12 +1,7 @@
 /**
- * Native FFI bindings for Ethereum primitives
- * Uses Bun FFI or Node-API for maximum performance
- *
- * This entrypoint exports the same API as the main JS entrypoint (src/index.ts)
- * but with native-optimized implementations where available.
- *
- * Currently native implementations:
- * - Keccak256 (via Zig FFI)
+ * Native FFI bindings for Ethereum primitives and cryptography.
+ * Uses synchronous Bun FFI (`dlopen`) or Node-API (`createRequire`) for maximum
+ * performance with 1:1 synchronous API parity against `@tevm/voltaire`.
  */
 
 import type { VoltaireAPI } from "../api-interface.js";
@@ -239,32 +234,49 @@ export {
 export * from "../primitives/errors/index.js";
 
 // ============================================================================
-// Crypto - Re-export JS implementations, override with native where available
+// Crypto - Synchronous Native FFI implementations + JS pass-throughs
 // ============================================================================
-
-// Native implementation - Keccak256 (async API - uses FFI)
-// Note: Native Keccak256 has async methods (hash, from, etc.) unlike sync JS version
-export { Keccak256 } from "../crypto/Keccak256/Keccak256.native.js";
-
-// JS implementations (pass-through)
 export {
-	Secp256k1,
-	EIP712,
-	KZG,
-	BN254,
-	Bls12381,
-	Ripemd160,
-	SHA256,
-	Blake2,
-	Ed25519,
 	AesGcm,
+	Blake2,
+	Bls12381,
+	BN254,
+	Ed25519,
+	Keccak256,
+	KZG,
+	ModExp,
+	P256,
+	Ripemd160,
+	Secp256k1,
+	SHA256,
+	X25519,
+} from "./crypto/index.js";
+
+// Explicit *Native aliases for advanced users
+export {
+	AesGcm as AesGcmNative,
+	Blake2 as Blake2Native,
+	Bls12381 as Bls12381Native,
+	BN254 as BN254Native,
+	Ed25519 as Ed25519Native,
+	Keccak256 as Keccak256Native,
+	Keccak256Hash as Keccak256HashNative,
+	KZG as KZGNative,
+	ModExp as ModExpNative,
+	P256 as P256Native,
+	Ripemd160 as Ripemd160Native,
+	Secp256k1 as Secp256k1Native,
+	SHA256 as SHA256Native,
+	X25519 as X25519Native,
+} from "./crypto/index.js";
+
+// Additional pure-JS crypto utilities
+export {
+	Bip39,
 	ChaCha20Poly1305,
 	ConstantTime,
-	Bip39,
+	EIP712,
 	Keystore,
-	P256,
-	X25519,
-	ModExp,
 } from "../crypto/index.js";
 
 export * as HDWallet from "../crypto/HDWallet/native.js";
@@ -272,19 +284,19 @@ export * as HDWallet from "../crypto/HDWallet/native.js";
 // Re-export crypto types
 export type { Keccak256Hash } from "../crypto/Keccak256/Keccak256HashType.js";
 export type {
+	Blake2Hash,
+	Blake2HashType,
+	Bls12381Fp2Type,
+	Bls12381G1PointType,
+	Bls12381G2PointType,
 	Keccak256HashType,
 	KzgBlobType,
 	KzgCommitmentType,
 	KzgProofType,
-	Bls12381G1PointType,
-	Bls12381G2PointType,
-	Bls12381Fp2Type,
 	Ripemd160Hash,
 	Ripemd160HashType,
 	SHA256Hash,
 	SHA256HashType,
-	Blake2Hash,
-	Blake2HashType,
 } from "../crypto/index.js";
 
 // ============================================================================
@@ -311,72 +323,86 @@ export * as precompiles from "../evm/precompiles/precompiles.js";
 // Native-specific utilities (for advanced users)
 // ============================================================================
 export {
-	loadNative,
-	loadForkWasm,
-	isBun,
-	isNode,
-	checkError,
 	allocateOutput,
 	allocateStringOutput,
-	getPlatform,
-	getNativeExtension,
-	isNativeSupported,
+	type BunNativeSymbols,
+	bunFfiSymbols,
+	checkError,
+	getLoadedBunLibPath,
 	getNativeErrorMessage,
+	getNativeExtension,
+	getNativeLibCandidates,
+	getNativeLibPath,
+	getNativeLibPrefix,
+	getPlatform,
+	isBun,
+	isNativeLoaded,
+	isNativeSupported,
+	isNode,
+	loadBunNative,
+	loadBunNativeSync,
+	loadForkWasm,
+	loadNative,
+	loadNativeSync,
+	loadNodeNative,
+	loadNodeNativeSync,
+	NativeError,
 	NativeErrorCode,
-	type Platform,
 	type NativeErrorCodeType,
+	type NativeExtension,
+	type NativeLibrary,
+	NativeLibraryNotFoundError,
+	type NativeModule,
+	type NativePathOptions,
+	type NativeRuntimeKind,
+	NativeUnsupportedPlatformError,
+	NativeUnsupportedRuntimeError,
+	type Platform,
+	resolveNativeLibPath,
+	safeBufferPtr,
+	toCStringBuffer,
+	unloadNative,
 } from "../native-loader/index.js";
 
-// Native Keccak256 exports for advanced users
-export {
-	Keccak256Hash as Keccak256HashNative,
-	Keccak256 as Keccak256Native,
-} from "../crypto/Keccak256/Keccak256.native.js";
-
 // ============================================================================
-// Type assertion - Ensure API compatibility with JS entrypoint
+// Type assertion - Verify ACTUAL native exports satisfy VoltaireAPI 1:1
 // ============================================================================
-
-// Import JS namespaces for type checking (use JS Keccak256 for satisfies check)
-import { Address } from "../primitives/Address/index.js";
-import { Hash } from "../primitives/Hash/index.js";
-import { Hex } from "../primitives/Hex/index.js";
-import { Uint } from "../primitives/Uint/Uint.js";
-import { Rlp } from "../primitives/Rlp/index.js";
+import { EIP712 } from "../crypto/EIP712/index.js";
 import { Abi } from "../primitives/Abi/Abi.js";
-import { Blob } from "../primitives/Blob/index.js";
 import { AccessList } from "../primitives/AccessList/index.js";
-import { Bytecode } from "../primitives/Bytecode/index.js";
-import { Chain } from "../primitives/Chain/index.js";
-import { Opcode } from "../primitives/Opcode/index.js";
+import { Address } from "../primitives/Address/index.js";
+import { Blob } from "../primitives/Blob/index.js";
 import { BloomFilter } from "../primitives/BloomFilter/index.js";
-import { Siwe } from "../primitives/Siwe/index.js";
+import { Bytecode } from "../primitives/Bytecode/index.js";
 import { Bytes } from "../primitives/Bytes/Bytes.js";
 import { Bytes32 } from "../primitives/Bytes/Bytes32/index.js";
+import { Chain } from "../primitives/Chain/index.js";
+import { Ether, Gwei, Wei } from "../primitives/Denomination/index.js";
+import { Hash } from "../primitives/Hash/index.js";
+import { Hex } from "../primitives/Hex/index.js";
+import { Opcode } from "../primitives/Opcode/index.js";
+import { Rlp } from "../primitives/Rlp/index.js";
+import { Siwe } from "../primitives/Siwe/index.js";
 import { StorageKey } from "../primitives/State/index.js";
-import { Wei, Gwei, Ether } from "../primitives/Denomination/index.js";
-
-// Crypto imports - use JS Keccak256 for type assertion (native is async)
-import { Keccak256 as Keccak256JS } from "../crypto/Keccak256/index.js";
-import { Secp256k1 } from "../crypto/Secp256k1/index.js";
-import { SHA256 } from "../crypto/SHA256/index.js";
-import { Blake2 } from "../crypto/Blake2/index.js";
-import { Ripemd160 } from "../crypto/Ripemd160/index.js";
-import { Ed25519 } from "../crypto/Ed25519/index.js";
-import { P256 } from "../crypto/P256/index.js";
-import { X25519 } from "../crypto/X25519/X25519.js";
-import { BN254 } from "../crypto/bn254/BN254.js";
-import { Bls12381 } from "../crypto/Bls12381/Bls12381.js";
-import { KZG } from "../crypto/KZG/index.js";
-import { EIP712 } from "../crypto/EIP712/index.js";
-import { ModExp } from "../crypto/ModExp/index.js";
+import { Uint } from "../primitives/Uint/Uint.js";
+import {
+	Blake2,
+	Bls12381,
+	BN254,
+	Ed25519,
+	Keccak256,
+	KZG,
+	ModExp,
+	P256,
+	Ripemd160,
+	Secp256k1,
+	SHA256,
+	X25519,
+} from "./crypto/index.js";
 
 /**
- * Native API object - satisfies VoltaireAPI interface
- * This ensures compile-time errors if the native API doesn't have all required namespaces.
- *
- * Note: The actual Keccak256 export is the native async version from Keccak256.native.js,
- * but we use JS Keccak256 here for type checking since native methods are async.
+ * Native API object verified directly against `VoltaireAPI` using the REAL
+ * synchronous native crypto implementations (zero JS stand-in workarounds).
  */
 const _nativeAPI = {
 	// Primitives
@@ -400,8 +426,8 @@ const _nativeAPI = {
 	Gwei,
 	Ether,
 
-	// Crypto (using JS for type check, actual export is native async Keccak256)
-	Keccak256: Keccak256JS,
+	// Real synchronous native crypto modules
+	Keccak256,
 	SHA256,
 	Blake2,
 	Ripemd160,
@@ -416,28 +442,18 @@ const _nativeAPI = {
 	ModExp,
 } satisfies VoltaireAPI;
 
-// Export the API object for programmatic access (with JS Keccak256 for sync API)
 export { _nativeAPI as nativeAPI };
 
 // ============================================================================
 // Streaming primitives (pure JS - same as main entrypoint)
 // ============================================================================
-
 export * as block from "../block/index.js";
 export * as contract from "../contract/index.js";
-export * as transaction from "../transaction/index.js";
 export * as stream from "../stream/index.js";
+export * as transaction from "../transaction/index.js";
 
 // ============================================================================
 // Wallet utilities (native-only hardware wallets)
 // ============================================================================
-
-export * as wallet from "../wallet/index.js";
-// NOTE: Ledger and Trezor support temporarily disabled due to dependency issues
-// export {
-// 	LedgerWallet,
-// 	TrezorWallet,
-// 	createLedger,
-// 	createTrezor,
-// } from "../wallet/hardware/index.js";
 export type { HardwareWallet } from "../wallet/hardware/HardwareWallet.js";
+export * as wallet from "../wallet/index.js";

@@ -868,14 +868,41 @@ pub const Blake2 = struct {
     /// mixed into the parameter block (h[0] ^= 0x01010000 ^ nn per RFC 7693),
     /// so BLAKE2b-256 is not a truncated BLAKE2b-512.
     pub fn hashVariable(input: []const u8, output: []u8) error{InvalidOutputLength}!void {
-        switch (output.len) {
-            inline 1...64 => |n| {
-                var buf: [n]u8 = undefined;
-                std.crypto.hash.blake2.Blake2b(n * 8).hash(input, &buf, .{});
-                @memcpy(output, &buf);
-            },
-            else => return error.InvalidOutputLength,
+        if (output.len == 0 or output.len > 64) return error.InvalidOutputLength;
+
+        var state = BLAKE2B_IV;
+        state[0] ^= 0x01010000 ^ @as(u64, output.len);
+
+        var offset: usize = 0;
+        var block: [128]u8 = undefined;
+        var m: [16]u64 = undefined;
+
+        while (offset + 128 < input.len) {
+            const next_offset = offset + 128;
+            for (0..16) |i| {
+                m[i] = std.mem.readInt(u64, input[offset + i * 8 ..][0..8], .little);
+            }
+            const t_lo: u64 = @truncate(next_offset);
+            const t_hi: u64 = if (@bitSizeOf(usize) > 64) @truncate(next_offset >> 64) else 0;
+            unauditedBlake2bCompress(&state, &m, .{ t_lo, t_hi }, false, 12);
+            offset = next_offset;
         }
+
+        @memset(&block, 0);
+        const rem = input.len - offset;
+        if (rem > 0) @memcpy(block[0..rem], input[offset..]);
+        for (0..16) |i| {
+            m[i] = std.mem.readInt(u64, block[i * 8 ..][0..8], .little);
+        }
+        const total_lo: u64 = @truncate(input.len);
+        const total_hi: u64 = if (@bitSizeOf(usize) > 64) @truncate(input.len >> 64) else 0;
+        unauditedBlake2bCompress(&state, &m, .{ total_lo, total_hi }, true, 12);
+
+        var digest: [64]u8 = undefined;
+        for (0..8) |i| {
+            std.mem.writeInt(u64, digest[i * 8 ..][0..8], state[i], .little);
+        }
+        @memcpy(output, digest[0..output.len]);
     }
 
     /// EIP-152 Blake2f compression function wrapper
@@ -1279,4 +1306,29 @@ test "Blake2.hashVariable encodes digest length in the parameter block" {
     try std.testing.expectError(error.InvalidOutputLength, Blake2.hashVariable("", &empty));
     var big: [65]u8 = undefined;
     try std.testing.expectError(error.InvalidOutputLength, Blake2.hashVariable("", &big));
+}
+
+test "Blake2.hashVariable matches std.crypto.hash.blake2 across lengths and block boundaries" {
+    var msg_300: [300]u8 = undefined;
+    for (&msg_300, 0..) |*b, idx| b.* = @intCast((idx * 37 + 13) & 0xff);
+    const messages = [_][]const u8{
+        "",
+        "abc",
+        msg_300[0..127],
+        msg_300[0..128],
+        msg_300[0..129],
+        msg_300[0..256],
+        &msg_300,
+    };
+
+    inline for ([_]usize{ 1, 16, 20, 32, 48, 64 }) |out_len| {
+        const StdBlake2b = std.crypto.hash.blake2.Blake2b(out_len * 8);
+        for (messages) |msg| {
+            var expected: [out_len]u8 = undefined;
+            StdBlake2b.hash(msg, &expected, .{});
+            var actual: [out_len]u8 = undefined;
+            try Blake2.hashVariable(msg, &actual);
+            try std.testing.expectEqualSlices(u8, &expected, &actual);
+        }
+    }
 }

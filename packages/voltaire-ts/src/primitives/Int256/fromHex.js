@@ -24,6 +24,13 @@ import { BITS, MAX, MIN, MODULO } from "./constants.js";
  * ```
  */
 export function fromHex(hex) {
+	if (typeof hex !== "string") {
+		throw new InvalidFormatError(`Invalid hex string: ${hex}`, {
+			value: hex,
+			expected: "valid hex string",
+			docsPath: "/primitives/int256#from-hex",
+		});
+	}
 	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
 
 	if (!/^[0-9a-fA-F]+$/.test(cleanHex)) {

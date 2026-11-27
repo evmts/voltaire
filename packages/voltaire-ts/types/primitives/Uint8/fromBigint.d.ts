@@ -5,6 +5,7 @@
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint8Type.js').Uint8Type} Uint8 value
+ * @throws {Uint8NotIntegerError} If value is not a bigint
  * @throws {Uint8NegativeError} If value is negative
  * @throws {Uint8OverflowError} If value exceeds maximum (255)
  * @example

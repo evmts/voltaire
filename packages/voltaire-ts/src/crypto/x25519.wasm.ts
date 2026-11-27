@@ -6,6 +6,7 @@
  */
 
 import * as loader from "../wasm-loader/loader.js";
+import { WasmNotInitializedError } from "../wasm-loader/loader.js";
 import { constantTimeIsZero } from "./ConstantTime/constantTimeIsZero.js";
 import { isWeakPublicKey as isWeakX25519PublicKey } from "./X25519/isWeakPublicKey.js";
 import { validatePublicKey as validateX25519PublicKey } from "./X25519/validatePublicKey.js";
@@ -70,9 +71,11 @@ export namespace X25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			return loader.x25519DerivePublicKey(secretKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new InvalidSecretKeyError(`Failed to derive public key: ${error}`);
 		}
 	}
@@ -103,10 +106,12 @@ export namespace X25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		let shared: SharedSecret;
 		try {
 			shared = loader.x25519Scalarmult(secretKey, publicKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new X25519Error(`Scalar multiplication failed: ${error}`);
 		}
 
@@ -134,9 +139,11 @@ export namespace X25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			return loader.x25519KeypairFromSeed(seed);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new X25519Error(`Keypair generation failed: ${error}`);
 		}
 	}

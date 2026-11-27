@@ -1,5 +1,3 @@
-import * as OxRlp from "ox/Rlp";
-import { MAX_DEPTH } from "./constants.js";
 import { getRlpItemLength } from "./getRlpItemLength.js";
 import { RlpDecodingError } from "./RlpError.js";
 
@@ -11,37 +9,78 @@ import { RlpDecodingError } from "./RlpError.js";
  */
 
 /**
- * Convert ox/Rlp decoded value to Data structure with depth tracking
+ * Read big-endian unsigned integer length of `lengthOfLength` bytes
  * @internal
- * @param {Uint8Array | any[]} value
- * @param {number} depth
- * @returns {import('./RlpType.js').BrandedRlp}
+ * @param {Uint8Array} bytes
+ * @param {number} offset
+ * @param {number} lengthOfLength
+ * @returns {number}
  */
-function toData(value, depth = 0) {
-	// Check recursion depth
-	if (depth >= MAX_DEPTH) {
-		throw new RlpDecodingError(
-			`Maximum recursion depth ${MAX_DEPTH} exceeded`,
-			{
-				code: "RLP_RECURSION_DEPTH_EXCEEDED",
-				context: { depth, maxDepth: MAX_DEPTH },
-			},
-		);
+function readLength(bytes, offset, lengthOfLength) {
+	let length = 0;
+	for (let i = 0; i < lengthOfLength; i++) {
+		length = length * 256 + /** @type {number} */ (bytes[offset + i]);
 	}
+	return length;
+}
 
-	if (value instanceof Uint8Array) {
-		return { type: "bytes", value };
-	}
-	if (Array.isArray(value)) {
+/**
+ * Decode a pre-validated RLP item starting at `offset`
+ * @internal
+ * @param {Uint8Array} bytes
+ * @param {number} offset
+ * @returns {{ data: import('./RlpType.js').BrandedRlp; nextOffset: number }}
+ */
+function decodeValidated(bytes, offset) {
+	const prefix = /** @type {number} */ (bytes[offset]);
+
+	if (prefix <= 0x7f) {
 		return {
-			type: "list",
-			value: value.map((item) => toData(item, depth + 1)),
+			data: { type: "bytes", value: bytes.slice(offset, offset + 1) },
+			nextOffset: offset + 1,
 		};
 	}
-	throw new RlpDecodingError("Invalid decoded value type", {
-		code: "RLP_UNEXPECTED_INPUT",
-		context: { type: typeof value },
-	});
+
+	if (prefix <= 0xb7) {
+		const len = prefix - 0x80;
+		const start = offset + 1;
+		return {
+			data: { type: "bytes", value: bytes.slice(start, start + len) },
+			nextOffset: start + len,
+		};
+	}
+
+	if (prefix <= 0xbf) {
+		const lenOfLen = prefix - 0xb7;
+		const len = readLength(bytes, offset + 1, lenOfLen);
+		const start = offset + 1 + lenOfLen;
+		return {
+			data: { type: "bytes", value: bytes.slice(start, start + len) },
+			nextOffset: start + len,
+		};
+	}
+
+	const headerLen = prefix <= 0xf7 ? 1 : 1 + (prefix - 0xf7);
+	const payloadLen =
+		prefix <= 0xf7
+			? prefix - 0xc0
+			: readLength(bytes, offset + 1, prefix - 0xf7);
+	const start = offset + headerLen;
+	const end = start + payloadLen;
+
+	/** @type {import('./RlpType.js').BrandedRlp[]} */
+	const items = [];
+	let pos = start;
+	while (pos < end) {
+		const decoded = decodeValidated(bytes, pos);
+		items.push(decoded.data);
+		pos = decoded.nextOffset;
+	}
+
+	return {
+		data: { type: "list", value: items },
+		nextOffset: end,
+	};
 }
 
 /**
@@ -71,7 +110,6 @@ function toData(value, depth = 0) {
  * const result = Rlp.decode(list);
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RLP decoding requires many conditions
 export function decode(bytes, stream = false) {
 	if (bytes.length === 0) {
 		throw new RlpDecodingError("Cannot decode empty input", {
@@ -79,56 +117,21 @@ export function decode(bytes, stream = false) {
 		});
 	}
 
-	try {
-		// Validates canonical framing and bounds of the item and of every
-		// nested item before anything is interpreted.
-		const itemLength = getRlpItemLength(bytes);
-		const item = bytes.slice(0, itemLength);
-		const remainder = bytes.slice(itemLength);
+	// Validates canonical framing and bounds of the item and of every
+	// nested item before anything is interpreted.
+	const itemLength = getRlpItemLength(bytes);
+	const remainder = bytes.slice(itemLength);
 
-		if (!stream && remainder.length > 0) {
-			throw new RlpDecodingError(
-				`Extra data after decoded value: ${remainder.length} bytes`,
-				{
-					code: "RLP_INVALID_REMAINDER",
-					context: { remainderLength: remainder.length },
-				},
-			);
-		}
-
-		// Decode using ox/Rlp
-		const value = OxRlp.toBytes(item);
-
-		return {
-			data: toData(/** @type {any} */ (value)),
-			remainder,
-		};
-	} catch (err) {
-		// Re-throw RlpDecodingError as-is
-		if (err instanceof RlpDecodingError) {
-			throw err;
-		}
-		// Map ox/Rlp errors to Voltaire error format
-		if (err instanceof globalThis.Error) {
-			const msg = err.message;
-			if (msg.includes("empty") || msg.includes("too short")) {
-				throw new RlpDecodingError(msg, {
-					code: "RLP_INPUT_TOO_SHORT",
-					cause: err,
-				});
-			}
-			if (msg.includes("canonical") || msg.includes("invalid")) {
-				throw new RlpDecodingError(msg, {
-					code: "RLP_NON_CANONICAL_SIZE",
-					cause: err,
-				});
-			}
-			// Re-throw as generic error
-			throw new RlpDecodingError(msg, {
-				code: "RLP_UNEXPECTED_INPUT",
-				cause: err,
-			});
-		}
-		throw err;
+	if (!stream && remainder.length > 0) {
+		throw new RlpDecodingError(
+			`Extra data after decoded value: ${remainder.length} bytes`,
+			{
+				code: "RLP_INVALID_REMAINDER",
+				context: { remainderLength: remainder.length },
+			},
+		);
 	}
+
+	const { data } = decodeValidated(bytes, 0);
+	return { data, remainder };
 }

@@ -1,1 +1,1 @@
-{"version":3,"file":"fromReturnData.d.ts","sourceRoot":"","sources":["../../../src/primitives/RevertReason/fromReturnData.js"],"names":[],"mappings":"AAOA;;;;;;;;;;;;;;GAcG;AAEH,2CAbW,OAAO,iCAAiC,EAAE,cAAc,GACtD,OAAO,uBAAuB,EAAE,gBAAgB,CA0F5D"}
+{"version":3,"file":"fromReturnData.d.ts","sourceRoot":"","sources":["../../../src/primitives/RevertReason/fromReturnData.js"],"names":[],"mappings":"AAwDA;;;;;;;;;;;;;;GAcG;AACH,2CAZW,OAAO,iCAAiC,EAAE,cAAc,GACtD,OAAO,uBAAuB,EAAE,gBAAgB,CA6B5D"}

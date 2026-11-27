@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { ripemd160 as nobleRipemd160 } from "@noble/hashes/legacy.js";
 import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 
@@ -24,5 +22,7 @@ export function hashHex(hex) {
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = parseHexByte(normalized, i * 2);
 	}
-	return nobleRipemd160(bytes);
+	return /** @type {import('./Ripemd160HashType.js').Ripemd160Hash} */ (
+		nobleRipemd160(bytes)
+	);
 }

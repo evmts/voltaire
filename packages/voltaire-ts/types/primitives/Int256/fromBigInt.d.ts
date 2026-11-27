@@ -5,6 +5,7 @@
  * @since 0.0.0
  * @param {bigint} value - BigInt value
  * @returns {import('./Int256Type.js').BrandedInt256} Int256 value
+ * @throws {InvalidFormatError} If value is not a bigint
  * @throws {IntegerOverflowError} If value exceeds maximum
  * @throws {IntegerUnderflowError} If value is below minimum
  * @example

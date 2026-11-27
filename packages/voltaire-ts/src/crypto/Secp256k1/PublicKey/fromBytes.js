@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { InvalidPublicKeyError } from "../errors.js";
 import { isValidPublicKey } from "../isValidPublicKey.js";
 
@@ -21,7 +20,7 @@ export function fromBytes(bytes) {
 		throw new InvalidPublicKeyError(
 			`Invalid public key: expected 64 bytes, got ${bytes.length}`,
 			{
-				code: "SECP256K1_INVALID_PUBLIC_KEY_LENGTH",
+				code: -32002,
 				context: { length: bytes.length, expected: 64 },
 				docsPath: "/crypto/secp256k1/public-key#error-handling",
 			},
@@ -31,7 +30,7 @@ export function fromBytes(bytes) {
 		throw new InvalidPublicKeyError(
 			"Invalid public key: not a valid point on the secp256k1 curve",
 			{
-				code: "SECP256K1_INVALID_CURVE_POINT",
+				code: -32002,
 				context: { publicKeyLength: bytes.length },
 				docsPath: "/crypto/secp256k1/public-key#error-handling",
 			},

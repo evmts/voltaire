@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BLS12-381 Signature
  *
@@ -70,7 +69,9 @@ export function sign(message, privateKey) {
 		// Return compressed bytes
 		return sig.toBytes();
 	} catch (error) {
-		throw new SignatureError(`Signing failed: ${error.message}`);
+		throw new SignatureError(
+			`Signing failed: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 }
 
@@ -101,7 +102,7 @@ export function signPoint(messagePoint, privateKey) {
 	// Convert to scalar
 	let scalar = 0n;
 	for (let i = 0; i < 32; i++) {
-		scalar = (scalar << 8n) | BigInt(privateKey[i]);
+		scalar = (scalar << 8n) | BigInt(privateKey[i] ?? 0);
 	}
 
 	try {
@@ -113,12 +114,14 @@ export function signPoint(messagePoint, privateKey) {
 		const sigPoint = noblePoint.multiply(scalar);
 		const affine = sigPoint.toAffine();
 
-		return {
+		return /** @type {import('./G2PointType.js').G2PointType} */ ({
 			x: { c0: affine.x.c0, c1: affine.x.c1 },
 			y: { c0: affine.y.c0, c1: affine.y.c1 },
 			z: { c0: 1n, c1: 0n },
-		};
+		});
 	} catch (error) {
-		throw new SignatureError(`Signing failed: ${error.message}`);
+		throw new SignatureError(
+			`Signing failed: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 }

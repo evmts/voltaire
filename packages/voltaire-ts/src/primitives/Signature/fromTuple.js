@@ -1,3 +1,4 @@
+import { InvalidSignatureFormatError } from "./errors.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
@@ -16,7 +17,25 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * ```
  */
 export function fromTuple(tuple, chainId) {
+	if (!Array.isArray(tuple) || tuple.length !== 3) {
+		throw new InvalidSignatureFormatError(
+			"Signature tuple must be [yParity, r, s]",
+			{ value: tuple, expected: "3-element tuple [yParity, r, s]" },
+		);
+	}
 	const [yParity, r, s] = tuple;
+	if (!Number.isInteger(yParity)) {
+		throw new InvalidSignatureFormatError(`Invalid yParity: ${yParity}`, {
+			value: yParity,
+			expected: "integer yParity (0 or 1)",
+		});
+	}
+	if (chainId !== undefined && (!Number.isInteger(chainId) || chainId < 0)) {
+		throw new InvalidSignatureFormatError(`Invalid chainId: ${chainId}`, {
+			value: chainId,
+			expected: "non-negative integer chainId",
+		});
+	}
 
 	// Calculate v from yParity and optional chainId
 	let v;

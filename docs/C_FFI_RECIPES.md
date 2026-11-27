@@ -1,18 +1,71 @@
 # Voltaire C FFI Recipes
 
-Voltaire publishes two first-party packages — **`@tevm/voltaire`** (TypeScript / WASM / Bun Native) and **`@tevm/zig`** (Zig 0.17.1 core) — and exports a stable **C99 ABI** directly from Zig ([`packages/voltaire-zig/src/c_api.zig`](../packages/voltaire-zig/src/c_api.zig)).
+Voltaire publishes **`@tevm/voltaire`** (TypeScript / WASM / synchronous Bun Native FFI), prebuilt npm platform binaries (**`@tevm/voltaire-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}`**), **`@tevm/zig`** (Zig 0.17.1 core), and standalone **C99 ABI release tarballs** exported directly from Zig ([`packages/voltaire-zig/src/c_api.zig`](../packages/voltaire-zig/src/c_api.zig)).
 
-If you are using **C, C++, Rust, Go, Python, Swift**, or any other language with a C FFI, build the shared library from this repository and bind directly against the auto-generated C header ([`packages/voltaire-zig/src/primitives.h`](../packages/voltaire-zig/src/primitives.h)).
+If you are using **C, C++, Rust, Go, Python, Swift**, or any other language with a C FFI, install a prebuilt GitHub Release tarball with `pkg-config` or build the shared library from source against the auto-generated C header ([`packages/voltaire-zig/src/primitives.h`](../packages/voltaire-zig/src/primitives.h)).
 
 ---
 
-## 1. Building the Native Library & Header
+## 1. Installing Prebuilt C99 ABI Tarballs (`pkg-config`)
+
+Every Voltaire GitHub Release publishes standalone, self-contained C99 ABI tarballs for all 5 supported platforms alongside a `SHA256SUMS.txt` checksum manifest:
+
+| Platform | Target Triple | Tarball |
+| --- | --- | --- |
+| macOS Apple Silicon | `aarch64-macos` | `voltaire-c-abi-<version>-darwin-arm64.tar.gz` |
+| macOS Intel | `x86_64-macos` | `voltaire-c-abi-<version>-darwin-x64.tar.gz` |
+| Linux x86_64 | `x86_64-linux-gnu` | `voltaire-c-abi-<version>-linux-x64.tar.gz` |
+| Linux ARM64 | `aarch64-linux-gnu` | `voltaire-c-abi-<version>-linux-arm64.tar.gz` |
+| Windows x86_64 | `x86_64-windows` | `voltaire-c-abi-<version>-win32-x64.tar.gz` |
+
+Each tarball bundles:
+
+- `lib/libprimitives_c.{dylib,so}` (or `lib/primitives_c.dll` on Windows) — self-contained shared library with `blst`, `c-kzg-4844`, and `libwally-core` linked in
+- `include/primitives.h` — auto-generated C99 ABI header
+- `lib/pkgconfig/voltaire.pc` — relocatable `pkg-config` manifest (`prefix=${pcfiledir}/../..`)
+
+### Download, Verify, and Configure `pkg-config`
+
+```bash
+VERSION="0.6.0"
+PLATFORM="darwin-arm64" # or darwin-x64, linux-x64, linux-arm64, win32-x64
+BASE_URL="https://github.com/evmts/voltaire/releases/download/@tevm/voltaire@${VERSION}"
+TARBALL="voltaire-c-abi-${VERSION}-${PLATFORM}.tar.gz"
+
+curl -fsSLO "${BASE_URL}/${TARBALL}"
+curl -fsSLO "${BASE_URL}/SHA256SUMS.txt"
+
+# Verify SHA-256 integrity (macOS: shasum -a 256 -c; Linux: sha256sum -c)
+grep "${TARBALL}" SHA256SUMS.txt | shasum -a 256 -c -
+
+# Extract to a local prefix (or /usr/local)
+tar -xzf "${TARBALL}"
+export VOLTAIRE_PREFIX="$PWD/voltaire-c-abi-${VERSION}-${PLATFORM}"
+export PKG_CONFIG_PATH="${VOLTAIRE_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+
+# Verify pkg-config resolution
+pkg-config --modversion voltaire
+pkg-config --cflags --libs voltaire
+```
+
+Compile any C/C++ consumer with `pkg-config`:
+
+```bash
+cc example.c \
+  $(pkg-config --cflags --libs voltaire) \
+  -Wl,-rpath,"$(pkg-config --variable=libdir voltaire)" \
+  -o example && ./example
+```
+
+---
+
+## 2. Building from Source
 
 ### Prerequisites
 
 - **Zig 0.17.1+**
-- **Rust / Cargo** (compiles internal `crypto_wrappers` for arkworks BN254/BLS12-381 and assembly Keccak)
 - **C compiler toolchain** (for vendored `blst`, `c-kzg-4844`, and `libwally-core`)
+- **Rust / Cargo** (optional — only needed when enabling `-Dwith-rust=true` for arkworks/keccak-asm)
 - **Submodules initialized:**
 
 ```bash
@@ -29,6 +82,9 @@ git submodule update --init --recursive packages/voltaire-zig/lib/libwally-core
 #   zig-out/lib/libvoltaire_blockchain.{so,dylib}
 zig build -Dwith-c-api=true -Doptimize=ReleaseFast
 
+# Build Bun/Node FFI shared library (zig-out/native/libprimitives_ts_native.{dylib,so}):
+zig build build-ts-native -Dwith-c-api=true
+
 # Regenerate packages/voltaire-zig/src/primitives.h standalone:
 zig build generate-header
 
@@ -38,13 +94,16 @@ zig build build-native-darwin-x64   -Dwith-c-api=true
 zig build build-native-linux-arm64  -Dwith-c-api=true
 zig build build-native-linux-x64    -Dwith-c-api=true
 zig build build-native-win32-x64    -Dwith-c-api=true
+
+# Package npm platform packages + C99 ABI tarballs locally:
+node scripts/package-native-platforms.mjs --input-dir zig-out/native --out-dir dist-native --allow-partial --verify
 ```
 
-> **Static vs. shared linking:** Link the **shared library** (`libprimitives_c.so` / `libprimitives_c.dylib` / `primitives_c.dll`). It already bundles `blst`, `c-kzg-4844`, `libwally-core`, and `crypto_wrappers`. The static archive `libprimitives_c.a` does not bundle those archives.
+> **Static vs. shared linking:** Link the **shared library** (`libprimitives_c.so` / `libprimitives_c.dylib` / `primitives_c.dll`). It already bundles `blst`, `c-kzg-4844`, and `libwally-core`. The static archive `libprimitives_c.a` does not bundle those archives.
 
 ---
 
-## 2. ABI Conventions & Memory Ownership
+## 3. ABI Conventions & Memory Ownership
 
 1. **Error codes:** `0` (`PRIMITIVES_SUCCESS`) indicates success; negative integers indicate errors:
    - `-1`: `PRIMITIVES_ERROR_INVALID_HEX`
@@ -54,6 +113,9 @@ zig build build-native-win32-x64    -Dwith-c-api=true
    - `-5`: `PRIMITIVES_ERROR_INVALID_INPUT`
    - `-6`: `PRIMITIVES_ERROR_INVALID_SIGNATURE`
    - `-7`: `PRIMITIVES_ERROR_INVALID_SELECTOR`
+   - `-20`: `PRIMITIVES_ERROR_KZG_NOT_LOADED`
+   - `-21`: `PRIMITIVES_ERROR_KZG_INVALID_BLOB`
+   - `-22`: `PRIMITIVES_ERROR_KZG_INVALID_PROOF`
 2. **Caller-owned buffers:** Primitive and crypto functions never heap-allocate for the caller — pass fixed-size structs (`PrimitivesAddress`, `PrimitivesHash`, `PrimitivesU256`) or pre-sized output buffers.
 3. **Hex writers omit the NUL terminator:** `primitives_address_to_hex` and `primitives_address_to_checksum_hex` write exactly **42 bytes** (`0x` + 40 hex chars); `primitives_hash_to_hex` writes exactly **66 bytes** (`0x` + 64 hex chars). Allocate one extra byte and write `'\0'` if passing to C string APIs.
 4. **Opaque handles must be destroyed:** Pair `state_manager_create*` / `state_manager_destroy`, `blockchain_create*` / `blockchain_destroy`, `hdwallet_from_seed` / `hdwallet_free`, and `kzg_load_trusted_setup` / `kzg_free_trusted_setup`.
@@ -62,7 +124,7 @@ See the full auto-generated declarations in [`packages/voltaire-zig/src/primitiv
 
 ---
 
-## 3. Language Recipes
+## 4. Language Recipes
 
 ### C / C++
 
@@ -93,7 +155,16 @@ int main(void) {
 }
 ```
 
-Compile and run:
+Compile and run with `pkg-config` (prebuilt tarball):
+
+```bash
+cc example.c \
+  $(pkg-config --cflags --libs voltaire) \
+  -Wl,-rpath,"$(pkg-config --variable=libdir voltaire)" \
+  -o example && ./example
+```
+
+Or directly against a source build (`zig-out/`):
 
 ```bash
 cc example.c \
@@ -107,12 +178,23 @@ cc example.c \
 
 ### Rust
 
-Add a `build.rs` that points Cargo at `zig-out/lib` (or `VOLTAIRE_LIB_DIR`):
+Add a `build.rs` that prefers `pkg-config` (when a prebuilt tarball is on `PKG_CONFIG_PATH`) or falls back to `VOLTAIRE_LIB_DIR` / `zig-out/lib`:
 
 ```rust
 // build.rs
 fn main() {
+    println!("cargo:rerun-if-env-changed=PKG_CONFIG_PATH");
     println!("cargo:rerun-if-env-changed=VOLTAIRE_LIB_DIR");
+
+    // Option A: Prebuilt tarball via pkg-config (`pkg-config` build-dependency)
+    // if let Ok(lib) = pkg_config::Config::new().probe("voltaire") {
+    //     for path in &lib.link_paths {
+    //         println!("cargo:rustc-link-arg=-Wl,-rpath,{}", path.display());
+    //     }
+    //     return;
+    // }
+
+    // Option B: Explicit VOLTAIRE_LIB_DIR or local zig-out/lib
     let lib_dir = std::env::var("VOLTAIRE_LIB_DIR")
         .unwrap_or_else(|_| "../voltaire/zig-out/lib".to_string());
 
@@ -172,12 +254,13 @@ pub fn checksum_address(hex: &str) -> Result<String, c_int> {
 
 ### Go (CGO)
 
+With `PKG_CONFIG_PATH` pointing at the extracted tarball's `lib/pkgconfig`, CGO resolves headers and library flags via `#cgo pkg-config: voltaire`:
+
 ```go
 package voltaire
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../voltaire/zig-out/include
-#cgo LDFLAGS: -L${SRCDIR}/../voltaire/zig-out/lib -Wl,-rpath,${SRCDIR}/../voltaire/zig-out/lib -lprimitives_c
+#cgo pkg-config: voltaire
 #include "primitives.h"
 #include <stdlib.h>
 */
@@ -220,11 +303,13 @@ func Keccak256(data []byte) ([32]byte, error) {
 }
 ```
 
+(When building from source without `pkg-config`, replace `#cgo pkg-config: voltaire` with `#cgo CFLAGS: -I${SRCDIR}/../voltaire/zig-out/include` and `#cgo LDFLAGS: -L${SRCDIR}/../voltaire/zig-out/lib -Wl,-rpath,${SRCDIR}/../voltaire/zig-out/lib -lprimitives_c`.)
+
 ---
 
 ### Python (`ctypes`)
 
-Zero third-party dependencies — uses the Python standard library:
+Zero third-party dependencies — uses the Python standard library (point `VOLTAIRE_LIB_PATH` at your extracted tarball's `lib/libprimitives_c.{dylib,so}` or `./zig-out/lib`):
 
 ```python
 import ctypes
@@ -276,14 +361,14 @@ def keccak256(data: bytes) -> bytes:
 
 ### Swift (Swift Package Manager)
 
-Create a C module target (`Sources/CVoltaire/include/primitives.h` copied or symlinked from `zig-out/include/primitives.h`, plus an empty `Sources/CVoltaire/empty.c`):
+Create a C module target (`Sources/CVoltaire/include/primitives.h` copied from the extracted tarball's `include/primitives.h` or `zig-out/include/primitives.h`, plus an empty `Sources/CVoltaire/empty.c`):
 
 ```swift
 // Package.swift
 // swift-tools-version:5.9
 import PackageDescription
 
-let libDir = "../voltaire/zig-out/lib"
+let libDir = "../voltaire-c-abi-0.5.1-darwin-arm64/lib" // or "../voltaire/zig-out/lib"
 
 let package = Package(
     name: "MyEthApp",
@@ -331,7 +416,7 @@ func checksumAddress(_ hex: String) throws -> String {
 
 ### TypeScript / JavaScript / Bun
 
-You do **not** need manual C FFI setup in JS/TS — install `@tevm/voltaire` directly:
+You do **not** need manual C FFI setup in JS/TS — install `@tevm/voltaire` directly (prebuilt platform packages `@tevm/voltaire-<platform>` are resolved automatically, or override via `VOLTAIRE_NATIVE_LIB`):
 
 ```bash
 pnpm add @tevm/voltaire
@@ -339,4 +424,4 @@ pnpm add @tevm/voltaire
 
 - Pure JS/TS: `import { Address, Keccak256 } from '@tevm/voltaire'`
 - WebAssembly: `import { Keccak256 } from '@tevm/voltaire/wasm'`
-- Bun Native FFI: `import { Keccak256 } from '@tevm/voltaire/native'`
+- Synchronous Native FFI (Bun / Node-API): `import { Keccak256, Secp256k1, SHA256, Blake2, Ripemd160, P256, Ed25519, X25519, KZG } from '@tevm/voltaire/native'`

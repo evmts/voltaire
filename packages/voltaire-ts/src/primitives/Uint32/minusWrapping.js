@@ -1,5 +1,3 @@
-import { minus } from "./minus.js";
-
 /**
  * Subtract two Uint32 values with wrapping
  *
@@ -19,5 +17,5 @@ import { minus } from "./minus.js";
  * ```
  */
 export function minusWrapping(a, b) {
-	return minus(a, b);
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ ((a - b) >>> 0);
 }

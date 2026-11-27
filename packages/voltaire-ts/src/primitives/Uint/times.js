@@ -1,17 +1,18 @@
 import { MAX } from "./constants.js";
+import { UintOverflowError } from "./errors.js";
 
 /**
- * Multiply Uint256 value with wrapping
+ * Multiply two Uint256 values with overflow checking
  *
- * Overflow mode: wrapping. `timesWrapping` is the explicit name for this behavior
- * and `timesChecked` throws instead of wrapping. Both exist on every Uint size.
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * `timesChecked` is an explicit alias and `timesWrapping` wraps mod 2^256.
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - First operand
  * @param {import('./BrandedUint.js').BrandedUint} b - Second operand
- * @returns {import('./BrandedUint.js').BrandedUint} Product (uint * b) mod 2^256
- * @throws {never}
+ * @returns {import('./BrandedUint.js').BrandedUint} Product (uint * b)
+ * @throws {UintOverflowError} If the result exceeds 2^256 - 1
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -22,5 +23,11 @@ import { MAX } from "./constants.js";
  */
 export function times(uint, b) {
 	const product = uint * b;
-	return product & MAX;
+	if (product > MAX) {
+		throw new UintOverflowError(
+			`Uint256 overflow: ${uint} * ${b} exceeds maximum (2^256 - 1)`,
+			{ value: product, context: { a: uint, b, operation: "multiplication" } },
+		);
+	}
+	return /** @type {import('./BrandedUint.js').BrandedUint} */ (product);
 }

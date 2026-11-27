@@ -78,25 +78,38 @@ describe("Uint boundary values", () => {
 // ============================================================================
 
 describe("Uint overflow/underflow edge cases", () => {
-	it("wraps addition overflow at multiple boundaries", () => {
-		expect(Uint.plus(Uint.MAX, Uint.ONE)).toBe(0n);
-		expect(Uint.plus(Uint.MAX, Uint.from(2))).toBe(1n);
-		expect(Uint.plus(Uint.MAX, Uint.from(10))).toBe(9n);
-		expect(Uint.plus(Uint.MAX, Uint.MAX)).toBe((Uint.MAX as bigint) - 1n);
+	it("throws on addition overflow and wraps with plusWrapping", () => {
+		expect(() => Uint.plus(Uint.MAX, Uint.ONE)).toThrow();
+		expect(() => Uint.plus(Uint.MAX, Uint.from(2))).toThrow();
+		expect(() => Uint.plus(Uint.MAX, Uint.from(10))).toThrow();
+		expect(() => Uint.plus(Uint.MAX, Uint.MAX)).toThrow();
+		expect(Uint.plusWrapping(Uint.MAX, Uint.ONE)).toBe(0n);
+		expect(Uint.plusWrapping(Uint.MAX, Uint.from(2))).toBe(1n);
+		expect(Uint.plusWrapping(Uint.MAX, Uint.from(10))).toBe(9n);
+		expect(Uint.plusWrapping(Uint.MAX, Uint.MAX)).toBe(
+			(Uint.MAX as bigint) - 1n,
+		);
 	});
 
-	it("wraps subtraction underflow at multiple boundaries", () => {
-		expect(Uint.minus(Uint.ZERO, Uint.ONE)).toBe(Uint.MAX);
-		expect(Uint.minus(Uint.ZERO, Uint.from(2))).toBe((Uint.MAX as bigint) - 1n);
-		expect(Uint.minus(Uint.ONE, Uint.from(2))).toBe(Uint.MAX);
-		expect(Uint.minus(Uint.from(10), Uint.from(100))).toBe(
+	it("throws on subtraction underflow and wraps with minusWrapping", () => {
+		expect(() => Uint.minus(Uint.ZERO, Uint.ONE)).toThrow();
+		expect(() => Uint.minus(Uint.ZERO, Uint.from(2))).toThrow();
+		expect(() => Uint.minus(Uint.ONE, Uint.from(2))).toThrow();
+		expect(() => Uint.minus(Uint.from(10), Uint.from(100))).toThrow();
+		expect(Uint.minusWrapping(Uint.ZERO, Uint.ONE)).toBe(Uint.MAX);
+		expect(Uint.minusWrapping(Uint.ZERO, Uint.from(2))).toBe(
+			(Uint.MAX as bigint) - 1n,
+		);
+		expect(Uint.minusWrapping(Uint.ONE, Uint.from(2))).toBe(Uint.MAX);
+		expect(Uint.minusWrapping(Uint.from(10), Uint.from(100))).toBe(
 			(Uint.MAX as bigint) - 89n,
 		);
 	});
 
-	it("wraps multiplication overflow", () => {
+	it("throws on multiplication overflow and wraps with timesWrapping", () => {
 		const halfMax = Uint.from((Uint.MAX as bigint) / 2n);
-		const result = Uint.times(halfMax, Uint.from(3));
+		expect(() => Uint.times(halfMax, Uint.from(3))).toThrow();
+		const result = Uint.timesWrapping(halfMax, Uint.from(3));
 		expect(Uint.isValid(result)).toBe(true);
 	});
 
@@ -424,12 +437,14 @@ describe("Uint special cases", () => {
 		const pairs: [Uint256Type, Uint256Type][] = [
 			[Uint.from(100), Uint.from(200)],
 			[Uint.from(2n ** 64n), Uint.from(2n ** 128n)],
-			[Uint.MAX, Uint.ONE],
 		];
 
 		for (const [a, b] of pairs) {
 			expect(Uint.plus(a, b)).toBe(Uint.plus(b, a));
 		}
+		expect(Uint.plusWrapping(Uint.MAX, Uint.ONE)).toBe(
+			Uint.plusWrapping(Uint.ONE, Uint.MAX),
+		);
 	});
 
 	it("handles associative property of addition", () => {

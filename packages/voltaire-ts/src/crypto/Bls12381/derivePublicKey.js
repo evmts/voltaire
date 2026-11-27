@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BLS12-381 Public Key Derivation
  *
@@ -62,7 +61,7 @@ export function derivePublicKey(privateKey) {
 		return pk.toBytes();
 	} catch (error) {
 		throw new InvalidScalarError(
-			`Failed to derive public key: ${error.message}`,
+			`Failed to derive public key: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
 }
@@ -90,21 +89,21 @@ export function derivePublicKeyPoint(privateKey) {
 	// Convert to scalar
 	let scalar = 0n;
 	for (let i = 0; i < 32; i++) {
-		scalar = (scalar << 8n) | BigInt(privateKey[i]);
+		scalar = (scalar << 8n) | BigInt(privateKey[i] ?? 0);
 	}
 
 	try {
 		const point = bls12_381.G1.Point.BASE.multiply(scalar);
 		const affine = point.toAffine();
 
-		return {
+		return /** @type {import('./G1PointType.js').G1PointType} */ ({
 			x: affine.x,
 			y: affine.y,
 			z: 1n,
-		};
+		});
 	} catch (error) {
 		throw new InvalidScalarError(
-			`Failed to derive public key: ${error.message}`,
+			`Failed to derive public key: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
 }

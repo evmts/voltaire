@@ -1,17 +1,11 @@
 /**
- * Dynamic module registry using Vite's import.meta.glob
- * Registers Voltaire and related modules for the in-browser executor.
+ * Dynamic module registry for the in-browser playground executor.
+ * Registers the root `@tevm/voltaire` (Pure TS), `@tevm/voltaire/wasm` (Zig WASM),
+ * and subpath exports derived from the live Voltaire source modules.
  */
 
-// Root voltaire entry (primitives + crypto)
-const rootEntry = import.meta.glob("../../../src/index.{ts,js}", {
-	eager: true,
-});
-
-// WASM aggregate entry
-const wasmEntry = import.meta.glob("../../../src/wasm/index.{ts,js}", {
-	eager: true,
-});
+import * as voltaireRoot from "../../../../packages/voltaire-ts/src/index.ts";
+import * as voltaireWasm from "../../../../packages/voltaire-ts/src/wasm/index.ts";
 
 export interface ModuleEntry {
 	specifier: string;
@@ -20,27 +14,44 @@ export interface ModuleEntry {
 }
 
 /**
- * Build the module registry from glob results
+ * Build the module registry from the live Voltaire entrypoints.
  */
 function buildRegistry(): Map<string, ModuleEntry> {
 	const registry = new Map<string, ModuleEntry>();
 
-	// Register root "voltaire" entry
-	for (const [, mod] of Object.entries(rootEntry)) {
-		registry.set("voltaire", {
-			specifier: "voltaire",
-			module: mod,
-			exports: Object.keys(mod as object),
-		});
-	}
+	const rootExports = Object.keys(voltaireRoot);
+	registry.set("voltaire", {
+		specifier: "voltaire",
+		module: voltaireRoot,
+		exports: rootExports,
+	});
 
-	// Register "voltaire/wasm" entry
-	for (const [, mod] of Object.entries(wasmEntry)) {
-		registry.set("voltaire/wasm", {
-			specifier: "voltaire/wasm",
-			module: mod,
-			exports: Object.keys(mod as object),
-		});
+	const wasmExports = Object.keys(voltaireWasm);
+	registry.set("voltaire/wasm", {
+		specifier: "voltaire/wasm",
+		module: voltaireWasm,
+		exports: wasmExports,
+	});
+
+	// Expose top-level named namespaces as subpath specifiers (e.g. voltaire/Address, voltaire/Keccak256)
+	for (const key of rootExports) {
+		if (key === "wasm" || key === "default") continue;
+		const value = (voltaireRoot as Record<string, unknown>)[key];
+		if (value !== null && (typeof value === "object" || typeof value === "function")) {
+			const subpath = `voltaire/${key}`;
+			if (!registry.has(subpath)) {
+				const subModule = {
+					[key]: value,
+					...(typeof value === "object" ? (value as Record<string, unknown>) : {}),
+					default: value,
+				};
+				registry.set(subpath, {
+					specifier: subpath,
+					module: subModule,
+					exports: Object.keys(subModule),
+				});
+			}
+		}
 	}
 
 	return registry;
@@ -48,11 +59,6 @@ function buildRegistry(): Map<string, ModuleEntry> {
 
 // Build registry once at module load time
 export const moduleRegistry = buildRegistry();
-
-// Log discovered modules for debugging
-if (moduleRegistry.size === 0) {
-} else {
-}
 
 /**
  * Get a module by its specifier

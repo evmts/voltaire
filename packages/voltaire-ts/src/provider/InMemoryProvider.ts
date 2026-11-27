@@ -100,6 +100,69 @@ interface TransactionReceipt {
 	logsBloom: string;
 }
 
+interface StoredTransaction {
+	hash: string;
+	nonce: string;
+	blockHash: string | null;
+	blockNumber: string | null;
+	transactionIndex: string | null;
+	from: string;
+	to: string | null;
+	value: string;
+	gasPrice: string;
+	gas: string;
+	input: string;
+	v: string;
+	r: string;
+	s: string;
+}
+
+interface RpcCallRequest {
+	from?: string;
+	to?: string | null;
+	value?: string;
+	data?: string;
+	gas?: string;
+}
+
+interface PendingTransactionRequest extends RpcCallRequest {
+	from: string;
+	hash?: string;
+}
+
+type ProviderFilter =
+	| { type: "block"; lastBlock: bigint }
+	| { type: "pendingTx"; txs: string[] }
+	| {
+			type: "logs";
+			params: Record<string, unknown> | undefined;
+			lastBlock: bigint;
+	  };
+
+interface FormattedBlock {
+	number: string;
+	hash: string;
+	parentHash: string;
+	timestamp: string;
+	gasLimit: string;
+	gasUsed: string;
+	baseFeePerGas: string;
+	miner: string;
+	difficulty: string;
+	totalDifficulty: string;
+	extraData: string;
+	size: string;
+	nonce: string;
+	mixHash: string;
+	sha3Uncles: string;
+	logsBloom: string;
+	transactionsRoot: string;
+	stateRoot: string;
+	receiptsRoot: string;
+	transactions: Array<StoredTransaction | undefined> | string[];
+	uncles: unknown[];
+}
+
 /**
  * In-Memory Provider implementation
  *
@@ -147,16 +210,13 @@ export class InMemoryProvider implements Provider {
 	private transientStorage: Map<string, Map<string, bigint>> = new Map();
 	private blocks: Map<bigint, BlockHeader> = new Map();
 	private blocksByHash: Map<string, BlockHeader> = new Map();
-	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC tx objects have varying shapes
-	private transactions: Map<string, any> = new Map();
+	private transactions: Map<string, StoredTransaction> = new Map();
 	private receipts: Map<string, TransactionReceipt> = new Map();
-	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC tx objects have varying shapes
-	private pendingTransactions: any[] = [];
+	private pendingTransactions: PendingTransactionRequest[] = [];
 	private currentBlockNumber: bigint;
 	private currentTimestamp: bigint;
 	private nextBlockTimestamp: bigint | null = null;
-	// biome-ignore lint/suspicious/noExplicitAny: filter objects have varying shapes per type
-	private filters: Map<string, any> = new Map();
+	private filters: Map<string, ProviderFilter> = new Map();
 	private filterIdCounter = 0;
 	private coinbase = "0x0000000000000000000000000000000000000000";
 
@@ -280,8 +340,10 @@ export class InMemoryProvider implements Provider {
 	/**
 	 * Format block for JSON-RPC response
 	 */
-	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC block response has complex shape
-	private formatBlock(block: BlockHeader, fullTransactions = false): any {
+	private formatBlock(
+		block: BlockHeader,
+		fullTransactions = false,
+	): FormattedBlock {
 		return {
 			number: `0x${block.number.toString(16)}`,
 			hash: block.hash,
@@ -367,9 +429,8 @@ export class InMemoryProvider implements Provider {
 	/**
 	 * Execute a transaction
 	 */
-	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC tx object has varying shape
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: tx execution inherently complex
-	private executeTx(tx: any): TransactionReceipt {
+	private executeTx(tx: PendingTransactionRequest): TransactionReceipt {
 		const from = tx.from.toLowerCase();
 		const to = tx.to?.toLowerCase() ?? null;
 		const value = tx.value ? BigInt(tx.value) : 0n;
@@ -396,8 +457,7 @@ export class InMemoryProvider implements Provider {
 		// Execute code if contract call
 		const status = "0x1"; // success
 		let gasUsed = 21000n;
-		// biome-ignore lint/suspicious/noExplicitAny: log objects have complex JSON-RPC shape
-		const logs: any[] = [];
+		const logs: TransactionReceipt["logs"] = [];
 		let contractAddress: string | null = null;
 
 		if (to && data.length > 0) {
@@ -550,8 +610,7 @@ export class InMemoryProvider implements Provider {
 
 			// Transaction
 			case "eth_sendTransaction": {
-				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC params are dynamic
-				const tx = p[0] as any;
+				const tx = p[0] as PendingTransactionRequest;
 				this.pendingTransactions.push(tx);
 
 				if (this.miningMode === "auto") {
@@ -585,8 +644,7 @@ export class InMemoryProvider implements Provider {
 
 			// Call
 			case "eth_call": {
-				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC params are dynamic
-				const tx = p[0] as any;
+				const tx = p[0] as RpcCallRequest;
 				const to = tx.to?.toLowerCase();
 				const data = tx.data
 					? Hex.toBytes(tx.data as `0x${string}`)
@@ -628,8 +686,7 @@ export class InMemoryProvider implements Provider {
 			}
 
 			case "eth_estimateGas": {
-				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC params are dynamic
-				const tx = p[0] as any;
+				const tx = p[0] as RpcCallRequest;
 				const data = tx.data ?? "0x";
 				// Simplified estimation
 				const baseGas = 21000n;
@@ -686,8 +743,7 @@ export class InMemoryProvider implements Provider {
 			}
 
 			case "eth_newFilter": {
-				// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC filter params are dynamic
-				const filterParams = p[0] as any;
+				const filterParams = p[0] as Record<string, unknown> | undefined;
 				const filterId = `0x${(++this.filterIdCounter).toString(16)}`;
 				this.filters.set(filterId, {
 					type: "logs",
@@ -1032,8 +1088,10 @@ export class InMemoryProvider implements Provider {
 			}
 		}.bind(this),
 
-		// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC filter params are dynamic
-		logs: async function* (this: InMemoryProvider, _params?: any) {
+		logs: async function* (
+			this: InMemoryProvider,
+			_params?: Record<string, unknown>,
+		) {
 			// Simplified - yields nothing for now
 			while (true) {
 				await new Promise((resolve) => setTimeout(resolve, 100));

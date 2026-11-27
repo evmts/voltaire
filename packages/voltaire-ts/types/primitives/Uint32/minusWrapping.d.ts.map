@@ -1,1 +1,1 @@
-{"version":3,"file":"minusWrapping.d.ts","sourceRoot":"","sources":["../../../src/primitives/Uint32/minusWrapping.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;;;GAiBG;AACH,iCAVW,OAAO,iBAAiB,EAAE,UAAU,KACpC,OAAO,iBAAiB,EAAE,UAAU,GAClC,OAAO,iBAAiB,EAAE,UAAU,CAUhD"}
+{"version":3,"file":"minusWrapping.d.ts","sourceRoot":"","sources":["../../../src/primitives/Uint32/minusWrapping.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;GAiBG;AACH,iCAVW,OAAO,iBAAiB,EAAE,UAAU,KACpC,OAAO,iBAAiB,EAAE,UAAU,GAClC,OAAO,iBAAiB,EAAE,UAAU,CAUhD"}

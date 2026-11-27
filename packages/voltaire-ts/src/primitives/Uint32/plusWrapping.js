@@ -1,5 +1,3 @@
-import { plus } from "./plus.js";
-
 /**
  * Add two Uint32 values with wrapping
  *
@@ -19,5 +17,5 @@ import { plus } from "./plus.js";
  * ```
  */
 export function plusWrapping(a, b) {
-	return plus(a, b);
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ ((a + b) >>> 0);
 }

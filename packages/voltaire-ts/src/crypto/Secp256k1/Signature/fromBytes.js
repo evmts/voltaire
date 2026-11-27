@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { InvalidSignatureError } from "../../../primitives/errors/index.js";
 
 /**
@@ -29,8 +28,12 @@ export function fromBytes(bytes) {
 	}
 
 	return {
-		r: bytes.slice(0, 32),
-		s: bytes.slice(32, 64),
+		r: /** @type {import('../../../primitives/Hash/index.js').HashType} */ (
+			bytes.slice(0, 32)
+		),
+		s: /** @type {import('../../../primitives/Hash/index.js').HashType} */ (
+			bytes.slice(32, 64)
+		),
 		v: bytes[64] ?? 0,
 	};
 }

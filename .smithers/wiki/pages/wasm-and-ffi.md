@@ -7,7 +7,7 @@ owner: evmts
 
 # WASM, Native FFI, and C ABI
 
-Voltaire compiles one Zig + Rust cryptographic core into four runtime targets so developers can choose pure TypeScript, browser/edge WebAssembly, Bun/Node native FFI, or C99 bindings for C, Rust, Go, Python, and Swift.
+Voltaire compiles one zero-Rust-by-default Zig 0.17.1 cryptographic core (with optional `-Dwith-rust=true` Rust arkworks/keccak-asm wrappers) into four runtime targets so developers can choose pure TypeScript, sub-350 kB browser/edge WebAssembly (plus 1.2–3.1 kB standalone micro-WASMs), synchronous Bun/Node native FFI across 13 crypto modules, or prebuilt C99 ABI release tarballs (`libprimitives_c`, `primitives.h`, `voltaire.pc`) for C, Rust, Go, Python, and Swift.
 
 ## Build Targets
 

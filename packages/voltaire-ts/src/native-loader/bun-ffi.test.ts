@@ -13,10 +13,14 @@ const zigSrc = path.resolve(
 function ffiType(zigType: string): string {
 	const t = zigType.trim();
 	if (/^\[\*:0\]const u8$/.test(t)) return "cstring";
-	if (/^\??(\*|\[\*\])/.test(t) || /^\??\w+Handle$/.test(t)) return "ptr";
+	if (/^\??(\*|\[\*(?::0)?\])/.test(t) || /^\??\w+Handle$/.test(t))
+		return "ptr";
 	const scalar: Record<string, string> = {
 		usize: "u64",
 		u64: "u64",
+		i64: "i64",
+		c_longlong: "i64",
+		u32: "u32",
 		u8: "u8",
 		c_int: "i32",
 		i32: "i32",

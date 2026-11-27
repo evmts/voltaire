@@ -1,4 +1,4 @@
-import { InvalidLengthError } from "../errors/index.js";
+import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
 import { SIZE } from "./constants.js";
 
 /**
@@ -8,6 +8,7 @@ import { SIZE } from "./constants.js";
  * @since 0.0.0
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
  * @returns {import('./HashType.js').HashType} Hash bytes
+ * @throws {InvalidFormatError} If input is not a Uint8Array
  * @throws {InvalidLengthError} If bytes is wrong length
  * @example
  * ```javascript
@@ -16,6 +17,14 @@ import { SIZE } from "./constants.js";
  * ```
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidFormatError("Hash bytes must be a Uint8Array", {
+			code: -32602,
+			value: bytes,
+			expected: `${SIZE}-byte Uint8Array`,
+			docsPath: "/primitives/hash",
+		});
+	}
 	if (bytes.length !== SIZE) {
 		throw new InvalidLengthError(
 			`Hash must be ${SIZE} bytes, got ${bytes.length}`,

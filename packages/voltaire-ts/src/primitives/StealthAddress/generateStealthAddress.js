@@ -1,5 +1,4 @@
 import * as Keccak256 from "../../crypto/Keccak256/index.js";
-// @ts-nocheck
 import * as Secp256k1 from "../../crypto/Secp256k1/index.js";
 import * as BrandedAddress from "../Address/internal-index.js";
 import { compressPublicKey } from "./compressPublicKey.js";

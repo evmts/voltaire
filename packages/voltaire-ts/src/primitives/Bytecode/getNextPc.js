@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getPushSize } from "./getPushSize.js";
 
 /**
@@ -25,6 +24,9 @@ export function getNextPc(bytecode, currentPc) {
 
 	// Get opcode at current position
 	const opcode = bytecode[currentPc];
+	if (opcode === undefined) {
+		return undefined;
+	}
 
 	// Calculate next PC based on opcode type
 	const pushSize = getPushSize(opcode);

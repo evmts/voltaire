@@ -1,4 +1,4 @@
-import { minus } from "./minus.js";
+import { MAX } from "./constants.js";
 
 /**
  * Subtract two Uint256 values with wrapping
@@ -19,5 +19,11 @@ import { minus } from "./minus.js";
  * ```
  */
 export function minusWrapping(a, b) {
-	return minus(a, b);
+	const diff = a - b;
+	if (diff < 0n) {
+		return /** @type {import('./Uint256Type.js').Uint256Type} */ (
+			MAX + 1n + diff
+		);
+	}
+	return /** @type {import('./Uint256Type.js').Uint256Type} */ (diff);
 }

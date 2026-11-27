@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getPushSize } from "./getPushSize.js";
 import { isPush } from "./isPush.js";
 
@@ -42,6 +41,9 @@ export function detectFusions(bytecode) {
 
 	while (pc < bytecode.length) {
 		const opcode = bytecode[pc];
+		if (opcode === undefined) {
+			break;
+		}
 
 		// Check for PUSH-based fusions
 		if (isPush(opcode)) {
@@ -54,6 +56,9 @@ export function detectFusions(bytecode) {
 			}
 
 			const nextOpcode = bytecode[nextPc];
+			if (nextOpcode === undefined) {
+				break;
+			}
 
 			// PUSH + arithmetic/logic operations
 			if (nextOpcode === ADD) {
@@ -150,7 +155,11 @@ export function detectFusions(bytecode) {
 				const nextOpcode = bytecode[nextPc];
 				const dupDepth = opcode - DUP1 + 1;
 
-				if (nextOpcode >= SWAP1 && nextOpcode <= SWAP16) {
+				if (
+					nextOpcode !== undefined &&
+					nextOpcode >= SWAP1 &&
+					nextOpcode <= SWAP16
+				) {
 					const swapDepth = nextOpcode - SWAP1 + 1;
 
 					if (dupDepth === swapDepth) {

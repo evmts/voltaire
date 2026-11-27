@@ -6,12 +6,10 @@
  * @module provider/eip6963/getPlatform
  */
 
-/** @type {typeof globalThis & { dispatchEvent?: Function }} */
-const window = globalThis;
-
-/** @type {Function | undefined} */
-// @ts-expect-error - WorkerGlobalScope may exist in worker environment
-const WorkerGlobalScope = globalThis.WorkerGlobalScope;
+const window =
+	/** @type {typeof globalThis & { dispatchEvent?: unknown; WorkerGlobalScope?: unknown; Bun?: unknown }} */ (
+		/** @type {unknown} */ (globalThis)
+	);
 
 import { UnsupportedEnvironmentError } from "./errors.js";
 
@@ -54,7 +52,7 @@ export function getPlatform() {
 	}
 
 	// Check for Web Worker
-	if (typeof WorkerGlobalScope !== "undefined") {
+	if (typeof window.WorkerGlobalScope !== "undefined") {
 		return "worker";
 	}
 

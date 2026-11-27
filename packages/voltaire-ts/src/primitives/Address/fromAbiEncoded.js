@@ -22,6 +22,16 @@ import {
  * ```
  */
 export function fromAbiEncoded(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidAddressLengthError(
+			"ABI-encoded Address must be a 32-byte Uint8Array",
+			{
+				value: bytes,
+				expected: "32 bytes",
+				code: -32602,
+			},
+		);
+	}
 	if (bytes.length !== 32) {
 		throw new InvalidAddressLengthError(
 			`ABI-encoded Address must be exactly 32 bytes, got ${bytes.length}`,

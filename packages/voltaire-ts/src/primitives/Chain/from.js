@@ -8,9 +8,11 @@
  * @throws {never}
  * @example
  * ```javascript
- * import { mainnet } from '@tevm/chains';
  * import * as Chain from './primitives/Chain/index.js';
- * const chain = Chain.from(mainnet);
+ * const mainnet = Chain.fromId(1);
+ * if (mainnet) {
+ *   const chain = Chain.from(mainnet);
+ * }
  * ```
  */
 export function from(chain) {

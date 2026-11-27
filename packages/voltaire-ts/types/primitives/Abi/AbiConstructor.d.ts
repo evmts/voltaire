@@ -7,7 +7,22 @@ import type * as AbiEvent from "./event/index.js";
 import type { findSelectorCollisions, hasSelectorCollisions, SelectorCollision } from "./findSelectorCollisions.js";
 import type * as AbiFunction from "./function/index.js";
 import type * as AbiItem from "./Item/index.js";
+import type { Fallback, Receive } from "./Item/index.js";
 import type { Parameter } from "./parameter/index.js";
+/**
+ * Log input accepted by `parseLogs`
+ */
+export interface ParseLogInput {
+    readonly data: Uint8Array | string;
+    readonly topics: readonly (Uint8Array | string)[];
+}
+/**
+ * Decoded event log returned by `parseLogs`
+ */
+export interface ParsedLog {
+    eventName: string;
+    args: Record<string, unknown>;
+}
 /**
  * Abi class interface
  *
@@ -16,20 +31,20 @@ import type { Parameter } from "./parameter/index.js";
 export interface Abi<TItems extends readonly Item[] = readonly Item[]> extends Array<TItems[number]> {
     getItem(name: string, type: "function" | "event" | "error"): Item | undefined;
     format(): string[];
-    formatWithArgs(args: Record<string, any>): string[];
-    encode(functionName: string, args: any[]): Uint8Array;
-    decode(functionName: string, data: Uint8Array): any[];
+    formatWithArgs(args: Record<string, unknown>): string[];
+    encode(functionName: string, args: readonly unknown[]): Uint8Array;
+    decode(functionName: string, data: Uint8Array): unknown[];
     decodeData(data: Uint8Array): {
         functionName: string;
         args: readonly unknown[];
     };
-    parseLogs(logs: readonly any[]): any[];
+    parseLogs(logs: readonly ParseLogInput[]): ParsedLog[];
     getFunction(name: string): AbiFunction.FunctionType | undefined;
     getEvent(name: string): import("./event/EventType.js").EventType | undefined;
     getError(name: string): AbiError.ErrorType | undefined;
     getConstructor(): AbiConstructorNs.ConstructorType | undefined;
-    getFallback(): any;
-    getReceive(): any;
+    getFallback(): Fallback | undefined;
+    getReceive(): Receive | undefined;
     findSelectorCollisions(): SelectorCollision[];
     hasSelectorCollisions(): boolean;
 }
@@ -51,14 +66,14 @@ export interface AbiConstructor {
     parseHumanReadable(signatures: readonly (Item | string)[]): Item[];
     getItem(abi: AbiType, name: string, type: "function" | "event" | "error"): Item | undefined;
     format(abi: AbiType): string[];
-    formatWithArgs(abi: AbiType, args: Record<string, any>): string[];
-    encode(abi: AbiType, functionName: string, args: any[]): Uint8Array;
-    decode(abi: AbiType, functionName: string, data: Uint8Array): any[];
+    formatWithArgs(abi: AbiType, args: Record<string, unknown>): string[];
+    encode(abi: AbiType, functionName: string, args: readonly unknown[]): Uint8Array;
+    decode(abi: AbiType, functionName: string, data: Uint8Array): unknown[];
     decodeData(abi: AbiType, data: Uint8Array): {
         functionName: string;
         args: readonly unknown[];
     };
-    parseLogs(abi: AbiType, logs: readonly any[]): any[];
+    parseLogs(abi: AbiType, logs: readonly ParseLogInput[]): ParsedLog[];
     findSelectorCollisions: typeof findSelectorCollisions;
     hasSelectorCollisions: typeof hasSelectorCollisions;
     encodeParameters: typeof encodeParameters;

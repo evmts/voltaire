@@ -2,7 +2,7 @@ export type { NodeInfoType } from "./NodeInfoType.js";
 import { from } from "./from.js";
 import { getProtocol as _getProtocol } from "./getProtocol.js";
 export { from };
-export declare function getProtocol(nodeInfo: any, protocolName: string): unknown;
+export declare function getProtocol(nodeInfo: Parameters<typeof from>[0], protocolName: string): unknown;
 export { _getProtocol };
 export declare const NodeInfo: {
     from: typeof from;

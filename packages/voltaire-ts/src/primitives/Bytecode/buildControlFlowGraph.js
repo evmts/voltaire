@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Build control flow graph
  * @param {Array<import('./BytecodeType.js').BasicBlock>} blocks
@@ -45,9 +43,11 @@ function addBlockEdges(block, blocks, pcToBlock) {
 function addJumpEdge(block, blocks, pcToBlock) {
 	if (block.target !== undefined) {
 		const targetIndex = pcToBlock.get(block.target);
-		if (targetIndex !== undefined) {
+		const targetBlock =
+			targetIndex !== undefined ? blocks[targetIndex] : undefined;
+		if (targetIndex !== undefined && targetBlock) {
 			block.successors.push(targetIndex);
-			blocks[targetIndex].predecessors.push(block.index);
+			targetBlock.predecessors.push(block.index);
 		}
 	}
 }

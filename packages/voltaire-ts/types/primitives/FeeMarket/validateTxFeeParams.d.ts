@@ -3,7 +3,7 @@
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
- * @param {import('../TxFeeParams.js').TxFeeParams | import('../BlobTxFeeParams.js').BlobTxFeeParams} params - Transaction fee parameters
+ * @param {import('./TxFeeParams.js').TxFeeParams | import('./BlobTxFeeParams.js').BlobTxFeeParams} params - Transaction fee parameters
  * @returns {string[]} Validation errors, empty array if valid
  * @throws {never}
  * @example
@@ -16,5 +16,5 @@
  * });
  * ```
  */
-export function validateTxFeeParams(params: any | any): string[];
+export function validateTxFeeParams(params: import("./TxFeeParams.js").TxFeeParams | import("./BlobTxFeeParams.js").BlobTxFeeParams): string[];
 //# sourceMappingURL=validateTxFeeParams.d.ts.map

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 export * from "./constants.js";
 export * from "./Uint256Type.js";
 
@@ -107,17 +105,24 @@ export {
 /**
  * Factory function for creating Uint instances
  *
- * @type {UintConstructor}
+ * @param {bigint | number | string} value
+ * @returns {Uint256Type}
  */
 export function Uint(value) {
 	return from(value);
 }
 
+/** @param {bigint | number | string} value */
 Uint.from = (value) => from(value);
+/** @param {string} value */
 Uint.fromHex = (value) => fromHex(value);
+/** @param {bigint} value */
 Uint.fromBigInt = (value) => fromBigInt(value);
+/** @param {number} value */
 Uint.fromNumber = (value) => fromNumber(value);
+/** @param {Uint8Array} value */
 Uint.fromBytes = (value) => fromBytes(value);
+/** @param {Uint8Array} value */
 Uint.fromAbiEncoded = (value) => fromAbiEncoded(value);
 
 Uint.tryFrom = tryFrom;
@@ -169,6 +174,12 @@ Uint.prototype.toString = Function.prototype.call.bind(toString);
 Uint.prototype.plus = Function.prototype.call.bind(plus);
 Uint.prototype.minus = Function.prototype.call.bind(minus);
 Uint.prototype.times = Function.prototype.call.bind(times);
+Uint.prototype.plusChecked = Function.prototype.call.bind(plusChecked);
+Uint.prototype.minusChecked = Function.prototype.call.bind(minusChecked);
+Uint.prototype.timesChecked = Function.prototype.call.bind(timesChecked);
+Uint.prototype.plusWrapping = Function.prototype.call.bind(plusWrapping);
+Uint.prototype.minusWrapping = Function.prototype.call.bind(minusWrapping);
+Uint.prototype.timesWrapping = Function.prototype.call.bind(timesWrapping);
 Uint.prototype.dividedBy = Function.prototype.call.bind(dividedBy);
 Uint.prototype.modulo = Function.prototype.call.bind(modulo);
 Uint.prototype.toPower = Function.prototype.call.bind(toPower);

@@ -1,41 +1,193 @@
 /**
- * WASM Keccak256 Hash Function
+ * WASM Keccak256 Hash Function (Standalone 3.1 kB Micro-WASM)
  *
- * WASM-accelerated Keccak256 implementation using unified wasm-loader.
- * Data-first API matching the Noble implementation.
+ * Instantiates the standalone `keccak256.wasm` (3.1 kB, zero imports) directly
+ * without loading the unified `primitives.wasm` monolith.
+ * Auto-initializes synchronously in Node/Bun on first call; in browsers, call
+ * `await Keccak256Wasm.init()` before hashing.
  *
  * @example
  * ```typescript
  * import { Keccak256Wasm } from './keccak256.wasm.js';
  *
- * // Hash bytes
+ * // Node/Bun: works synchronously out of the box (auto-loads 3.1 kB micro-WASM)
+ * // Browser: await Keccak256Wasm.init();
  * const hash = Keccak256Wasm.hash(data);
- *
- * // Hash string
- * const hash = Keccak256Wasm.hashString('hello');
- *
- * // Hash hex
- * const hash = Keccak256Wasm.hashHex('0x1234...');
+ * const strHash = Keccak256Wasm.hashString('hello');
+ * const hexHash = Keccak256Wasm.hashHex('0x1234');
  * ```
  */
 
 import type { HashType } from "../primitives/Hash/index.js";
 import { encodeList } from "../primitives/Rlp/encodeList.js";
-import * as loader from "../wasm-loader/loader.js";
+import {
+	createScratch,
+	type Scratch,
+	scratchAlloc,
+	WASM_PAGE_SIZE,
+} from "../wasm-loader/scratch.js";
 
-let isInitialized = false;
+export type Keccak256WasmInput = string | URL | Uint8Array | ArrayBuffer;
 
-/**
- * Initialize WASM module
- */
-async function ensureInit(): Promise<void> {
-	if (isInitialized) return;
-	// Resolves next to the source in development. The @tevm/voltaire build
-	// rewrites this literal to the shipped dist/wasm/primitives.wasm.
-	await loader.loadWasm(
-		new URL("../wasm-loader/primitives.wasm", import.meta.url),
-	);
-	isInitialized = true;
+interface Keccak256MicroExports {
+	memory: WebAssembly.Memory;
+	keccak256Hash: (
+		inputPtr: number,
+		inputLen: number,
+		outputPtr: number,
+	) => void;
+}
+
+interface NodeFsSync {
+	readFileSync: (path: string | URL) => Uint8Array;
+}
+
+interface ProcessWithBuiltin {
+	getBuiltinModule?: (id: string) => unknown;
+}
+
+let wasmExports: Keccak256MicroExports | null = null;
+let wasmMemory: WebAssembly.Memory | null = null;
+let scratch: Scratch | null = null;
+let memoryOffset = 0;
+
+const utf8Encoder = new TextEncoder();
+
+function getDefaultWasmUrl(): URL {
+	// Resolves via packages/voltaire-ts/wasm symlink in dev;
+	// tsup rewrites `wasm/crypto/keccak256.wasm` to dist/wasm/crypto/keccak256.wasm.
+	return new URL("../../wasm/crypto/keccak256.wasm", import.meta.url);
+}
+
+function getNodeFsSync(): NodeFsSync | null {
+	const proc = (globalThis as { process?: ProcessWithBuiltin }).process;
+	if (typeof proc?.getBuiltinModule !== "function") {
+		return null;
+	}
+	const mod = proc.getBuiltinModule("node:fs") as
+		| Partial<NodeFsSync>
+		| undefined;
+	return mod && typeof mod.readFileSync === "function"
+		? (mod as NodeFsSync)
+		: null;
+}
+
+function toArrayBuffer(bytes: Uint8Array | ArrayBuffer): ArrayBuffer {
+	if (bytes instanceof ArrayBuffer) return bytes;
+	if (
+		bytes.buffer instanceof ArrayBuffer &&
+		bytes.byteOffset === 0 &&
+		bytes.byteLength === bytes.buffer.byteLength
+	) {
+		return bytes.buffer;
+	}
+	const copy = new Uint8Array(bytes.byteLength);
+	copy.set(bytes);
+	return copy.buffer;
+}
+
+function bindInstance(instance: WebAssembly.Instance): void {
+	const exports = instance.exports as unknown as Keccak256MicroExports;
+	if (!exports.memory || typeof exports.keccak256Hash !== "function") {
+		throw new Error(
+			"Invalid keccak256.wasm module: missing memory or keccak256Hash export",
+		);
+	}
+	wasmExports = exports;
+	wasmMemory = exports.memory;
+	scratch = createScratch(wasmMemory, WASM_PAGE_SIZE);
+	memoryOffset = scratch.base;
+}
+
+async function loadBytesAsync(
+	source: Keccak256WasmInput,
+): Promise<ArrayBuffer> {
+	if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+		return toArrayBuffer(source);
+	}
+	const isFileUrl =
+		(source instanceof URL && source.protocol === "file:") ||
+		(typeof source === "string" && source.startsWith("file://"));
+	const isLocalPath =
+		typeof source === "string" &&
+		!/^https?:\/\//i.test(source) &&
+		getNodeFsSync() !== null;
+	if (isFileUrl || isLocalPath) {
+		const fs = await import("node:fs/promises");
+		const target =
+			typeof source === "string" && source.startsWith("file://")
+				? new URL(source)
+				: source;
+		return toArrayBuffer(await fs.readFile(target));
+	}
+	const response = await fetch(source);
+	if (response.ok === false) {
+		throw new Error(
+			`Failed to fetch keccak256.wasm: ${response.status} ${response.statusText}`,
+		);
+	}
+	return response.arrayBuffer();
+}
+
+function loadBytesSync(source: Keccak256WasmInput): ArrayBuffer {
+	if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+		return toArrayBuffer(source);
+	}
+	if (
+		(source instanceof URL && source.protocol !== "file:") ||
+		(typeof source === "string" && /^https?:\/\//i.test(source))
+	) {
+		throw new Error(
+			"WASM not initialized. Call await Keccak256Wasm.init() first in browser environments.",
+		);
+	}
+	const fs = getNodeFsSync();
+	if (!fs) {
+		throw new Error(
+			"WASM not initialized. Call await Keccak256Wasm.init() first in browser environments.",
+		);
+	}
+	const target =
+		typeof source === "string" && source.startsWith("file://")
+			? new URL(source)
+			: source;
+	return toArrayBuffer(fs.readFileSync(target));
+}
+
+function ensureReady(): {
+	exports: Keccak256MicroExports;
+	memory: WebAssembly.Memory;
+	scratch: Scratch;
+} {
+	if (!wasmExports || !wasmMemory || !scratch) {
+		initSync();
+	}
+	if (!wasmExports || !wasmMemory || !scratch) {
+		throw new Error(
+			"WASM not initialized. Call await Keccak256Wasm.init() first.",
+		);
+	}
+	return { exports: wasmExports, memory: wasmMemory, scratch };
+}
+
+function keccak256Raw(data: Uint8Array): HashType {
+	const { exports, memory, scratch: region } = ensureReady();
+	const savedOffset = memoryOffset;
+	try {
+		const inputAlloc = scratchAlloc(region, memoryOffset, data.length);
+		memoryOffset = inputAlloc.next;
+		const outputAlloc = scratchAlloc(region, memoryOffset, 32);
+		memoryOffset = outputAlloc.next;
+
+		new Uint8Array(memory.buffer).set(data, inputAlloc.ptr);
+		exports.keccak256Hash(inputAlloc.ptr, data.length, outputAlloc.ptr);
+		return new Uint8Array(memory.buffer).slice(
+			outputAlloc.ptr,
+			outputAlloc.ptr + 32,
+		) as HashType;
+	} finally {
+		memoryOffset = savedOffset;
+	}
 }
 
 // ============================================================================
@@ -43,39 +195,29 @@ async function ensureInit(): Promise<void> {
 // ============================================================================
 
 /**
- * Hash bytes using Keccak256
+ * Hash bytes using standalone 3.1 kB Keccak256 micro-WASM.
  * @param data - Input bytes to hash
  * @returns 32-byte Keccak256 hash
  */
 export function hash(data: Uint8Array): HashType {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
-	return loader.keccak256(data) as HashType;
+	return keccak256Raw(data);
 }
 
 /**
- * Hash a UTF-8 string
+ * Hash a UTF-8 string using standalone Keccak256 micro-WASM.
  * @param str - String to hash
  * @returns 32-byte Keccak256 hash
  */
 export function hashString(str: string): HashType {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
-	const bytes = new TextEncoder().encode(str);
-	return loader.keccak256(bytes) as HashType;
+	return keccak256Raw(utf8Encoder.encode(str));
 }
 
 /**
- * Hash a hex string
+ * Hash a hex string using standalone Keccak256 micro-WASM.
  * @param hex - Hex string to hash (with or without 0x prefix)
  * @returns 32-byte Keccak256 hash
  */
 export function hashHex(hex: string): HashType {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!/^[0-9a-fA-F]*$/.test(normalized)) {
 		throw new Error("Invalid hex string");
@@ -87,19 +229,15 @@ export function hashHex(hex: string): HashType {
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
-	return loader.keccak256(bytes) as HashType;
+	return keccak256Raw(bytes);
 }
 
 /**
- * Hash multiple byte arrays in sequence
+ * Hash multiple byte arrays in sequence using standalone Keccak256 micro-WASM.
  * @param chunks - Array of byte arrays to hash
  * @returns 32-byte Keccak256 hash
  */
-export function hashMultiple(chunks: Uint8Array[]): HashType {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
-	// Concatenate all chunks
+export function hashMultiple(chunks: readonly Uint8Array[]): HashType {
 	const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 	const combined = new Uint8Array(totalLength);
 	let offset = 0;
@@ -107,7 +245,7 @@ export function hashMultiple(chunks: Uint8Array[]): HashType {
 		combined.set(chunk, offset);
 		offset += chunk.length;
 	}
-	return loader.keccak256(combined) as HashType;
+	return keccak256Raw(combined);
 }
 
 // ============================================================================
@@ -120,12 +258,7 @@ export function hashMultiple(chunks: Uint8Array[]): HashType {
  * @returns 4-byte function selector
  */
 export function selector(signature: string): Uint8Array {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
-	const bytes = new TextEncoder().encode(signature);
-	const hash = loader.keccak256(bytes);
-	return hash.slice(0, 4);
+	return keccak256Raw(utf8Encoder.encode(signature)).slice(0, 4);
 }
 
 /**
@@ -133,23 +266,13 @@ export function selector(signature: string): Uint8Array {
  * @param signature - Event signature string (e.g., "Transfer(address,address,uint256)")
  * @returns 32-byte event topic as HashType
  */
-export function topic(
-	signature: string,
-): import("../primitives/Hash/HashType.js").HashType {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
-	const bytes = new TextEncoder().encode(signature);
-	const hash = loader.keccak256(bytes);
-	return hash as HashType;
+export function topic(signature: string): HashType {
+	return keccak256Raw(utf8Encoder.encode(signature));
 }
 
-/**
- * Convert nonce to minimal bytes for RLP encoding
- */
 function nonceToBytes(nonce: bigint): Uint8Array {
 	if (nonce === 0n) {
-		return new Uint8Array(0); // Empty for RLP encoding of 0
+		return new Uint8Array(0);
 	}
 	const hex = nonce.toString(16);
 	const paddedHex = hex.length % 2 ? `0${hex}` : hex;
@@ -167,16 +290,11 @@ function nonceToBytes(nonce: bigint): Uint8Array {
  * @returns Contract address (20 bytes)
  */
 export function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
 	if (sender.length !== 20) {
 		throw new Error("Sender must be 20 bytes");
 	}
-	// RLP encode [sender, nonce]
 	const rlpEncoded = encodeList([sender, nonceToBytes(nonce)]);
-	const hashResult = loader.keccak256(rlpEncoded);
-	return hashResult.slice(12); // Take last 20 bytes
+	return keccak256Raw(rlpEncoded).slice(12);
 }
 
 /**
@@ -191,9 +309,6 @@ export function create2Address(
 	salt: Uint8Array,
 	initCodeHash: Uint8Array,
 ): Uint8Array {
-	if (!isInitialized) {
-		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
-	}
 	if (sender.length !== 20) {
 		throw new Error("Sender must be 20 bytes");
 	}
@@ -203,17 +318,12 @@ export function create2Address(
 	if (initCodeHash.length !== 32) {
 		throw new Error("Init code hash must be 32 bytes");
 	}
-	// 0xff ++ sender ++ salt ++ initCodeHash
-	const combined = new Uint8Array(
-		1 + sender.length + salt.length + initCodeHash.length,
-	);
+	const combined = new Uint8Array(85);
 	combined[0] = 0xff;
 	combined.set(sender, 1);
-	combined.set(salt, 1 + sender.length);
-	combined.set(initCodeHash, 1 + sender.length + salt.length);
-
-	const hash = loader.keccak256(combined);
-	return hash.slice(-20); // Take last 20 bytes
+	combined.set(salt, 21);
+	combined.set(initCodeHash, 53);
+	return keccak256Raw(combined).slice(-20);
 }
 
 // ============================================================================
@@ -221,17 +331,44 @@ export function create2Address(
 // ============================================================================
 
 /**
- * Initialize WASM module (must be called before using any functions)
+ * Initialize standalone 3.1 kB Keccak256 micro-WASM asynchronously.
+ * Required before hashing in browsers; optional in Node/Bun (auto-inits synchronously).
  */
-export async function init(): Promise<void> {
-	await ensureInit();
+export async function init(wasmInput?: Keccak256WasmInput): Promise<void> {
+	if (wasmExports && wasmInput === undefined) return;
+	const source = wasmInput ?? getDefaultWasmUrl();
+	const bytes = await loadBytesAsync(source);
+	const { instance } = await WebAssembly.instantiate(bytes, {});
+	bindInstance(instance);
 }
 
 /**
- * Check if WASM is initialized
+ * Initialize standalone 3.1 kB Keccak256 micro-WASM synchronously.
+ * Supported in Node/Bun or anywhere when passed raw WASM bytes.
+ */
+export function initSync(wasmInput?: Keccak256WasmInput): void {
+	if (wasmExports && wasmInput === undefined) return;
+	const source = wasmInput ?? getDefaultWasmUrl();
+	const bytes = loadBytesSync(source);
+	const mod = new WebAssembly.Module(bytes);
+	bindInstance(new WebAssembly.Instance(mod, {}));
+}
+
+/**
+ * Check if the standalone Keccak256 micro-WASM is initialized.
  */
 export function isReady(): boolean {
-	return isInitialized;
+	return wasmExports !== null;
+}
+
+/**
+ * Unload the standalone Keccak256 micro-WASM instance (primarily for testing).
+ */
+export function reset(): void {
+	wasmExports = null;
+	wasmMemory = null;
+	scratch = null;
+	memoryOffset = 0;
 }
 
 // ============================================================================
@@ -248,7 +385,9 @@ export const Keccak256Wasm = {
 	contractAddress,
 	create2Address,
 	init,
+	initSync,
 	isReady,
+	reset,
 	DIGEST_SIZE: 32,
 	RATE: 136,
 	STATE_SIZE: 25,

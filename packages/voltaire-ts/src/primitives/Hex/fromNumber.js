@@ -1,4 +1,5 @@
 import {
+	InvalidSizeError,
 	NegativeNumberError,
 	NonIntegerError,
 	UnsafeIntegerError,
@@ -41,6 +42,11 @@ export function fromNumber(value, size) {
 	if (!Number.isInteger(value)) {
 		throw new NonIntegerError(`Number must be an integer. Got: ${value}`, {
 			value,
+		});
+	}
+	if (size !== undefined && (!Number.isInteger(size) || size < 0)) {
+		throw new InvalidSizeError(`Invalid size parameter: ${size}`, {
+			value: size,
 		});
 	}
 	let hex = value.toString(16);

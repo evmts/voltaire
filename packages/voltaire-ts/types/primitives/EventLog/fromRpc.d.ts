@@ -1,9 +1,13 @@
 /**
+ * @typedef {import('./EventLogType.js').EventLogType} BrandedEventLog
+ * @typedef {import('./EventLogType.js').RpcLog} RpcLog
+ */
+/**
  * Convert RPC log format to EventLog
  *
  * @see https://voltaire.tevm.sh/primitives/eventlog for EventLog documentation
  * @since 0.0.0
- * @param {import('ox/Log').Rpc} rpcLog - RPC log object
+ * @param {RpcLog} rpcLog - RPC log object
  * @returns {BrandedEventLog} EventLog branded type
  * @throws {never}
  * @example
@@ -23,6 +27,7 @@
  * const log = EventLog.fromRpc(rpcLog);
  * ```
  */
-export function fromRpc(rpcLog: import("ox/Log").Rpc): BrandedEventLog;
+export function fromRpc(rpcLog: RpcLog): BrandedEventLog;
 export type BrandedEventLog = import("./EventLogType.js").EventLogType;
+export type RpcLog = import("./EventLogType.js").RpcLog;
 //# sourceMappingURL=fromRpc.d.ts.map

@@ -1,17 +1,21 @@
 import type { Uint256Type } from "./Uint256Type.js";
 /**
- * Add Uint256 value with wrapping
+ * Add two Uint256 values with overflow checking
+ *
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * Use `plusWrapping` for wrapping mod 2^256 arithmetic.
  *
  * @param uint - First operand
  * @param b - Second operand
- * @returns Sum (uint + b) mod 2^256
+ * @returns Sum (uint + b)
+ * @throws {UintOverflowError} If the result exceeds 2^256 - 1
  *
  * @example
  * ```typescript
  * const a = Uint(100n);
  * const b = Uint(50n);
- * const sum1 = Uint.plus(a, b); // 150
- * const sum2 = a.plus(b); // 150
+ * const sum1 = Uint.plus(a, b); // 150n
+ * const sum2 = a.plus(b); // 150n
  * ```
  */
 export declare function plus(uint: Uint256Type, b: Uint256Type): Uint256Type;

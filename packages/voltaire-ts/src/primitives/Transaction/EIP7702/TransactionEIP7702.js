@@ -1,4 +1,3 @@
-// @ts-nocheck
 export * from "./BrandedTransactionEIP7702.js";
 
 // Import crypto dependencies
@@ -52,6 +51,7 @@ export {
  * Factory function for creating EIP-7702 Transaction instances
  *
  * @type {TransactionEIP7702Constructor}
+ * @param {Parameters<TransactionEIP7702Constructor>[0]} tx
  */
 export function TransactionEIP7702(tx) {
 	// Validate maxPriorityFeePerGas <= maxFeePerGas
@@ -89,10 +89,16 @@ export function TransactionEIP7702(tx) {
 }
 
 // Initialize prototype
-TransactionEIP7702.prototype = {};
+TransactionEIP7702.prototype =
+	/** @type {TransactionEIP7702Constructor["prototype"]} */ (
+		/** @type {unknown} */ ({})
+	);
 
 // Attach static methods
-TransactionEIP7702.deserialize = deserialize;
+TransactionEIP7702.deserialize =
+	/** @type {TransactionEIP7702Constructor["deserialize"]} */ (
+		/** @type {unknown} */ (deserialize)
+	);
 TransactionEIP7702.serialize = serialize;
 TransactionEIP7702.hash = hash;
 TransactionEIP7702.getSigningHash = getSigningHash;

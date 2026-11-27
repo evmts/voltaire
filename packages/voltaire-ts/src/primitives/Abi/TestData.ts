@@ -8,8 +8,7 @@ import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 export interface EncodeTestVector {
 	name: string;
 	description: string;
-	// biome-ignore lint/suspicious/noExplicitAny: test vectors need flexible value types
-	params: Array<{ type: string; value: any }>;
+	params: Array<{ type: string; value: unknown }>;
 	expected: string; // hex string without 0x prefix
 	source: string; // reference to Zig test line number
 }
@@ -19,8 +18,7 @@ export interface DecodeTestVector {
 	description: string;
 	encoded: string; // hex string without 0x prefix
 	types: string[];
-	// biome-ignore lint/suspicious/noExplicitAny: test vectors need flexible decoded types
-	expected: any[];
+	expected: unknown[];
 	source: string;
 }
 
@@ -29,8 +27,7 @@ export interface FunctionDataTestVector {
 	description: string;
 	signature: string;
 	selector: string; // 4-byte hex without 0x
-	// biome-ignore lint/suspicious/noExplicitAny: test vectors need flexible value types
-	params: Array<{ type: string; value: any }>;
+	params: Array<{ type: string; value: unknown }>;
 	expectedCalldata: string; // full calldata hex without 0x
 	source: string;
 }
@@ -195,8 +192,7 @@ export const encodeVectors: EncodeTestVector[] = [
 export const roundTripVectors: Array<{
 	name: string;
 	description: string;
-	// biome-ignore lint/suspicious/noExplicitAny: test vectors need flexible value types
-	params: Array<{ type: string; value: any }>;
+	params: Array<{ type: string; value: unknown }>;
 	source: string;
 }> = [
 	{
@@ -436,8 +432,7 @@ export const boundaryVectors: EncodeTestVector[] = [
 export const complexVectors: Array<{
 	name: string;
 	description: string;
-	// biome-ignore lint/suspicious/noExplicitAny: test vectors need flexible value types
-	params: Array<{ type: string; value: any }>;
+	params: Array<{ type: string; value: unknown }>;
 	source: string;
 }> = [
 	{
@@ -541,8 +536,7 @@ export const functionDataVectors: FunctionDataTestVector[] = [
 export const arrayVectors: Array<{
 	name: string;
 	description: string;
-	// biome-ignore lint/suspicious/noExplicitAny: test vectors need flexible value types
-	params: Array<{ type: string; value: any }>;
+	params: Array<{ type: string; value: unknown }>;
 	source: string;
 }> = [
 	{

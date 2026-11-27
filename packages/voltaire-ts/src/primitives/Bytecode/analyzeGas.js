@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Opcode from "../Opcode/index.js";
 import { parseInstructions } from "./parseInstructions.js";
 
@@ -36,10 +35,13 @@ export function analyzeGas(bytecode, options = {}) {
 	const expensive = [];
 
 	for (const inst of instructions) {
-		const gas = Opcode.getGasCost(inst.opcode) ?? 0;
+		const opcode = /** @type {import('../Opcode/OpcodeType.js').OpcodeType} */ (
+			inst.opcode
+		);
+		const gas = Opcode.getGasCost(opcode) ?? 0;
 		totalGas += BigInt(gas);
 
-		const opcodeName = Opcode.getName(inst.opcode);
+		const opcodeName = Opcode.getName(opcode);
 
 		byInstruction.push({
 			pc: inst.position,
@@ -54,7 +56,7 @@ export function analyzeGas(bytecode, options = {}) {
 				pc: inst.position,
 				opcode: opcodeName,
 				gas,
-				category: Opcode.getCategory(inst.opcode),
+				category: Opcode.getCategory(opcode),
 			});
 		}
 	}
@@ -90,17 +92,21 @@ function aggregateByBlocks(instructions, byInstruction, totalGas) {
 	if (instructions.length === 0) return [];
 
 	// Simple block detection: split on JUMPDEST
+	/** @type {import('./BytecodeType.js').BlockGas[]} */
 	const blocks = [];
+	/** @type {import('./BytecodeType.js').BlockGas} */
 	let currentBlock = {
 		blockIndex: 0,
 		startPc: 0,
 		endPc: 0,
 		gas: 0,
+		percentage: 0,
 	};
 
 	for (let i = 0; i < instructions.length; i++) {
 		const inst = instructions[i];
 		const gasInfo = byInstruction[i];
+		if (!inst || !gasInfo) continue;
 
 		if (inst.opcode === 0x5b && i > 0) {
 			// JUMPDEST - start new block (except at start)
@@ -112,6 +118,7 @@ function aggregateByBlocks(instructions, byInstruction, totalGas) {
 				startPc: inst.position,
 				endPc: inst.position,
 				gas: 0,
+				percentage: 0,
 			};
 		}
 
@@ -138,7 +145,7 @@ function aggregateByBlocks(instructions, byInstruction, totalGas) {
  *
  * @param {import('./BytecodeType.js').Instruction[]} instructions
  * @param {import('./BytecodeType.js').InstructionGas[]} byInstruction
- * @param {number} maxPaths
+ * @param {number} _maxPaths
  * @returns {{ cheapest: import('./BytecodeType.js').ExecutionPath, mostExpensive: import('./BytecodeType.js').ExecutionPath, average: bigint }}
  */
 function analyzeExecutionPaths(instructions, byInstruction, _maxPaths) {
@@ -146,10 +153,8 @@ function analyzeExecutionPaths(instructions, byInstruction, _maxPaths) {
 	// For branching code (JUMP/JUMPI), we'd need CFG traversal
 
 	// For now, implement simple linear path
-	const totalGas =
-		byInstruction.length > 0
-			? byInstruction[byInstruction.length - 1].cumulative
-			: 0n;
+	const lastInstruction = byInstruction[byInstruction.length - 1];
+	const totalGas = lastInstruction ? lastInstruction.cumulative : 0n;
 
 	const path = {
 		blocks: [0],

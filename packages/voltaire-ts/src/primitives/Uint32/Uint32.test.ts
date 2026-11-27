@@ -301,16 +301,18 @@ describe("Uint32.plus", () => {
 		expect(Uint32.plus(a, b)).toBe(150);
 	});
 
-	it("wraps on overflow", () => {
+	it("throws on overflow (and wraps with plusWrapping)", () => {
 		const a = Uint32.from(4294967295);
 		const b = Uint32.from(1);
-		expect(Uint32.plus(a, b)).toBe(0);
+		expect(() => Uint32.plus(a, b)).toThrow();
+		expect(Uint32.plusWrapping(a, b)).toBe(0);
 	});
 
-	it("wraps correctly on large overflow", () => {
+	it("throws on large overflow (and wraps with plusWrapping)", () => {
 		const a = Uint32.from(4294967295);
 		const b = Uint32.from(10);
-		expect(Uint32.plus(a, b)).toBe(9);
+		expect(() => Uint32.plus(a, b)).toThrow();
+		expect(Uint32.plusWrapping(a, b)).toBe(9);
 	});
 });
 
@@ -321,16 +323,18 @@ describe("Uint32.minus", () => {
 		expect(Uint32.minus(a, b)).toBe(50);
 	});
 
-	it("wraps on underflow", () => {
+	it("throws on underflow (and wraps with minusWrapping)", () => {
 		const a = Uint32.from(0);
 		const b = Uint32.from(1);
-		expect(Uint32.minus(a, b)).toBe(4294967295);
+		expect(() => Uint32.minus(a, b)).toThrow();
+		expect(Uint32.minusWrapping(a, b)).toBe(4294967295);
 	});
 
-	it("wraps correctly on large underflow", () => {
+	it("throws on large underflow (and wraps with minusWrapping)", () => {
 		const a = Uint32.from(5);
 		const b = Uint32.from(10);
-		expect(Uint32.minus(a, b)).toBe(4294967291);
+		expect(() => Uint32.minus(a, b)).toThrow();
+		expect(Uint32.minusWrapping(a, b)).toBe(4294967291);
 	});
 });
 
@@ -341,10 +345,11 @@ describe("Uint32.times", () => {
 		expect(Uint32.times(a, b)).toBe(200);
 	});
 
-	it("wraps on overflow", () => {
+	it("throws on overflow (and wraps with timesWrapping)", () => {
 		const a = Uint32.from(4294967295);
 		const b = Uint32.from(2);
-		expect(Uint32.times(a, b)).toBe(4294967294);
+		expect(() => Uint32.times(a, b)).toThrow();
+		expect(Uint32.timesWrapping(a, b)).toBe(4294967294);
 	});
 
 	it("returns zero when multiplied by zero", () => {
@@ -701,7 +706,8 @@ describe("Uint32 boundary testing", () => {
 	it("handles MAX correctly", () => {
 		const max = Uint32.from(4294967295);
 		expect(max).toBe(4294967295);
-		expect(Uint32.plus(max, Uint32.ONE)).toBe(0);
+		expect(() => Uint32.plus(max, Uint32.ONE)).toThrow();
+		expect(Uint32.plusWrapping(max, Uint32.ONE)).toBe(0);
 	});
 
 	it("handles MAX-1 correctly", () => {

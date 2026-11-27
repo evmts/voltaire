@@ -30,7 +30,7 @@ import type { ProviderRpcError } from "./ProviderRpcError.js";
  * };
  * ```
  */
-export interface EIP1193EventMap extends Record<string, (...args: any[]) => void> {
+export interface EIP1193EventMap {
     /**
      * Emitted when Provider connects to a chain
      *
@@ -108,7 +108,7 @@ export interface EIP1193EventMap extends Record<string, (...args: any[]) => void
  *
  * @template TEventMap - Event map defining available events
  */
-export interface EIP1193EventEmitter<TEventMap extends Record<string, (...args: any[]) => void> = EIP1193EventMap> {
+export interface EIP1193EventEmitter<TEventMap extends object = EIP1193EventMap> {
     /**
      * Register event listener
      */
@@ -121,6 +121,6 @@ export interface EIP1193EventEmitter<TEventMap extends Record<string, (...args: 
      * Emit event (internal use)
      * @internal
      */
-    emit(eventName: keyof TEventMap, ...args: any[]): boolean;
+    emit<TEvent extends keyof TEventMap>(eventName: TEvent, ...args: TEventMap[TEvent] extends (...args: infer TArgs) => void ? TArgs : unknown[]): boolean;
 }
 //# sourceMappingURL=EIP1193Events.d.ts.map

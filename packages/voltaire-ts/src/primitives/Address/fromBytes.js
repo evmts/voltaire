@@ -15,6 +15,12 @@ import { InvalidAddressLengthError } from "./errors.js";
  * ```
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidAddressLengthError("Address bytes must be a Uint8Array", {
+			value: bytes,
+			expected: `${SIZE}-byte Uint8Array`,
+		});
+	}
 	if (bytes.length !== SIZE) {
 		throw new InvalidAddressLengthError("Invalid address length", {
 			value: bytes,

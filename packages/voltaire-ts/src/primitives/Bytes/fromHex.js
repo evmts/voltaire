@@ -1,4 +1,4 @@
-import { parseHexByte } from "../Hex/parseHexByte.js";
+import { decodeHexDigitsInto } from "../Hex/decodeHexDigitsInto.js";
 import { InvalidBytesFormatError } from "./errors.js";
 
 /**
@@ -15,29 +15,25 @@ import { InvalidBytesFormatError } from "./errors.js";
  * ```
  */
 export function fromHex(hex) {
-	if (!hex.startsWith("0x")) {
+	if (typeof hex !== "string" || !hex.startsWith("0x")) {
 		throw new InvalidBytesFormatError("Hex string must start with 0x", {
 			value: hex,
 			expected: "0x-prefixed hex string",
 		});
 	}
-	const hexNoPrefix = hex.slice(2);
-	if (hexNoPrefix.length % 2 !== 0) {
+	const hexNoPrefixLength = hex.length - 2;
+	if (hexNoPrefixLength % 2 !== 0) {
 		throw new InvalidBytesFormatError("Hex string must have even length", {
 			value: hex,
 			expected: "even-length hex string",
 		});
 	}
-	const bytes = new Uint8Array(hexNoPrefix.length / 2);
-	for (let i = 0; i < bytes.length; i++) {
-		const byte = parseHexByte(hexNoPrefix, i * 2);
-		if (Number.isNaN(byte)) {
-			throw new InvalidBytesFormatError("Invalid hex character", {
-				value: hex,
-				expected: "valid hex characters (0-9, a-f, A-F)",
-			});
-		}
-		bytes[i] = byte;
+	const bytes = new Uint8Array(hexNoPrefixLength / 2);
+	if (decodeHexDigitsInto(hex, 2, bytes) !== -1) {
+		throw new InvalidBytesFormatError("Invalid hex character", {
+			value: hex,
+			expected: "valid hex characters (0-9, a-f, A-F)",
+		});
 	}
 	return /** @type {import('./BytesType.js').BytesType} */ (bytes);
 }

@@ -1,3 +1,4 @@
+import { InvalidFormatError } from "./errors.js";
 import type { HexType } from "./HexType.js";
 
 /**
@@ -7,7 +8,7 @@ import type { HexType } from "./HexType.js";
  * @since 0.0.0
  * @param bytes - Byte array to convert
  * @returns Hex string
- * @throws {never}
+ * @throws {InvalidFormatError} If input is not a Uint8Array
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';
@@ -15,6 +16,12 @@ import type { HexType } from "./HexType.js";
  * ```
  */
 export function fromBytes(bytes: Uint8Array): HexType {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidFormatError("Expected Uint8Array for Hex.fromBytes", {
+			value: bytes,
+			expected: "Uint8Array",
+		});
+	}
 	const hexChars = "0123456789abcdef";
 	let result = "0x";
 	for (let i = 0; i < bytes.length; i++) {

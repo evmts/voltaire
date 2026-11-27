@@ -1,5 +1,4 @@
 import { calculateTxFee } from "./calculateTxFee.js";
-// @ts-nocheck
 import * as Eip4844 from "./eip4844Constants.js";
 
 /**

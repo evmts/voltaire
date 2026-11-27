@@ -1,4 +1,4 @@
-import { getChainById } from "@tevm/chains";
+import { byId } from "./byId.js";
 
 /**
  * Get a chain by its chain ID
@@ -16,5 +16,5 @@ import { getChainById } from "@tevm/chains";
  * ```
  */
 export function fromId(id) {
-	return getChainById(id);
+	return Object.hasOwn(byId, id) ? byId[id] : undefined;
 }

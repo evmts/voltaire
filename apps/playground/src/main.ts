@@ -14,6 +14,7 @@ import { cryptoExamples } from "./examples/crypto.js";
 import { evmExamples } from "./examples/evm.js";
 import { primitiveExamples } from "./examples/primitives.js";
 import { recipesExamples } from "./examples/recipes.js";
+import { showcaseExamples } from "./examples/showcase.js";
 import { standardsExamples } from "./examples/standards.js";
 import { AutoSave } from "./features/AutoSave.js";
 import { CodeLensProvider } from "./features/CodeLens.js";
@@ -31,6 +32,15 @@ import { Executor } from "./runtime/Executor.js";
 
 // Build file tree structure
 const fileTree: FileNode[] = [
+	{
+		name: "Showcase",
+		path: "showcase",
+		children: Object.entries(showcaseExamples).map(([name, content]) => ({
+			name,
+			path: `showcase/${name}`,
+			content,
+		})),
+	},
 	{
 		name: "Primitives",
 		path: "primitives",
@@ -430,14 +440,19 @@ async function init(): Promise<void> {
 
 	// Initialize editor
 	await editor.init();
+	const monacoInstance = editor.getMonaco();
+	const editorInstance = editor.getEditor();
+	if (!monacoInstance || !editorInstance) {
+		throw new Error("Failed to initialize Monaco editor");
+	}
 
 	// Initialize EditorTabs
 	const editorTabsContainer =
 		document.getElementById("editor-tabs") ?? document.body;
 	editorTabs = new EditorTabs(
 		editorTabsContainer,
-		editor.getMonaco(),
-		editor.getEditor(),
+		monacoInstance,
+		editorInstance,
 		(tab) => {
 			// Tab change callback
 			if (diffView) {
@@ -455,22 +470,22 @@ async function init(): Promise<void> {
 	// Initialize DiffView
 	const editorContainer = document.getElementById("editor") ?? document.body;
 	diffView = new DiffView(
-		editor.getMonaco(),
+		monacoInstance,
 		editorContainer,
-		editor.getEditor(),
+		editorInstance,
 	);
 
 	// Initialize SearchReplace
 	const searchPanel = document.getElementById("search-panel") ?? document.body;
 	searchReplace = new SearchReplace(
-		editor.getMonaco(),
-		editor.getEditor(),
+		monacoInstance,
+		editorInstance,
 		editorTabs,
 		searchPanel,
 	);
 
 	// Initialize CodeLens
-	CodeLensProvider.register(editor.getMonaco(), editor.getEditor(), handleRun);
+	CodeLensProvider.register(monacoInstance, editorInstance, handleRun);
 
 	// Initialize AutoSave with UI indicators
 	const unsavedIndicator =
@@ -480,7 +495,7 @@ async function init(): Promise<void> {
 	autoSave.init(unsavedIndicator, lastSavedIndicator);
 
 	// Initialize breadcrumbs with editor reference
-	breadcrumbs.setEditor(editor.getEditor(), editor.getMonaco());
+	breadcrumbs.setEditor(editorInstance, monacoInstance);
 	breadcrumbs.setNavigationCallback((path: string) => {
 		// Navigate to folder - find first file in folder
 		const folderNode = findFileByPath(fileTree, path);
@@ -552,13 +567,13 @@ async function init(): Promise<void> {
 		mobileOverlay.addEventListener("click", closeMobileMenu);
 	}
 
-	// Handle URL deep linking - select file from ?example= parameter
+	// Handle URL deep linking - select file from ?example= parameter, or default to first Showcase demo
 	const examplePath = getExampleFromUrl();
-	if (examplePath) {
-		const file = findFileByPath(fileTree, examplePath);
-		if (file) {
-			handleFileSelect(file);
-		}
+	const initialFile = examplePath
+		? findFileByPath(fileTree, examplePath)
+		: fileTree[0]?.children?.[0] ?? null;
+	if (initialFile) {
+		handleFileSelect(initialFile);
 	}
 
 	// Setup run button
@@ -634,15 +649,15 @@ What you expected to happen.
 	});
 
 	// Initialize vim mode if previously enabled
-	if (vimMode.isEnabled()) {
-		vimMode.initVim(editor.getEditor());
+	if (vimMode.isEnabled() && vimToggle) {
+		vimMode.initVim(editorInstance);
 		vimToggle.classList.add("active");
 	}
 
 	// Setup keyboard shortcuts
 	const shortcuts = new KeyboardShortcuts({
-		editor: editor.getEditor(),
-		monaco: editor.getMonaco(),
+		editor: editorInstance,
+		monaco: monacoInstance,
 		onRun: handleRun,
 		onClearConsole: () => consoleComponent.clear(),
 		onIncreaseFontSize: () => displaySettings.increaseFontSize(),

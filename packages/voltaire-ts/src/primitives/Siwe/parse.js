@@ -1,4 +1,3 @@
-import * as OxSiwe from "ox/Siwe";
 import * as Address from "../Address/internal-index.js";
 import {
 	InvalidFieldError,
@@ -6,6 +5,153 @@ import {
 	MissingFieldError,
 	SiweParseError,
 } from "./errors.js";
+
+const DOMAIN_HEADER_REGEX =
+	/^(?:[a-zA-Z][a-zA-Z0-9+\-.]*:\/\/)?(.+) wants you to sign in with your Ethereum account:$/;
+const ADDRESS_LINE_REGEX = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * Parse header lines (domain + Ethereum address)
+ * @internal
+ * @param {string[]} lines
+ * @param {string} text
+ * @returns {{ domain: string; address: import('../Address/AddressType.js').AddressType }}
+ */
+function parseHeader(lines, text) {
+	const headerLine = lines[0];
+	const headerMatch = headerLine?.match(DOMAIN_HEADER_REGEX);
+	if (!headerMatch?.[1]) {
+		throw new InvalidSiweMessageError("missing domain header", {
+			value: text,
+		});
+	}
+
+	const addressLine = lines[1];
+	if (!addressLine || !ADDRESS_LINE_REGEX.test(addressLine)) {
+		throw new MissingFieldError("address");
+	}
+
+	// Normalize to lowercase because EIP-4361 parsing accepts mixed-case hex
+	const address = Address.from(addressLine.toLowerCase());
+	return { domain: headerMatch[1], address };
+}
+
+/**
+ * Locate the URI suffix start index and extract optional multiline statement
+ * @internal
+ * @param {string[]} lines
+ * @param {string} text
+ * @returns {{ uriIdx: number; statement: string | undefined }}
+ */
+function extractStatementAndSuffixStart(lines, text) {
+	const required = ["URI:", "Version:", "Chain ID:", "Nonce:", "Issued At:"];
+	for (const label of required) {
+		if (!text.includes(label)) {
+			throw new MissingFieldError(label.slice(0, -1));
+		}
+	}
+
+	let uriIdx = -1;
+	for (let i = 2; i < lines.length; i++) {
+		if (lines[i]?.startsWith("URI:") && lines[i + 1]?.startsWith("Version:")) {
+			uriIdx = i;
+			break;
+		}
+	}
+	if (uriIdx === -1) {
+		uriIdx = lines.findIndex((line, i) => i >= 2 && line.startsWith("URI:"));
+	}
+	if (uriIdx === -1) {
+		throw new MissingFieldError("URI");
+	}
+
+	let start = 2;
+	if (start < uriIdx && lines[start]?.trim() === "") {
+		start++;
+	}
+	let end = uriIdx;
+	if (end > start && lines[end - 1]?.trim() === "") {
+		end--;
+	}
+
+	const statement =
+		end > start ? lines.slice(start, end).join("\n") : undefined;
+	return { uriIdx, statement };
+}
+
+/**
+ * Read a required prefixed field line
+ * @internal
+ * @param {string[]} lines
+ * @param {number} idx
+ * @param {string} fieldName
+ * @returns {string}
+ */
+function readRequiredField(lines, idx, fieldName) {
+	const line = lines[idx];
+	const prefix = `${fieldName}:`;
+	if (!line?.startsWith(prefix)) {
+		throw new MissingFieldError(fieldName);
+	}
+	const value = line.slice(prefix.length).trim();
+	if (value.length === 0) {
+		throw new InvalidFieldError(fieldName, "cannot be empty", { value });
+	}
+	return value;
+}
+
+/**
+ * Parse optional trailing EIP-4361 fields (Expiration Time, Not Before, Request ID, Resources)
+ * @internal
+ * @param {string[]} lines
+ * @param {number} startIdx
+ * @param {string} text
+ * @returns {{ expirationTime?: string; notBefore?: string; requestId?: string; resources?: string[] }}
+ */
+function parseOptionalFields(lines, startIdx, text) {
+	let idx = startIdx;
+	/** @type {{ expirationTime?: string; notBefore?: string; requestId?: string; resources?: string[] }} */
+	const optional = {};
+
+	if (lines[idx]?.startsWith("Expiration Time:")) {
+		optional.expirationTime = lines[idx]
+			?.slice("Expiration Time:".length)
+			.trim();
+		idx++;
+	}
+
+	if (lines[idx]?.startsWith("Not Before:")) {
+		optional.notBefore = lines[idx]?.slice("Not Before:".length).trim();
+		idx++;
+	}
+
+	if (lines[idx]?.startsWith("Request ID:")) {
+		const reqId = lines[idx]?.slice("Request ID:".length).trim();
+		if (reqId) {
+			optional.requestId = reqId;
+		}
+		idx++;
+	}
+
+	if (lines[idx] === "Resources:") {
+		idx++;
+		/** @type {string[]} */
+		const resources = [];
+		while (idx < lines.length && lines[idx]?.startsWith("- ")) {
+			resources.push(/** @type {string} */ (lines[idx]).slice(2));
+			idx++;
+		}
+		optional.resources = resources;
+	}
+
+	if (idx < lines.length) {
+		throw new SiweParseError(`Unexpected line in SIWE message: ${lines[idx]}`, {
+			value: text,
+		});
+	}
+
+	return optional;
+}
 
 /**
  * Parse a SIWE message from a formatted string
@@ -35,173 +181,36 @@ import {
  * const message = Siwe.parse(text);
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SIWE parsing requires many conditions
 export function parse(text) {
-	try {
-		// Validate domain header format before ox parsing
-		const lines = text.split("\n");
-		if (
-			!lines[0] ||
-			!lines[0].match(/^.+ wants you to sign in with your Ethereum account:$/)
-		) {
-			throw new InvalidSiweMessageError("missing domain header", {
-				value: text,
-			});
-		}
+	const lines = text.split("\n");
+	const { domain, address } = parseHeader(lines, text);
+	const { uriIdx, statement } = extractStatementAndSuffixStart(lines, text);
 
-		// Validate address line is present before checking remaining fields
-		if (!lines[1] || !/^0x[0-9a-fA-F]{40}$/.test(lines[1])) {
-			throw new MissingFieldError("address");
-		}
-
-		// Validate required fields are actually present in the text
-		if (!text.includes("URI:")) {
-			throw new MissingFieldError("URI");
-		}
-		if (!text.includes("Version:")) {
-			throw new MissingFieldError("Version");
-		}
-		if (!text.includes("Chain ID:")) {
-			throw new MissingFieldError("Chain ID");
-		}
-		if (!text.includes("Nonce:")) {
-			throw new MissingFieldError("Nonce");
-		}
-		if (!text.includes("Issued At:")) {
-			throw new MissingFieldError("Issued At");
-		}
-
-		// Validate chain ID is a number
-		const chainIdMatch = text.match(/Chain ID:\s*(.+)/);
-		if (chainIdMatch?.[1]) {
-			const chainIdValue = chainIdMatch[1].trim();
-			if (!/^\d+$/.test(chainIdValue)) {
-				throw new InvalidFieldError("Chain ID", "must be a number", {
-					value: chainIdValue,
-				});
-			}
-		}
-
-		// Extract multiline statement manually (ox doesn't support this)
-		let statement;
-		const statementLines = [];
-		let lineIdx = 2; // Start after domain and address lines
-
-		// Skip empty line after address
-		if (lines[lineIdx]?.trim() === "") {
-			lineIdx++;
-		}
-
-		const statementStart = lineIdx;
-		// Collect statement lines until empty line or field with colon
-		while (
-			lineIdx < lines.length &&
-			lines[lineIdx]?.trim() !== "" &&
-			!lines[lineIdx]?.includes(":")
-		) {
-			statementLines.push(lines[lineIdx]);
-			lineIdx++;
-		}
-		const statementEnd = lineIdx;
-		if (statementLines.length > 0) {
-			statement = statementLines.join("\n");
-		}
-
-		// Collapse multiline statements to a single line for ox@1.x anchored parsing,
-		// then restore the original multiline statement below.
-		const textForOx =
-			statementLines.length > 1
-				? [
-						...lines.slice(0, statementStart),
-						statementLines.join(" "),
-						...lines.slice(statementEnd),
-					].join("\n")
-				: text;
-
-		// Normalize address to lowercase to avoid checksum validation issues
-		// ox validates checksums strictly, but SIWE spec allows mixed case
-		const normalizedText = textForOx.replace(/0x[0-9a-fA-F]{40}/, (match) =>
-			match.toLowerCase(),
-		);
-
-		// Use ox to parse the message
-		const oxMessage = OxSiwe.parseMessage(normalizedText);
-
-		// Validate address field is present
-		if (!oxMessage.address) {
-			throw new MissingFieldError("address");
-		}
-
-		// Convert address from hex to BrandedAddress
-		const address = Address.from(oxMessage.address);
-
-		// Extract original timestamp strings from text to preserve format
-		const issuedAtMatch = text.match(/Issued At:\s*(.+)/);
-		const expirationTimeMatch = text.match(/Expiration Time:\s*(.+)/);
-		const notBeforeMatch = text.match(/Not Before:\s*(.+)/);
-
-		// Convert Date objects to ISO strings, preserving original format when possible
-		/** @type {import('./SiweMessageType.js').SiweMessageType} */
-		const message = {
-			domain: oxMessage.domain || "",
-			address,
-			uri: oxMessage.uri || "",
-			version: oxMessage.version || "1",
-			chainId: oxMessage.chainId || 1,
-			nonce: oxMessage.nonce || "",
-			issuedAt: issuedAtMatch?.[1] || oxMessage.issuedAt?.toISOString() || "",
-			// Use manually extracted multiline statement if available, otherwise use ox's
-			...(statement
-				? { statement }
-				: oxMessage.statement
-					? { statement: oxMessage.statement }
-					: {}),
-			...(oxMessage.expirationTime
-				? {
-						expirationTime:
-							expirationTimeMatch?.[1] ||
-							oxMessage.expirationTime.toISOString(),
-					}
-				: {}),
-			...(oxMessage.notBefore
-				? {
-						notBefore: notBeforeMatch?.[1] || oxMessage.notBefore.toISOString(),
-					}
-				: {}),
-			...(oxMessage.requestId ? { requestId: oxMessage.requestId } : {}),
-			...(oxMessage.resources ? { resources: oxMessage.resources } : {}),
-		};
-
-		return message;
-	} catch (error) {
-		// Re-throw our own errors directly
-		if (
-			error instanceof InvalidSiweMessageError ||
-			error instanceof MissingFieldError ||
-			error instanceof InvalidFieldError
-		) {
-			throw error;
-		}
-
-		// Map error messages to expected Voltaire format
-		const errMsg = error instanceof Error ? error.message : String(error);
-		const cause = error instanceof Error ? error : undefined;
-
-		// Map ox error messages to Voltaire-expected messages
-		if (errMsg.includes("Unsupported address value type")) {
-			throw new MissingFieldError("address", { cause });
-		}
-		if (errMsg.includes("Invalid message field") && errMsg.includes("domain")) {
-			throw new InvalidSiweMessageError("missing domain header", {
-				value: text,
-				cause,
-			});
-		}
-
-		// Generic parse error with cause chain
-		throw new SiweParseError(errMsg, {
-			value: text,
-			cause,
+	const uri = readRequiredField(lines, uriIdx, "URI");
+	const version = readRequiredField(lines, uriIdx + 1, "Version");
+	const chainIdRaw = readRequiredField(lines, uriIdx + 2, "Chain ID");
+	if (!/^\d+$/.test(chainIdRaw)) {
+		throw new InvalidFieldError("Chain ID", "must be a number", {
+			value: chainIdRaw,
 		});
 	}
+	const chainId = Number(chainIdRaw);
+	const nonce = readRequiredField(lines, uriIdx + 3, "Nonce");
+	const issuedAt = readRequiredField(lines, uriIdx + 4, "Issued At");
+	const optional = parseOptionalFields(lines, uriIdx + 5, text);
+
+	/** @type {import('./SiweMessageType.js').SiweMessageType} */
+	const message = {
+		domain,
+		address,
+		uri,
+		version,
+		chainId,
+		nonce,
+		issuedAt,
+		...(statement !== undefined ? { statement } : {}),
+		...optional,
+	};
+
+	return message;
 }

@@ -357,16 +357,16 @@ describe("Uint.plus", () => {
 		expect(sum).toBe(100n);
 	});
 
-	it("wraps on overflow", () => {
-		const sum = Uint.plus(Uint.MAX, Uint.ONE);
-		expect(sum).toBe(0n);
+	it("throws on overflow (and wraps with plusWrapping)", () => {
+		expect(() => Uint.plus(Uint.MAX, Uint.ONE)).toThrow();
+		expect(Uint.plusWrapping(Uint.MAX, Uint.ONE)).toBe(0n);
 	});
 
-	it("wraps correctly on large overflow", () => {
+	it("throws on large overflow (and wraps with plusWrapping)", () => {
 		const a = Uint.MAX;
 		const b = Uint.from(10);
-		const sum = Uint.plus(a, b);
-		expect(sum).toBe(9n);
+		expect(() => Uint.plus(a, b)).toThrow();
+		expect(Uint.plusWrapping(a, b)).toBe(9n);
 	});
 });
 
@@ -384,16 +384,16 @@ describe("Uint.minus", () => {
 		expect(diff).toBe(100n);
 	});
 
-	it("wraps on underflow", () => {
-		const diff = Uint.minus(Uint.ZERO, Uint.ONE);
-		expect(diff).toBe(Uint.MAX);
+	it("throws on underflow (and wraps with minusWrapping)", () => {
+		expect(() => Uint.minus(Uint.ZERO, Uint.ONE)).toThrow();
+		expect(Uint.minusWrapping(Uint.ZERO, Uint.ONE)).toBe(Uint.MAX);
 	});
 
-	it("wraps correctly on large underflow", () => {
+	it("throws on large underflow (and wraps with minusWrapping)", () => {
 		const a = Uint.from(5);
 		const b = Uint.from(10);
-		const diff = Uint.minus(a, b);
-		expect(diff).toBe((Uint.MAX as bigint) - 4n);
+		expect(() => Uint.minus(a, b)).toThrow();
+		expect(Uint.minusWrapping(a, b)).toBe((Uint.MAX as bigint) - 4n);
 	});
 });
 
@@ -417,12 +417,12 @@ describe("Uint.times", () => {
 		expect(product).toBe(100n);
 	});
 
-	it("wraps on overflow", () => {
+	it("throws on overflow (and wraps with timesWrapping)", () => {
 		const a = Uint.MAX;
 		const b = Uint.from(2);
-		const product = Uint.times(a, b);
+		expect(() => Uint.times(a, b)).toThrow();
 		// MAX * 2 = 2^257 - 2, which wraps to (2^257 - 2) & (2^256 - 1) = 2^256 - 2
-		expect(product).toBe((Uint.MAX as bigint) - 1n);
+		expect(Uint.timesWrapping(a, b)).toBe((Uint.MAX as bigint) - 1n);
 	});
 });
 

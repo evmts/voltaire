@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Calculate effective transaction fee (standard form)
  *
@@ -9,8 +7,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
- * @param {import('../TxFeeParams.js').TxFeeParams} params - Transaction fee parameters
- * @returns {import('../TxFee.js').TxFee} Calculated fee breakdown
+ * @param {import('./TxFeeParams.js').TxFeeParams} params - Transaction fee parameters
+ * @returns {import('./TxFee.js').TxFee} Calculated fee breakdown
  * @throws {never}
  * @example
  * ```javascript

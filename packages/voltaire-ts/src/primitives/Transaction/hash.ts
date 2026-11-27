@@ -1,10 +1,15 @@
 import { InvalidTransactionTypeError } from "../errors/index.js";
 import type { HashType } from "../Hash/index.js";
 import * as EIP1559 from "./EIP1559/hash.js";
+import type { TransactionEIP1559Type } from "./EIP1559/TransactionEIP1559Type.js";
 import * as EIP2930 from "./EIP2930/hash.js";
+import type { TransactionEIP2930Type } from "./EIP2930/TransactionEIP2930Type.js";
 import * as EIP4844 from "./EIP4844/hash.js";
+import type { TransactionEIP4844Type } from "./EIP4844/TransactionEIP4844Type.js";
 import * as EIP7702 from "./EIP7702/hash.js";
+import type { TransactionEIP7702Type } from "./EIP7702/TransactionEIP7702Type.js";
 import * as Legacy from "./Legacy/hash.js";
+import type { TransactionLegacyType } from "./Legacy/TransactionLegacyType.js";
 import { type Any, Type } from "./types.js";
 
 /**
@@ -23,30 +28,35 @@ import { type Any, Type } from "./types.js";
 export function hash(this: Any): HashType {
 	switch (this.type) {
 		case Type.Legacy:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return Legacy.hash.call(this as any) as HashType;
+			return Legacy.hash.call(
+				this as unknown as TransactionLegacyType,
+			) as HashType;
 		case Type.EIP2930:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP2930.hash(this as any) as HashType;
+			return EIP2930.hash(
+				this as unknown as TransactionEIP2930Type,
+			) as HashType;
 		case Type.EIP1559:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP1559.hash(this as any) as HashType;
+			return EIP1559.hash(
+				this as unknown as TransactionEIP1559Type,
+			) as HashType;
 		case Type.EIP4844:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP4844.hash(this as any) as HashType;
+			return EIP4844.hash(
+				this as unknown as TransactionEIP4844Type,
+			) as HashType;
 		case Type.EIP7702:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP7702.hash(this as any) as HashType;
-		default:
+			return EIP7702.hash(
+				this as unknown as TransactionEIP7702Type,
+			) as HashType;
+		default: {
+			const unknownType = (this as { type?: unknown }).type;
 			throw new InvalidTransactionTypeError(
-				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
-				`Unknown transaction type: ${(this as any).type}`,
+				`Unknown transaction type: ${String(unknownType)}`,
 				{
 					code: -32602,
-					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
-					context: { type: (this as any).type },
+					context: { type: unknownType },
 					docsPath: "/primitives/transaction/hash#error-handling",
 				},
 			);
+		}
 	}
 }

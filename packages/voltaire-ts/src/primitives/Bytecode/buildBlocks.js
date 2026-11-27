@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Opcode from "../Opcode/index.js";
 import { isPush } from "./isPush.js";
 import { isTerminatorOpcode } from "./isTerminatorOpcode.js";
@@ -7,17 +6,19 @@ import { isTerminatorOpcode } from "./isTerminatorOpcode.js";
  * Build blocks from instructions
  * @param {Array<import('./BytecodeType.js').Instruction>} instructions
  * @param {Set<number>} boundaries
- * @param {Set<number>} jumpDests
+ * @param {Set<number>} _jumpDests
  * @returns {Array<import('./BytecodeType.js').BasicBlock>}
  */
 export function buildBlocks(instructions, boundaries, _jumpDests) {
 	const blocks = [];
 	let blockIndex = 0;
 	let currentBlockStart = 0;
+	/** @type {Array<import('./BytecodeType.js').Instruction>} */
 	let currentBlockInsts = [];
 
 	for (let i = 0; i < instructions.length; i++) {
 		const inst = instructions[i];
+		if (!inst) continue;
 
 		// Start new block at boundaries (except first instruction)
 		if (boundaries.has(inst.position) && currentBlockInsts.length > 0) {
@@ -84,7 +85,7 @@ export function buildBlocks(instructions, boundaries, _jumpDests) {
  */
 function finalizeBlock(index, startPc, blockInsts, allInsts, lastInstIndex) {
 	const lastInst = blockInsts[blockInsts.length - 1];
-	const endPc = calculateEndPc(lastInst);
+	const endPc = lastInst ? calculateEndPc(lastInst) : startPc;
 
 	// Calculate gas and stack
 	const { gasEstimate, minStack, maxStack, stackEffect } =
@@ -139,7 +140,9 @@ function analyzeBlockMetrics(blockInsts) {
 	let maxStack = 0;
 
 	for (const inst of blockInsts) {
-		const opcode = inst.opcode;
+		const opcode = /** @type {import('../Opcode/OpcodeType.js').OpcodeType} */ (
+			inst.opcode
+		);
 
 		// Add gas cost
 		const gas = Opcode.getGasCost(opcode) ?? 0;
@@ -172,6 +175,9 @@ function analyzeBlockMetrics(blockInsts) {
  */
 function analyzeTerminator(blockInsts, allInsts, lastInstIndex) {
 	const lastInst = blockInsts[blockInsts.length - 1];
+	if (!lastInst) {
+		return { terminator: "stop" };
+	}
 	const opcode = lastInst.opcode;
 
 	// Explicit terminators
@@ -224,7 +230,7 @@ function extractJumpTarget(blockInsts) {
 	const prevInst = blockInsts[blockInsts.length - 2];
 
 	// Check for PUSH+JUMP(I) pattern
-	if (isPush(prevInst.opcode) && prevInst.pushData) {
+	if (prevInst && isPush(prevInst.opcode) && prevInst.pushData) {
 		// Convert push data to number (target PC)
 		let target = 0;
 		for (let i = 0; i < prevInst.pushData.length; i++) {

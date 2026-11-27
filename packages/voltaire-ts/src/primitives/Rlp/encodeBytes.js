@@ -1,4 +1,21 @@
-import * as OxRlp from "ox/Rlp";
+import { RlpEncodingError } from "./RlpError.js";
+
+/**
+ * Encode a positive integer length as minimal big-endian bytes
+ * @internal
+ * @param {number} length
+ * @returns {Uint8Array}
+ */
+function encodeLength(length) {
+	/** @type {number[]} */
+	const lenBytes = [];
+	let n = length;
+	while (n > 0) {
+		lenBytes.unshift(n & 0xff);
+		n = Math.floor(n / 256);
+	}
+	return new Uint8Array(lenBytes);
+}
 
 /**
  * Encodes a byte array according to RLP string rules
@@ -28,5 +45,29 @@ import * as OxRlp from "ox/Rlp";
  * ```
  */
 export function encodeBytes(bytes) {
-	return OxRlp.from(bytes, { as: "Bytes" });
+	if (!(bytes instanceof Uint8Array)) {
+		throw new RlpEncodingError("Expected Uint8Array for encodeBytes", {
+			code: "RLP_INVALID_TYPE",
+			context: { type: typeof bytes },
+		});
+	}
+
+	const len = bytes.length;
+	if (len === 1 && /** @type {number} */ (bytes[0]) < 0x80) {
+		return new Uint8Array([/** @type {number} */ (bytes[0])]);
+	}
+
+	if (len <= 55) {
+		const out = new Uint8Array(1 + len);
+		out[0] = 0x80 + len;
+		out.set(bytes, 1);
+		return out;
+	}
+
+	const lenBytes = encodeLength(len);
+	const out = new Uint8Array(1 + lenBytes.length + len);
+	out[0] = 0xb7 + lenBytes.length;
+	out.set(lenBytes, 1);
+	out.set(bytes, 1 + lenBytes.length);
+	return out;
 }

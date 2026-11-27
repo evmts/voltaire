@@ -1,3 +1,4 @@
+import type * as Monaco from "monaco-editor";
 import { init } from "modern-monaco";
 import type { DisplaySettings } from "../features/DisplaySettings.js";
 import { registerImportCompletion } from "../features/ImportCompletion.js";
@@ -15,35 +16,19 @@ interface Disposable {
 	dispose(): void;
 }
 
-/** Monaco editor instance (subset of IStandaloneCodeEditor) */
-interface MonacoEditor {
-	setValue(value: string): void;
-	getValue(): string;
-	updateOptions(options: Record<string, unknown>): void;
-	setModel(model: unknown): void;
-}
-
-/** Monaco namespace returned by modern-monaco init */
-interface MonacoNamespace {
-	editor: {
-		create(
-			container: HTMLElement,
-			options: Record<string, unknown>,
-		): MonacoEditor;
-		createModel(value: string, language: string): unknown;
-	};
-	languages?: {
+type MonacoWithTsDefaults = typeof Monaco & {
+	languages?: typeof Monaco.languages & {
 		typescript?: {
 			typescriptDefaults?: {
 				addExtraLib(content: string, filePath: string): void;
 			};
 		};
 	};
-}
+};
 
 export class Editor {
-	private editor: MonacoEditor | null = null;
-	private monaco: MonacoNamespace | null = null;
+	private editor: Monaco.editor.IStandaloneCodeEditor | null = null;
+	private monaco: typeof Monaco | null = null;
 	private container: HTMLElement;
 	private completionDisposables: Disposable[] = [];
 	private quickFixDisposable: Disposable | null = null;
@@ -80,7 +65,19 @@ export class Editor {
 		}
 
 		// Load monaco with TypeScript LSP support
-		this.monaco = await init({
+		const importMapConfig = {
+			// $baseURL must match the origin of files being edited
+			// Without this, importMap resolution fails due to origin mismatch
+			$baseURL: `${baseUrl}/`,
+			imports,
+			scopes: {},
+		} as NonNullable<
+			NonNullable<Parameters<typeof init>[0]>["lsp"]
+		>["typescript"] extends { importMap?: infer T }
+			? T
+			: never;
+
+		const monacoApi = (await init({
 			theme: "vitesse-dark",
 			lsp: {
 				typescript: {
@@ -95,23 +92,18 @@ export class Editor {
 						skipLibCheck: true,
 						resolveJsonModule: true,
 					},
-					importMap: {
-						// $baseURL must match the origin of files being edited
-						// Without this, importMap resolution fails due to origin mismatch
-						$baseURL: `${baseUrl}/`,
-						imports,
-						scopes: {},
-					},
+					importMap: importMapConfig,
 				},
 			},
-		});
+		})) as unknown as MonacoWithTsDefaults;
+		this.monaco = monacoApi;
 
 		// Add fetched type definitions to Monaco
 		// Note: modern-monaco doesn't expose typescriptDefaults.addExtraLib
 		// Types are provided via importMap in the init config above
-		if (this.monaco.languages?.typescript?.typescriptDefaults) {
+		if (monacoApi.languages?.typescript?.typescriptDefaults) {
 			for (const [modulePath, typeDef] of Object.entries(typeDefinitions)) {
-				this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+				monacoApi.languages.typescript.typescriptDefaults.addExtraLib(
 					typeDef,
 					`file:///node_modules/${modulePath}/index.d.ts`,
 				);
@@ -121,22 +113,22 @@ export class Editor {
 		// Register import completion providers
 		this.completionDisposables = registerImportCompletion(
 			typeDefinitions,
-			this.monaco,
+			monacoApi,
 		);
 
 		// Register Voltaire code snippets
-		registerVoltaireSnippets(this.monaco);
+		registerVoltaireSnippets(monacoApi);
 
 		// Register quick fix code actions
-		this.quickFixDisposable = registerQuickFixes(this.monaco);
+		this.quickFixDisposable = registerQuickFixes(monacoApi);
 
 		// Register inline suggestions
 		this.inlineSuggestions = new InlineSuggestions();
-		const inlineDisposable = this.inlineSuggestions.register(this.monaco);
+		const inlineDisposable = this.inlineSuggestions.register(monacoApi);
 		this.completionDisposables.push(inlineDisposable);
 
 		// Create editor instance without initial model
-		this.editor = this.monaco.editor.create(this.container, {
+		const editorInstance = monacoApi.editor.create(this.container, {
 			automaticLayout: true,
 			minimap: { enabled: false },
 			fontSize: 14,
@@ -146,18 +138,19 @@ export class Editor {
 			wrappingIndent: "indent",
 			padding: { top: 8, bottom: 8 },
 		});
+		this.editor = editorInstance;
 
 		// Create and attach model separately (required by modern-monaco LSP)
-		const model = this.monaco.editor.createModel(
+		const model = monacoApi.editor.createModel(
 			"// Select a file from the tree to begin",
 			"typescript",
 		);
-		this.editor.setModel(model);
+		editorInstance.setModel(model);
 
 		// Register navigation providers (F12, Alt+F12, Shift+F12)
 		this.navigationDisposables = registerNavigationProviders(
-			this.editor,
-			this.monaco,
+			editorInstance,
+			monacoApi,
 		);
 	}
 
@@ -179,21 +172,33 @@ export class Editor {
 
 	applySettings(settings: DisplaySettings): void {
 		if (this.editor) {
+			const lineNumbers: Monaco.editor.LineNumbersType =
+				settings.lineNumbers === "off" ||
+				settings.lineNumbers === "relative" ||
+				settings.lineNumbers === "interval"
+					? settings.lineNumbers
+					: "on";
+			const wordWrap: "on" | "off" | "wordWrapColumn" | "bounded" =
+				settings.wordWrap === "off" ||
+				settings.wordWrap === "wordWrapColumn" ||
+				settings.wordWrap === "bounded"
+					? settings.wordWrap
+					: "on";
 			this.editor.updateOptions({
 				fontSize: settings.fontSize,
 				fontFamily: settings.fontFamily,
 				minimap: { enabled: settings.minimap },
-				lineNumbers: settings.lineNumbers,
-				wordWrap: settings.wordWrap,
+				lineNumbers,
+				wordWrap,
 			});
 		}
 	}
 
-	getEditor(): MonacoEditor | null {
+	getEditor(): Monaco.editor.IStandaloneCodeEditor | null {
 		return this.editor;
 	}
 
-	getMonaco(): MonacoNamespace | null {
+	getMonaco(): typeof Monaco | null {
 		return this.monaco;
 	}
 

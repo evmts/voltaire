@@ -19,6 +19,14 @@ import { SIZE } from "./constants.js";
  * ```
  */
 export function fromHex(hex) {
+	if (typeof hex !== "string") {
+		throw new InvalidFormatError("Hash hex must be a string", {
+			code: -32602,
+			value: hex,
+			expected: "hexadecimal string",
+			docsPath: "/primitives/hash",
+		});
+	}
 	const offset = hex.startsWith("0x") ? 2 : 0;
 	const length = hex.length - offset;
 	if (length !== SIZE * 2) {

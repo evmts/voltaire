@@ -1,5 +1,9 @@
 import { parseHexByte } from "../Hex/parseHexByte.js";
-import { NegativeBigIntError, SizeExceededError } from "./errors.js";
+import {
+	InvalidBytesFormatError,
+	NegativeBigIntError,
+	SizeExceededError,
+} from "./errors.js";
 
 /**
  * Convert bigint to Bytes
@@ -7,6 +11,7 @@ import { NegativeBigIntError, SizeExceededError } from "./errors.js";
  * @param {bigint} value - BigInt to convert (must be non-negative)
  * @param {number} [size] - Optional byte size (pads or throws if too small)
  * @returns {import('./BytesType.js').BytesType} Bytes
+ * @throws {InvalidBytesFormatError} If value is not a bigint or size is invalid
  * @throws {NegativeBigIntError} If value is negative
  * @throws {SizeExceededError} If value doesn't fit in size
  *
@@ -19,6 +24,12 @@ import { NegativeBigIntError, SizeExceededError } from "./errors.js";
  * ```
  */
 export function fromBigInt(value, size) {
+	if (typeof value !== "bigint") {
+		throw new InvalidBytesFormatError(`Expected bigint, got ${typeof value}`, {
+			value,
+			expected: "non-negative bigint",
+		});
+	}
 	if (value < 0n) {
 		throw new NegativeBigIntError(
 			`BigInt must be non-negative. Got: ${value}`,
@@ -26,6 +37,12 @@ export function fromBigInt(value, size) {
 				value,
 			},
 		);
+	}
+	if (size !== undefined && (!Number.isInteger(size) || size < 0)) {
+		throw new InvalidBytesFormatError(`Invalid size parameter: ${size}`, {
+			value: size,
+			expected: "non-negative integer",
+		});
 	}
 
 	// Calculate minimum bytes needed

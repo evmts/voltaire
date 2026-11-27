@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 export * from "./EIP712Type.js";
 export * from "./errors.js";
 
@@ -44,6 +42,7 @@ const hashType = HashType({ keccak256 });
 
 // Circular dependency: encodeValue needs hashStruct, hashStruct needs encodeData, encodeData needs encodeValue
 // Solution: Create them in order with forward references
+/** @type {(primaryType: string, data: import('./EIP712Type.js').Message, types: import('./EIP712Type.js').TypeDefinitions) => import('../../primitives/Hash/index.js').HashType} */
 let hashStruct;
 const encodeValue = EncodeValue({
 	keccak256,
@@ -56,14 +55,27 @@ hashStruct = HashStruct({ keccak256, encodeData });
 const hashDomain = HashDomain({ hashStruct });
 const hashTypedData = HashTypedData({ keccak256, hashDomain, hashStruct });
 
-// Adapter for secp256k1 recoverPublicKey to match factory signature
+/**
+ * Adapter for secp256k1 recoverPublicKey to match factory signature
+ * @param {Uint8Array} compactSig
+ * @param {Uint8Array} hash
+ * @param {number} recoveryBit
+ * @returns {Uint8Array}
+ */
 const recoverPublicKey = (compactSig, hash, recoveryBit) => {
 	const signature = {
-		r: compactSig.slice(0, 32),
-		s: compactSig.slice(32, 64),
+		r: /** @type {import('../../primitives/Hash/index.js').HashType} */ (
+			compactSig.slice(0, 32)
+		),
+		s: /** @type {import('../../primitives/Hash/index.js').HashType} */ (
+			compactSig.slice(32, 64)
+		),
 		v: recoveryBit, // Use raw recovery bit (0 or 1)
 	};
-	return secp256k1RecoverPublicKey(signature, hash);
+	return secp256k1RecoverPublicKey(
+		signature,
+		/** @type {import('../../primitives/Hash/index.js').HashType} */ (hash),
+	);
 };
 
 const recoverAddress = RecoverAddress({
@@ -72,10 +84,24 @@ const recoverAddress = RecoverAddress({
 	hashTypedData,
 });
 
-const _signTypedData = SignTypedData({ hashTypedData, sign: secp256k1Sign });
+const _signTypedData = SignTypedData({
+	hashTypedData,
+	sign: (hash, privateKey) =>
+		secp256k1Sign(
+			/** @type {import('../../primitives/Hash/index.js').HashType} */ (hash),
+			/** @type {import('../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType} */ (
+				privateKey
+			),
+		),
+});
 const verifyTypedData = VerifyTypedData({ recoverAddress });
 
-// Wrapper for signTypedData to accept string or Uint8Array private keys
+/**
+ * Wrapper for signTypedData to accept string or Uint8Array private keys
+ * @param {import('./EIP712Type.js').TypedData} typedData
+ * @param {string | Uint8Array} privateKey
+ * @returns {import('./EIP712Type.js').Signature}
+ */
 function signTypedData(typedData, privateKey) {
 	const privateKeyBytes =
 		typeof privateKey === "string" ? privateKeyFrom(privateKey) : privateKey;

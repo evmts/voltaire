@@ -1,5 +1,9 @@
 import { MAX } from "./constants.js";
-import { Uint16NegativeError, Uint16OverflowError } from "./errors.js";
+import {
+	Uint16NegativeError,
+	Uint16NotIntegerError,
+	Uint16OverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint16 from bigint
@@ -8,6 +12,7 @@ import { Uint16NegativeError, Uint16OverflowError } from "./errors.js";
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint16Type.js').Uint16Type} Uint16 value
+ * @throws {Uint16NotIntegerError} If value is not a bigint
  * @throws {Uint16NegativeError} If value is negative
  * @throws {Uint16OverflowError} If value exceeds maximum (65535)
  * @example
@@ -17,6 +22,12 @@ import { Uint16NegativeError, Uint16OverflowError } from "./errors.js";
  * ```
  */
 export function fromBigint(value) {
+	if (typeof value !== "bigint") {
+		throw new Uint16NotIntegerError(
+			`Uint16.fromBigint requires bigint, got ${typeof value}`,
+			{ value },
+		);
+	}
 	if (value < 0n) {
 		throw new Uint16NegativeError(`Uint16 value cannot be negative: ${value}`, {
 			value,

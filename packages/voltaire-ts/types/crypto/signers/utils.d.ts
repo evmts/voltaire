@@ -31,7 +31,7 @@ export declare function getAddress(signer: Signer): string;
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {any} _transaction - The transaction to recover the address from
+ * @param {unknown} _transaction - The transaction to recover the address from
  * @returns {Promise<string>} The recovered Ethereum address
  * @throws {Error} Always throws as this function is not yet implemented
  * @example
@@ -44,5 +44,5 @@ export declare function getAddress(signer: Signer): string;
  * }
  * ```
  */
-export declare function recoverTransactionAddress(_transaction: any): Promise<string>;
+export declare function recoverTransactionAddress(_transaction: unknown): Promise<string>;
 //# sourceMappingURL=utils.d.ts.map

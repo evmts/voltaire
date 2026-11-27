@@ -17,6 +17,15 @@ import type { Uint256Type } from "./Uint256Type.js";
  * ```
  */
 export function fromAbiEncoded(bytes: Uint8Array): Uint256Type {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new UintInvalidLengthError(
+			"ABI-encoded Uint256 must be a 32-byte Uint8Array",
+			{
+				value: bytes,
+				expected: "32 bytes",
+			},
+		);
+	}
 	if (bytes.length !== 32) {
 		throw new UintInvalidLengthError(
 			`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`,

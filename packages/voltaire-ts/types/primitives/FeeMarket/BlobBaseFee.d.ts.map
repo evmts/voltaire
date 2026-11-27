@@ -1,1 +1,1 @@
-{"version":3,"file":"BlobBaseFee.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/BlobBaseFee.js"],"names":[],"mappings":"AAGA;;;;;;;;;;;;;;;;;;GAkBG;AACH,2CAZW,MAAM,6BACN,MAAM,GAAG,OAAO,uBAAuB,EAAE,gBAAgB,GACvD,MAAM,CAYlB"}
+{"version":3,"file":"BlobBaseFee.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/BlobBaseFee.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;;;;GAkBG;AACH,2CAZW,MAAM,6BACN,MAAM,GAAG,OAAO,uBAAuB,EAAE,gBAAgB,GACvD,MAAM,CAYlB"}

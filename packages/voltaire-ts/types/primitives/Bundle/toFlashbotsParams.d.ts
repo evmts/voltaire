@@ -1,11 +1,8 @@
 /**
- * @typedef {import('./BundleType.js').BundleType} BundleType
- */
-/**
  * Converts bundle to Flashbots RPC parameters
  *
  * @param {BundleType} bundle - Bundle instance
- * @returns {object} Flashbots eth_sendBundle parameters
+ * @returns {{ txs: string[], blockNumber?: string, minTimestamp?: number, maxTimestamp?: number, revertingTxHashes?: string[] }} Flashbots eth_sendBundle parameters
  * @example
  * ```typescript
  * import * as Bundle from './Bundle/index.js';
@@ -13,6 +10,12 @@
  * await flashbots.request({ method: "eth_sendBundle", params: [params] });
  * ```
  */
-export function toFlashbotsParams(bundle: BundleType): object;
+export function toFlashbotsParams(bundle: BundleType): {
+    txs: string[];
+    blockNumber?: string;
+    minTimestamp?: number;
+    maxTimestamp?: number;
+    revertingTxHashes?: string[];
+};
 export type BundleType = import("./BundleType.js").BundleType;
 //# sourceMappingURL=toFlashbotsParams.d.ts.map

@@ -8,8 +8,10 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 - [Getting Started](/getting-started): Installation, core patterns, architecture, and migration guides
 - [Introduction](/introduction): Overview of Voltaire features and capabilities
 - [Comparisons](/comparisons): Comparison with other Ethereum libraries and design philosophy
+- [Benchmarks](/benchmarks): Reproducible runtime benchmarks and bundle-size comparisons across Voltaire (Pure TS, Zig WASM, Native Zig FFI), viem, ox, and ethers
+- [Spec Compliance](/spec-compliance): Live Ethereum hardfork, precompile, EIP, and Wycheproof compliance matrix
 - [Architecture](/dev/architecture): System architecture, module structure, and design decisions
-- [External Dependencies](/concepts/external-dependencies): C, Rust, and Zig dependencies used by Tevm
+- [External Dependencies](/concepts/external-dependencies): C, Rust, and Zig dependencies used by Voltaire
 - [WASM](/getting-started/wasm): WASM integration, performance characteristics, and usage patterns
 
 ## Concepts
@@ -114,7 +116,7 @@ Ethereum primitives and cryptography library for TypeScript and Zig. Multi-langu
 
 ## ENS
 
-Ethereum Name Service: offline normalization and hashing in the `Ens` primitive, RPC resolution in skills and voltaire-effect.
+Ethereum Name Service: offline normalization and hashing in the `Ens` primitive, RPC resolution in skills.
 
 - [ENS Overview](/primitives/ens): `Ens` branded type, `normalize`, `beautify`, `namehash`, `labelhash`, `isValid`, `validate`
 - [Fundamentals](/primitives/ens/fundamentals): Names, labels, namehash, resolvers, and reverse records
@@ -129,7 +131,6 @@ Ethereum Name Service: offline normalization and hashing in the `Ens` primitive,
 - [WASM](/primitives/ens/wasm): WASM support status for ENS
 - [ENS Resolution skill](/skills/ens-resolution): Resolve names to addresses and back with Voltaire contract modules
 - [ENS skill](/skills/ens): Register, manage, and resolve ENS names
-- [voltaire-effect ENS service](https://voltaire-effect.tevm.sh/services/ens): `EnsService` / `DefaultEns` with `getEnsAddress`, `getEnsName`, `getEnsText`, `getEnsAvatar`, `getEnsResolver`
 
 `namehash` hashes its input as given. Call `normalize` first: `namehash('Vitalik.eth')` differs from `namehash('vitalik.eth')`.
 

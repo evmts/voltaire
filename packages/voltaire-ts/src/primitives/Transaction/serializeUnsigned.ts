@@ -1,5 +1,6 @@
 import { InvalidTransactionTypeError } from "../errors/index.js";
 import { encode } from "../Rlp/encode.js";
+import type { Encodable } from "../Rlp/RlpType.js";
 import { type Any, Type } from "./types.js";
 import type { Unsigned } from "./UnsignedType.js";
 import {
@@ -22,9 +23,8 @@ function legacyChainId(tx: {
 	return null;
 }
 
-function typed(type: Type, fields: Uint8Array[] | unknown[]): Uint8Array {
-	// biome-ignore lint/suspicious/noExplicitAny: RLP encodable nested arrays
-	const rlp = encode(fields as any);
+function typed(type: Type, fields: Encodable): Uint8Array {
+	const rlp = encode(fields);
 	const out = new Uint8Array(1 + rlp.length);
 	out[0] = type;
 	out.set(rlp, 1);
@@ -127,16 +127,16 @@ export function serializeUnsigned(tx: Unsigned | Any): Uint8Array {
 				encodeAccessList(tx.accessList),
 				encodeAuthorizationList(tx.authorizationList),
 			]);
-		default:
+		default: {
+			const unknownType = (tx as { type?: unknown }).type;
 			throw new InvalidTransactionTypeError(
-				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
-				`Unknown transaction type: ${(tx as any).type}`,
+				`Unknown transaction type: ${String(unknownType)}`,
 				{
 					code: -32602,
-					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
-					context: { type: (tx as any).type },
+					context: { type: unknownType },
 					docsPath: "/primitives/transaction/serialize#error-handling",
 				},
 			);
+		}
 	}
 }

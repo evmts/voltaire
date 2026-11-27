@@ -3,7 +3,7 @@ title: Library Comparisons
 description: Architectural and code-level comparison of Voltaire, Viem, and Ethers.js.
 ---
 
-Voltaire, Viem, and Ethers.js solve different layers of the Ethereum stack. Voltaire focuses on validated byte primitives, multi-runtime cryptography, and EVM execution; higher-level workflows live in copyable [Skills](/concepts/skills) or [voltaire-effect](https://github.com/evmts/voltaire/tree/main/packages/voltaire-effect).
+Voltaire, Viem, and Ethers.js solve different layers of the Ethereum stack. Voltaire focuses on validated byte primitives, multi-runtime cryptography, and EVM execution; higher-level workflows live in copyable [Skills](/concepts/skills).
 
 ## Architectural Comparison
 
@@ -14,8 +14,8 @@ Voltaire, Viem, and Ethers.js solve different layers of the Ethereum stack. Volt
 | **Validation** | Enforced at construction | Function-by-function | Function-by-function |
 | **Crypto backends** | Pure TS, Zig WASM, Bun Native FFI | Pure JS (`@noble/*`) | Pure JS (`@noble/*`) |
 | **EVM & bytecode** | Built-in frame, opcodes, precompiles, analysis | Not included | Not included |
-| **Providers & contracts** | Low-level EIP-1193 + copyable Skills / `voltaire-effect` | Built-in `PublicClient` / `WalletClient` | Built-in `Provider` / `Signer` / `Contract` |
-| **Multi-language** | TS, Zig, C, Rust, Go, Python, Swift | TypeScript only | TypeScript only |
+| **Providers & contracts** | Low-level EIP-1193 + copyable Skills | Built-in `PublicClient` / `WalletClient` | Built-in `Provider` / `Signer` / `Contract` |
+| **Languages & FFI** | TypeScript (`@tevm/voltaire`), Zig (`@tevm/zig`), C99 ABI (`docs/C_FFI_RECIPES.md`) | TypeScript only | TypeScript only |
 
 ## Address Operations
 
@@ -158,6 +158,5 @@ Because Voltaire stores addresses as 20-byte `Uint8Array` instances, casing diff
 
 ## When to Pick What
 
-- **Choose Voltaire** when you want strict branded types, raw `Uint8Array` performance, WASM/native crypto acceleration, local EVM/bytecode tooling, cross-language parity with Zig/Rust/Go/C/Python/Swift, or custom-fitted abstractions via Skills.
-- **Choose `voltaire-effect`** when you want Voltaire primitives paired with typed-error Effect.ts services, retries, timeouts, contract registries, and reorg-aware streams.
+- **Choose Voltaire** when you want strict branded types, raw `Uint8Array` performance, WASM/native crypto acceleration, local EVM/bytecode tooling, Zig (`@tevm/zig`) and C99 ABI (`docs/C_FFI_RECIPES.md`) interoperability, or custom-fitted abstractions via Skills.
 - **Mix freely:** Voltaire primitives expose `.toHex()` and `Uint8Array` directly, so you can adopt Voltaire incrementally inside an existing Viem or Ethers codebase.

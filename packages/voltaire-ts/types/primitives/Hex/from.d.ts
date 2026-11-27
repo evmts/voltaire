@@ -6,7 +6,8 @@ import type { HexType } from "./HexType.js";
  * @since 0.0.0
  * @param value - Hex string or bytes
  * @returns Hex string
- * @throws {never}
+ * @throws {InvalidFormatError} If input is not a string/Uint8Array or string is missing 0x prefix
+ * @throws {import('./errors.js').InvalidCharacterError} If string contains invalid hex characters
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';

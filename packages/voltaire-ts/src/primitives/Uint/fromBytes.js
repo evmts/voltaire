@@ -16,6 +16,12 @@ import { UintInvalidLengthError } from "./errors.js";
  * ```
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new UintInvalidLengthError("Uint256 bytes must be a Uint8Array", {
+			value: bytes,
+			expected: "Uint8Array (<= 32 bytes)",
+		});
+	}
 	if (bytes.length > 32) {
 		throw new UintInvalidLengthError(
 			`Uint256 bytes cannot exceed 32 bytes, got ${bytes.length}`,

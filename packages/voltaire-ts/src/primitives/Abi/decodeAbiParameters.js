@@ -1,15 +1,14 @@
 // @ts-check
 
 import { hash as keccak256Impl } from "../../crypto/Keccak256/hash.js";
-import { From as ChecksumFrom } from "../Address/ChecksumAddress.js";
-import { fromBytes as hexFromBytes } from "../Hex/fromBytes.js";
 import { toBytes as hexToBytes } from "../Hex/toBytes.js";
 import { decodeParameters } from "./decodeParameters.js";
+import { CreateViemParameterConverter } from "./toViemParameters.js";
 
 /**
  * Factory: decode ABI parameters with viem `decodeAbiParameters` output semantics
  *
- * `Abi.decodeParameters` returns Voltaire-native values: lowercase address
+ * `Abi.decodeParameters` returns Voltaire-native values by default: lowercase address
  * strings, `Uint8Array` for `bytes`/`bytesN`, `bigint` for every integer, and
  * arrays for every tuple. The function this factory returns decodes the same
  * data and returns what viem returns:
@@ -43,105 +42,22 @@ import { decodeParameters } from "./decodeParameters.js";
  * ```
  */
 export function DecodeAbiParameters({ keccak256 }) {
-	const checksum = ChecksumFrom({ keccak256 });
-
-	/**
-	 * Convert a decoded non-array, non-tuple value.
-	 *
-	 * @param {string} type
-	 * @param {unknown} value
-	 * @returns {unknown}
-	 */
-	function scalarToViem(type, value) {
-		if (type === "address") {
-			return checksum(/** @type {string} */ (value));
-		}
-		if (type.startsWith("bytes")) {
-			return hexFromBytes(/** @type {Uint8Array} */ (value));
-		}
-		const integer = type.match(/^u?int(\d*)$/);
-		if (integer) {
-			const bits = integer[1] ? Number.parseInt(integer[1], 10) : 256;
-			return bits > 48 ? value : Number(value);
-		}
-		return value;
-	}
-
-	/**
-	 * Convert one Voltaire-native decoded value to its viem representation.
-	 *
-	 * @param {string} type
-	 * @param {readonly import('abitype').AbiParameter[] | undefined} components
-	 * @param {unknown} value
-	 * @returns {unknown}
-	 */
-	function toViem(type, components, value) {
-		const array = type.match(/^(.+)\[\d*\]$/);
-		if (array?.[1]) {
-			const elementType = array[1];
-			return /** @type {unknown[]} */ (value).map((element) =>
-				toViem(elementType, components, element),
-			);
-		}
-		if (type === "tuple") {
-			return tupleToViem(components ?? [], /** @type {unknown[]} */ (value));
-		}
-		return scalarToViem(type, value);
-	}
-
-	/**
-	 * Convert a decoded tuple: object when every component is named, else array.
-	 *
-	 * @param {readonly import('abitype').AbiParameter[]} fields
-	 * @param {unknown[]} tuple
-	 * @returns {unknown}
-	 */
-	function tupleToViem(fields, tuple) {
-		const values = tuple.map((element, i) => {
-			const field = /** @type {import('abitype').AbiParameter} */ (fields[i]);
-			return toViem(
-				field.type,
-				/** @type {{ components?: readonly import('abitype').AbiParameter[] }} */ (
-					field
-				).components,
-				element,
-			);
-		});
-		// viem returns an array for an empty tuple or any unnamed component.
-		if (fields.length === 0 || fields.some((field) => !field.name)) {
-			return values;
-		}
-		/** @type {Record<string, unknown>} */
-		const object = {};
-		for (let i = 0; i < fields.length; i++) {
-			// defineProperty, not assignment: a component named "__proto__"
-			// must become an own property, not replace the object's prototype.
-			Object.defineProperty(object, /** @type {string} */ (fields[i]?.name), {
-				value: values[i],
-				enumerable: true,
-				writable: true,
-				configurable: true,
-			});
-		}
-		return object;
-	}
+	const convertToViem = CreateViemParameterConverter({ keccak256 });
 
 	return function decodeAbiParameters(params, data) {
 		const bytes = typeof data === "string" ? hexToBytes(data) : data;
-		const native = /** @type {unknown[]} */ (
-			decodeParameters(/** @type {any} */ (params), bytes)
+		const native = /** @type {readonly unknown[]} */ (
+			/** @type {unknown} */ (
+				decodeParameters(
+					/** @type {readonly import("./Parameter.js").Parameter[]} */ (
+						/** @type {unknown} */ (params)
+					),
+					bytes,
+				)
+			)
 		);
-		return /** @type {any} */ (
-			native.map((value, i) => {
-				const param = /** @type {import('abitype').AbiParameter} */ (params[i]);
-				return toViem(
-					param.type,
-					/** @type {{ components?: readonly import('abitype').AbiParameter[] }} */ (
-						param
-					).components,
-					value,
-				);
-			})
+		return /** @type {import('abitype').AbiParametersToPrimitiveTypes<typeof params>} */ (
+			/** @type {unknown} */ (convertToViem(params, native))
 		);
 	};
 }
@@ -150,7 +66,8 @@ export function DecodeAbiParameters({ keccak256 }) {
  * Decode ABI parameters with viem `decodeAbiParameters` output semantics
  *
  * Same argument order and return shape as viem. See {@link DecodeAbiParameters}
- * for the full mapping. Use `Abi.decodeParameters` for Voltaire-native values.
+ * for the full mapping. Use `Abi.decodeParameters` for Voltaire-native values
+ * or pass `{ format: 'viem' }` to `Abi.decodeParameters`.
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0

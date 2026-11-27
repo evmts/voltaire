@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Eip4844 from "./eip4844Constants.js";
 
 /**
@@ -6,7 +5,7 @@ import * as Eip4844 from "./eip4844Constants.js";
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
- * @param {import('../TxFeeParams.js').TxFeeParams | import('../BlobTxFeeParams.js').BlobTxFeeParams} params - Transaction fee parameters
+ * @param {import('./TxFeeParams.js').TxFeeParams | import('./BlobTxFeeParams.js').BlobTxFeeParams} params - Transaction fee parameters
  * @returns {string[]} Validation errors, empty array if valid
  * @throws {never}
  * @example

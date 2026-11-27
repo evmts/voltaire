@@ -17,6 +17,12 @@ import { Uint32InvalidLengthError } from "./errors.js";
  * ```
  */
 export function fromAbiEncoded(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new Uint32InvalidLengthError(
+			"Uint32 ABI-encoded bytes must be a Uint8Array",
+			{ value: bytes, expected: "32 bytes" },
+		);
+	}
 	if (bytes.length !== 32) {
 		throw new Uint32InvalidLengthError(
 			`Uint32 ABI-encoded bytes must be 32 bytes, got ${bytes.length}`,

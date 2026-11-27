@@ -23,7 +23,11 @@ function loadInPlainNode(libPath: string) {
 	const platform = dataUrl(
 		`export const getNativeLibPath = () => ${JSON.stringify(libPath)};`,
 	);
-	const types = dataUrl("export const getNativeErrorMessage = String;");
+	const types = dataUrl(`
+		export const getNativeErrorMessage = String;
+		export class NativeError extends Error {}
+		export class NativeLibraryNotFoundError extends Error {}
+	`);
 	const hooks = dataUrl(`
 		export async function resolve(specifier, context, next) {
 			if (specifier === "./platform.js") return { url: ${JSON.stringify(platform)}, shortCircuit: true };

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import {
 	CryptoError,
@@ -99,7 +98,7 @@ export function signHash(hash, privateKey) {
 			code: "SECP256K1_SIGN_HASH_FAILED",
 			context: { hashLength: hash.length, privateKeyLength: privateKey.length },
 			docsPath: "/crypto/secp256k1/sign-hash#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

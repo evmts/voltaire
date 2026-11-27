@@ -7,7 +7,7 @@
  * @module provider/HttpProvider
  */
 import type { Provider } from "./Provider.js";
-import type { ProviderEvent, ProviderEventMap, RequestArguments } from "./types.js";
+import { type ProviderEvent, type ProviderEventMap, type RequestArguments } from "./types.js";
 /**
  * HTTP configuration options
  */
@@ -55,11 +55,6 @@ export declare class HttpProvider implements Provider {
      * Execute single fetch attempt with timeout
      */
     private executeRequest;
-    /**
-     * Handle request error and determine if retry is needed
-     * Returns true if should retry, throws if error is final
-     */
-    private handleRequestError;
     /**
      * EIP-1193 request method
      * Submits JSON-RPC request and returns result or throws RpcError

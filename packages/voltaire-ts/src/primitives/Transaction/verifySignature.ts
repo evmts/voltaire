@@ -40,16 +40,16 @@ export function verifySignature(this: Any): boolean {
 			return EIP4844.verifySignature(this as unknown as TransactionEIP4844Type);
 		case Type.EIP7702:
 			return EIP7702.verifySignature(this as unknown as TransactionEIP7702Type);
-		default:
+		default: {
+			const unknownType = (this as { type?: unknown }).type;
 			throw new InvalidTransactionTypeError(
-				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
-				`Unknown transaction type: ${(this as any).type}`,
+				`Unknown transaction type: ${String(unknownType)}`,
 				{
 					code: -32602,
-					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
-					context: { type: (this as any).type },
+					context: { type: unknownType },
 					docsPath: "/primitives/transaction/verify-signature#error-handling",
 				},
 			);
+		}
 	}
 }

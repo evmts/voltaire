@@ -45,6 +45,11 @@ export function fromNumber(value, size) {
 			value,
 		});
 	}
+	if (size !== undefined && (!Number.isInteger(size) || size < 0)) {
+		throw new NonIntegerError(`Invalid size parameter: ${size}`, {
+			value: size,
+		});
+	}
 
 	// Calculate minimum bytes needed
 	let hex = value.toString(16);

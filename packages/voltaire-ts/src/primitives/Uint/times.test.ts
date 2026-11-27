@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MAX, ONE, ZERO } from "./constants.js";
+import { UintOverflowError } from "./errors.js";
 import { from } from "./from.js";
 import { times } from "./times.js";
+import { timesWrapping } from "./timesWrapping.js";
 
 describe("Uint256.times", () => {
 	describe("known values", () => {
@@ -62,15 +64,17 @@ describe("Uint256.times", () => {
 			expect(result).toBe(MAX);
 		});
 
-		it("wraps on overflow", () => {
-			const result = times(MAX, from(2n));
-			expect(result).toBe(MAX - 1n);
+		it("throws on overflow", () => {
+			expect(() => times(MAX, from(2n))).toThrow(UintOverflowError);
+			expect(timesWrapping(MAX, from(2n))).toBe(MAX - 1n);
 		});
 
-		it("wraps on large overflow", () => {
-			const result = times(from(1n << 200n), from(1n << 200n));
+		it("throws on large overflow", () => {
+			expect(() => times(from(1n << 200n), from(1n << 200n))).toThrow(
+				UintOverflowError,
+			);
 			const expected = ((1n << 200n) * (1n << 200n)) & MAX;
-			expect(result).toBe(expected);
+			expect(timesWrapping(from(1n << 200n), from(1n << 200n))).toBe(expected);
 		});
 	});
 
@@ -82,19 +86,19 @@ describe("Uint256.times", () => {
 			expect(result).toBe((1n << 128n) & MAX);
 		});
 
-		it("multiplies values causing overflow", () => {
+		it("throws for values causing overflow (and wraps with timesWrapping)", () => {
 			const a = from(1n << 128n);
 			const b = from(1n << 128n);
-			const result = times(a, b);
+			expect(() => times(a, b)).toThrow(UintOverflowError);
 			const expected = ((1n << 128n) * (1n << 128n)) & MAX;
-			expect(result).toBe(expected);
+			expect(timesWrapping(a, b)).toBe(expected);
 		});
 
-		it("handles multiplication near MAX", () => {
+		it("throws on multiplication near MAX (and wraps with timesWrapping)", () => {
 			const a = MAX;
 			const b = MAX;
-			const result = times(a, b);
-			expect(result).toBe(1n);
+			expect(() => times(a, b)).toThrow(UintOverflowError);
+			expect(timesWrapping(a, b)).toBe(1n);
 		});
 	});
 

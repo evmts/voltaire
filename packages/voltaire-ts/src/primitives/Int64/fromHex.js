@@ -9,6 +9,13 @@ import { InvalidFormatError, InvalidLengthError } from "../errors/index.js";
  * @throws {InvalidFormatError} If hex is invalid
  */
 export function fromHex(hex) {
+	if (typeof hex !== "string") {
+		throw new InvalidFormatError(`Invalid hex string: ${hex}`, {
+			value: hex,
+			expected: "valid hex string",
+			docsPath: "/primitives/int64#from-hex",
+		});
+	}
 	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
 
 	if (cleaned.length > 16) {

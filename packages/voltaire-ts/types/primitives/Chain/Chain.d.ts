@@ -1,5 +1,5 @@
 /**
- * @typedef {import('./ChainType.js').Chain} Chain
+ * @typedef {import('./ChainType.js').Chain} ChainType
  * @typedef {import('./ChainConstructor.js').ChainConstructor} ChainConstructor
  */
 /**
@@ -7,20 +7,30 @@
  *
  * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
  * @since 0.0.0
- * @type {ChainConstructor}
+ * @param {ChainType} chain - Chain configuration object
+ * @returns {ChainType} Chain instance
  * @throws {never}
  * @example
  * ```javascript
- * import { mainnet } from '@tevm/chains';
  * import * as Chain from './primitives/Chain/index.js';
- * const chain = Chain.Chain(mainnet);
+ * const mainnet = Chain.fromId(1);
+ * if (mainnet) {
+ *   const chain = Chain.Chain(mainnet);
+ * }
  * ```
  */
-export function Chain(chain: any): import("@tevm/chains").Chain;
-export type Chain = import("./ChainType.js").Chain;
+export function Chain(chain: ChainType): ChainType;
 export namespace Chain {
-    export function from(chain: import("@tevm/chains").Chain): import("@tevm/chains").Chain;
-    export function fromId(id: number): import("@tevm/chains").Chain | undefined;
+    /**
+     * @param {ChainType} chain
+     * @returns {ChainType}
+     */
+    export function from(chain: ChainType): ChainType;
+    /**
+     * @param {number} id
+     * @returns {ChainType | undefined}
+     */
+    export function fromId(id: number): ChainType | undefined;
     export { byId };
     export { getName };
     export { getShortName };
@@ -37,6 +47,7 @@ export namespace Chain {
     export { getBlockTime };
     export { getGasLimit };
 }
+export type ChainType = import("./ChainType.js").Chain;
 export type ChainConstructor = import("./ChainConstructor.js").ChainConstructor;
 import { byId } from "./byId.js";
 import { getName } from "./getName.js";

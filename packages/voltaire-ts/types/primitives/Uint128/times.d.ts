@@ -1,15 +1,15 @@
 /**
- * Multiply Uint128 value with wrapping
+ * Multiply two Uint128 values with overflow checking
  *
- * Overflow mode: wrapping. `timesWrapping` is the explicit name for this behavior
- * and `timesChecked` throws instead of wrapping. Both exist on every Uint size.
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * `timesChecked` is an explicit alias and `timesWrapping` wraps mod 2^128.
  *
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
  * @param {import('./Uint128Type.js').Uint128Type} uint - First operand
  * @param {import('./Uint128Type.js').Uint128Type} b - Second operand
- * @returns {import('./Uint128Type.js').Uint128Type} Product (uint * b) mod 2^128
- * @throws {never}
+ * @returns {import('./Uint128Type.js').Uint128Type} Product (uint * b)
+ * @throws {Uint128OverflowError} If the result exceeds 2^128 - 1
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';

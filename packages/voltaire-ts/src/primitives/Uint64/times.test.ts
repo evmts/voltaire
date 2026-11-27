@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ONE, ZERO } from "./constants.js";
+import { Uint64OverflowError } from "./errors.js";
 import { from } from "./from.js";
 import { times } from "./times.js";
+import { timesWrapping } from "./timesWrapping.js";
 
 describe("Uint64.times", () => {
 	describe("known values", () => {
@@ -47,11 +49,11 @@ describe("Uint64.times", () => {
 			expect(result).toBe(999n);
 		});
 
-		it("wraps on overflow", () => {
+		it("throws on overflow (and wraps with timesWrapping)", () => {
 			const a = from(1n << 32n);
 			const b = from(1n << 33n);
-			const result = times(a, b);
-			expect(result).toBe(0n);
+			expect(() => times(a, b)).toThrow(Uint64OverflowError);
+			expect(timesWrapping(a, b)).toBe(0n);
 		});
 	});
 

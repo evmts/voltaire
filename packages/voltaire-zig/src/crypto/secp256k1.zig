@@ -405,14 +405,18 @@ pub fn mulmod(a: u256, b: u256, m: u256) u256 {
     if (a_mod == 0 or b_mod == 0) return 0;
 
     if (m == SECP256K1_P) {
-        const fa = feFromReduced(a_mod) catch unreachable;
-        const fb = feFromReduced(b_mod) catch unreachable;
-        return feToU256(fa.mul(fb));
+        if (feFromReduced(a_mod)) |fa| {
+            if (feFromReduced(b_mod)) |fb| {
+                return feToU256(fa.mul(fb));
+            } else |_| {}
+        } else |_| {}
     }
     if (m == SECP256K1_N) {
-        const sa = scalarFromReduced(a_mod) catch unreachable;
-        const sb = scalarFromReduced(b_mod) catch unreachable;
-        return scalarToU256(sa.mul(sb));
+        if (scalarFromReduced(a_mod)) |sa| {
+            if (scalarFromReduced(b_mod)) |sb| {
+                return scalarToU256(sa.mul(sb));
+            } else |_| {}
+        } else |_| {}
     }
 
     return @truncate((@as(u512, a_mod) * @as(u512, b_mod)) % @as(u512, m));
@@ -475,14 +479,18 @@ fn ctMulmod(a: u256, b: u256, m: u256) u256 {
     const b_mod = b % m;
 
     if (m == SECP256K1_P) {
-        const fa = feFromReduced(a_mod) catch unreachable;
-        const fb = feFromReduced(b_mod) catch unreachable;
-        return feToU256(fa.mul(fb));
+        if (feFromReduced(a_mod)) |fa| {
+            if (feFromReduced(b_mod)) |fb| {
+                return feToU256(fa.mul(fb));
+            } else |_| {}
+        } else |_| {}
     }
     if (m == SECP256K1_N) {
-        const sa = scalarFromReduced(a_mod) catch unreachable;
-        const sb = scalarFromReduced(b_mod) catch unreachable;
-        return scalarToU256(sa.mul(sb));
+        if (scalarFromReduced(a_mod)) |sa| {
+            if (scalarFromReduced(b_mod)) |sb| {
+                return scalarToU256(sa.mul(sb));
+            } else |_| {}
+        } else |_| {}
     }
 
     var result: u256 = 0;
@@ -761,4 +769,106 @@ test "recoverPubkey with valid signature" {
     } else |_| {
         // Expected for contrived test data
     }
+}
+
+test "Wycheproof - secp256k1 ECDSA boundary scalars, malleability, R=O, and curve checks" {
+    const testing = std.testing;
+    const max_u256 = std.math.maxInt(u256);
+
+    // 1. Official go-ethereum / EEST ValidKey vector (s is high-s > n/2; v = 28).
+    var valid_hash: [32]u8 = undefined;
+    var valid_r_bytes: [32]u8 = undefined;
+    var high_s_bytes: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&valid_hash, "18c547e4f7b0f325ad1e56f57e26c745b09a3e503d86e00e5255ff7f715d3d1c");
+    _ = try std.fmt.hexToBytes(&valid_r_bytes, "73b1693892219d736caba55bdb67216e485557ea6b6af75f37096c9aa6a5a75f");
+    _ = try std.fmt.hexToBytes(&high_s_bytes, "eeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549");
+
+    const r_val = std.mem.readInt(u256, &valid_r_bytes, .big);
+    const high_s_val = std.mem.readInt(u256, &high_s_bytes, .big);
+    const low_s_val = SECP256K1_N - high_s_val;
+    var low_s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &low_s_bytes, low_s_val, .big);
+
+    try testing.expect(high_s_val > SECP256K1_N >> 1);
+    try testing.expect(low_s_val <= SECP256K1_N >> 1);
+
+    // EIP-2 / Wycheproof malleability: strict recovery rejects high-s, accepts low-s sibling (v = 27),
+    // while ECRECOVER-mode recoverPubkeyAllowHighS accepts both and recovers identical keys.
+    try testing.expect(!unauditedValidateSignature(r_val, high_s_val));
+    try testing.expect(unauditedValidateSignature(r_val, low_s_val));
+    try testing.expectError(error.InvalidSignature, recoverPubkey(&valid_hash, &valid_r_bytes, &high_s_bytes, 28));
+    try testing.expectError(error.InvalidSignature, unauditedRecoverAddress(&valid_hash, 1, r_val, high_s_val));
+    const pk_low = try recoverPubkey(&valid_hash, &valid_r_bytes, &low_s_bytes, 27);
+    const pk_high = try recoverPubkeyAllowHighS(&valid_hash, &valid_r_bytes, &high_s_bytes, 28);
+    try testing.expectEqualSlices(u8, &pk_low, &pk_high);
+
+    const recovered_pt = AffinePoint{
+        .x = std.mem.readInt(u256, pk_low[0..32], .big),
+        .y = std.mem.readInt(u256, pk_low[32..64], .big),
+        .infinity = false,
+    };
+    try testing.expect(recovered_pt.isOnCurve());
+    try testing.expect(verifySignature(valid_hash, r_val, low_s_val, recovered_pt));
+    // Mathematical ECDSA accepts the conjugate (r, n - s), whereas EIP-2 gate unauditedValidateSignature rejects it.
+    try testing.expect(verifySignature(valid_hash, r_val, high_s_val, recovered_pt));
+    try testing.expect(!verifySignature(valid_hash, r_val ^ 1, low_s_val, recovered_pt));
+    try testing.expect(!verifySignature(valid_hash, r_val, low_s_val ^ 1, recovered_pt));
+
+    // Exact EIP-2 half-order boundary: n/2 valid, n/2 + 1 invalid.
+    const half_n = SECP256K1_N >> 1;
+    try testing.expect(unauditedValidateSignature(1, half_n));
+    try testing.expect(!unauditedValidateSignature(1, half_n + 1));
+
+    // 2. Wycheproof boundary scalar rejections: 0, n, n+1, maxInt(u256).
+    for ([_]u256{ 0, SECP256K1_N, SECP256K1_N + 1, max_u256 }) |bad| {
+        var bad_bytes: [32]u8 = undefined;
+        std.mem.writeInt(u256, &bad_bytes, bad, .big);
+        try testing.expect(!unauditedValidateSignature(bad, 1));
+        try testing.expect(!unauditedValidateSignature(1, bad));
+        try testing.expectError(error.InvalidSignature, recoverPubkey(&valid_hash, &bad_bytes, &low_s_bytes, 27));
+        try testing.expectError(error.InvalidSignature, recoverPubkey(&valid_hash, &valid_r_bytes, &bad_bytes, 27));
+        try testing.expectError(error.InvalidSignature, recoverPubkeyAllowHighS(&valid_hash, &bad_bytes, &low_s_bytes, 27));
+        try testing.expectError(error.InvalidSignature, recoverPubkeyAllowHighS(&valid_hash, &valid_r_bytes, &bad_bytes, 27));
+        try testing.expect(!verifySignature(valid_hash, bad, low_s_val, recovered_pt));
+        try testing.expect(!verifySignature(valid_hash, r_val, bad, recovered_pt));
+    }
+
+    // 3. Invalid recovery IDs.
+    for ([_]u8{ 2, 26, 29, 35, 36, 255 }) |bad_v| {
+        try testing.expectError(error.InvalidRecoveryId, recoverPubkey(&valid_hash, &valid_r_bytes, &low_s_bytes, bad_v));
+    }
+
+    // 4. Non-canonical field coordinates, infinity, and off-curve public keys rejected.
+    const G = AffinePoint.generator();
+    const bad_points = [_]AffinePoint{
+        AffinePoint.zero(),
+        .{ .x = 0, .y = 0, .infinity = false },
+        .{ .x = 0, .y = 1, .infinity = false },
+        .{ .x = G.x, .y = G.y + 1, .infinity = false },
+        .{ .x = SECP256K1_P, .y = G.y, .infinity = false },
+        .{ .x = G.x, .y = SECP256K1_P, .infinity = false },
+        .{ .x = max_u256, .y = max_u256, .infinity = false },
+    };
+    for (bad_points) |pt| {
+        if (!pt.infinity) try testing.expect(!pt.isOnCurve());
+        try testing.expect(!verifySignature(valid_hash, r_val, low_s_val, pt));
+    }
+
+    // 5. Degenerate R = O (u1*G + u2*Q = O): Q = G, hash = n - 1, r = 1, s = 1 -> -G + G = O.
+    var n_minus_1_hash: [32]u8 = undefined;
+    std.mem.writeInt(u256, &n_minus_1_hash, SECP256K1_N - 1, .big);
+    try testing.expect(!verifySignature(n_minus_1_hash, 1, 1, G));
+
+    // 6. Zero digest (h = 0 and h = n): Q = G, r = G.x, s = G.x -> u1=0, u2=1 -> R = G.
+    //    Use low-s form if G.x > n/2 (G.x = 0x79be... <= n/2 = 0x7fffffff..., so low-s).
+    const zero_hash = @as([32]u8, @splat(0));
+    var n_hash: [32]u8 = undefined;
+    std.mem.writeInt(u256, &n_hash, SECP256K1_N, .big);
+    try testing.expect(verifySignature(zero_hash, G.x, G.x, G));
+    try testing.expect(verifySignature(n_hash, G.x, G.x, G));
+
+    // 7. Non-quadratic-residue x-coordinate (x = 5 -> 5^3 + 7 = 132 has no sqrt mod p).
+    var non_qr_r = @as([32]u8, @splat(0));
+    non_qr_r[31] = 5;
+    try testing.expectError(error.InvalidSignature, recoverPubkey(&valid_hash, &non_qr_r, &low_s_bytes, 27));
 }

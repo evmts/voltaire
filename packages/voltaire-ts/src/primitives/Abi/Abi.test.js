@@ -254,7 +254,7 @@ describe("Abi", () => {
 			it("finds fallback", () => {
 				const fallback = testAbi.getFallback();
 				expect(fallback).toBeDefined();
-				expect(fallback.type).toBe("fallback");
+				expect(fallback?.type).toBe("fallback");
 			});
 
 			it("returns undefined when no fallback", () => {
@@ -276,7 +276,7 @@ describe("Abi", () => {
 			it("finds receive", () => {
 				const receive = testAbi.getReceive();
 				expect(receive).toBeDefined();
-				expect(receive.type).toBe("receive");
+				expect(receive?.type).toBe("receive");
 			});
 
 			it("returns undefined when no receive", () => {

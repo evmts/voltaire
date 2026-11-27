@@ -1,1 +1,1 @@
-{"version":3,"file":"fromBigInt.d.ts","sourceRoot":"","sources":["../../../src/primitives/Int256/fromBigInt.js"],"names":[],"mappings":"AAMA;;;;;;;;;;;;;;;GAeG;AACH,kCAXW,MAAM,GACJ,OAAO,iBAAiB,EAAE,aAAa,CAkCnD"}
+{"version":3,"file":"fromBigInt.d.ts","sourceRoot":"","sources":["../../../src/primitives/Int256/fromBigInt.js"],"names":[],"mappings":"AAOA;;;;;;;;;;;;;;;;GAgBG;AACH,kCAZW,MAAM,GACJ,OAAO,iBAAiB,EAAE,aAAa,CAyCnD"}

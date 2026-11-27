@@ -1,5 +1,9 @@
 import { MAX } from "./constants.js";
-import { Uint8NegativeError, Uint8OverflowError } from "./errors.js";
+import {
+	Uint8NegativeError,
+	Uint8NotIntegerError,
+	Uint8OverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint8 from bigint
@@ -8,6 +12,7 @@ import { Uint8NegativeError, Uint8OverflowError } from "./errors.js";
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint8Type.js').Uint8Type} Uint8 value
+ * @throws {Uint8NotIntegerError} If value is not a bigint
  * @throws {Uint8NegativeError} If value is negative
  * @throws {Uint8OverflowError} If value exceeds maximum (255)
  * @example
@@ -17,6 +22,12 @@ import { Uint8NegativeError, Uint8OverflowError } from "./errors.js";
  * ```
  */
 export function fromBigint(value) {
+	if (typeof value !== "bigint") {
+		throw new Uint8NotIntegerError(
+			`Uint8.fromBigint requires bigint, got ${typeof value}`,
+			{ value },
+		);
+	}
 	if (value < 0n) {
 		throw new Uint8NegativeError(`Uint8 value cannot be negative: ${value}`, {
 			value,

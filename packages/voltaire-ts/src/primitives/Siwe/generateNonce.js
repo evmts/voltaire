@@ -1,5 +1,10 @@
-import * as OxSiwe from "ox/Siwe";
 import { InvalidNonceLengthError } from "./errors.js";
+
+const ALPHABET =
+	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const ALPHABET_LEN = ALPHABET.length; // 62
+// Largest multiple of 62 <= 256 to avoid modulo bias
+const MAX_UNBIASED_BYTE = 248;
 
 /**
  * Generate a cryptographically secure random nonce for SIWE messages
@@ -24,7 +29,18 @@ export function generateNonce(length = 11) {
 		throw new InvalidNonceLengthError(length);
 	}
 
-	// Generate ox nonce (96 chars) and truncate to desired length
-	const oxNonce = OxSiwe.generateNonce();
-	return oxNonce.slice(0, length);
+	let nonce = "";
+	const buf = new Uint8Array(Math.max(length * 2, 16));
+
+	while (nonce.length < length) {
+		globalThis.crypto.getRandomValues(buf);
+		for (let i = 0; i < buf.length && nonce.length < length; i++) {
+			const byte = /** @type {number} */ (buf[i]);
+			if (byte < MAX_UNBIASED_BYTE) {
+				nonce += ALPHABET.charAt(byte % ALPHABET_LEN);
+			}
+		}
+	}
+
+	return nonce;
 }

@@ -8,6 +8,7 @@ export type * from "./EventLogConstructor.js";
 export type {
 	EventLogType,
 	EventLogType as BrandedEventLogType,
+	RpcLog,
 } from "./EventLogType.js";
 
 // Import all methods and create namespace export

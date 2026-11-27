@@ -133,13 +133,8 @@ pub fn init(
 
 const test_caps = [_][]const u8{ "eth/67", "snap/1" };
 
-test "PeerInfo: isInbound returns true for inbound peer" {
-    const peer = createTestPeer(true);
-    try std.testing.expect(peer.isInbound());
-}
-
-fn createTestPeer(inbound: bool) PeerInfo {
-    const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
+fn createTestPeer(inbound: bool) !PeerInfo {
+    const peer_id = try PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303");
     return init(
         peer_id,
         "Geth/v1.10.26-stable",
@@ -155,18 +150,23 @@ fn createTestPeer(inbound: bool) PeerInfo {
     );
 }
 
+test "PeerInfo: isInbound returns true for inbound peer" {
+    const peer = try createTestPeer(true);
+    try std.testing.expect(peer.isInbound());
+}
+
 test "PeerInfo: isInbound returns false for outbound peer" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expect(!peer.isInbound());
 }
 
 test "PeerInfo: isOutbound returns true for outbound peer" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expect(peer.isOutbound());
 }
 
 test "PeerInfo: isOutbound returns false for inbound peer" {
-    const peer = createTestPeer(true);
+    const peer = try createTestPeer(true);
     try std.testing.expect(!peer.isOutbound());
 }
 
@@ -207,19 +207,19 @@ test "PeerInfo: isStatic returns correct value" {
 }
 
 test "PeerInfo: hasCapability returns true for supported capability" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expect(peer.hasCapability("eth/67"));
     try std.testing.expect(peer.hasCapability("snap/1"));
 }
 
 test "PeerInfo: hasCapability returns false for unsupported capability" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expect(!peer.hasCapability("eth/66"));
     try std.testing.expect(!peer.hasCapability("les/2"));
 }
 
 test "PeerInfo: getEthProtocol returns null when not supported" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expectEqual(@as(?EthProtocolInfo, null), peer.getEthProtocol());
 }
 
@@ -252,7 +252,7 @@ test "PeerInfo: getEthProtocol returns info when supported" {
 }
 
 test "PeerInfo: supportsEth returns correct value" {
-    const peer_without_eth = createTestPeer(false);
+    const peer_without_eth = try createTestPeer(false);
     try std.testing.expect(!peer_without_eth.supportsEth());
 
     const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
@@ -280,8 +280,8 @@ test "PeerInfo: supportsEth returns correct value" {
 }
 
 test "PeerInfo: equals compares by ID" {
-    const peer1 = createTestPeer(true);
-    const peer2 = createTestPeer(false); // Different inbound status, same ID
+    const peer1 = try createTestPeer(true);
+    const peer2 = try createTestPeer(false); // Different inbound status, same ID
     try std.testing.expect(peer1.equals(peer2));
 
     const peer_id_diff = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("de".*)))) ++ "@127.0.0.1:30303") catch unreachable;
@@ -302,12 +302,12 @@ test "PeerInfo: equals compares by ID" {
 }
 
 test "PeerInfo: access name field" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expectEqualStrings("Geth/v1.10.26-stable", peer.name);
 }
 
 test "PeerInfo: access network addresses" {
-    const peer = createTestPeer(false);
+    const peer = try createTestPeer(false);
     try std.testing.expectEqualStrings("192.168.1.1:30303", peer.network.local_address);
     try std.testing.expectEqualStrings("10.0.0.1:30303", peer.network.remote_address);
 }

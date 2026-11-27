@@ -6,8 +6,9 @@
  * Factory function for creating EIP-1559 Transaction instances
  *
  * @type {TransactionEIP1559Constructor}
+ * @param {Parameters<TransactionEIP1559Constructor>[0]} tx
  */
-export function TransactionEIP1559(tx: any): BrandedTransactionEIP1559;
+export function TransactionEIP1559(tx: Parameters<TransactionEIP1559Constructor>[0]): BrandedTransactionEIP1559;
 export class TransactionEIP1559 {
     /**
      * @typedef {import('./TransactionEIP1559Type.js').BrandedTransactionEIP1559} BrandedTransactionEIP1559
@@ -17,8 +18,9 @@ export class TransactionEIP1559 {
      * Factory function for creating EIP-1559 Transaction instances
      *
      * @type {TransactionEIP1559Constructor}
+     * @param {Parameters<TransactionEIP1559Constructor>[0]} tx
      */
-    constructor(tx: any);
+    constructor(tx: Parameters<TransactionEIP1559Constructor>[0]);
     serialize: typeof serialize;
     hash: (tx: import("./TransactionEIP1559Type.js").BrandedTransactionEIP1559) => Uint8Array;
     getSigningHash: (tx: import("./TransactionEIP1559Type.js").BrandedTransactionEIP1559) => Uint8Array;
@@ -27,7 +29,14 @@ export class TransactionEIP1559 {
     getEffectiveGasPrice: typeof getEffectiveGasPrice;
 }
 export namespace TransactionEIP1559 {
-    export { deserialize };
+    export let deserialize: (bytes: Uint8Array) => import("./TransactionEIP1559Type.js").TransactionEIP1559Type & {
+        serialize: typeof import("./serialize.js").serialize;
+        hash: typeof import("./hash.js").hash;
+        getSigningHash: typeof import("./getSigningHash.js").getSigningHash;
+        getSender: typeof import("./getSender.js").getSender;
+        verifySignature: typeof import("./verifySignature.js").verifySignature;
+        getEffectiveGasPrice: typeof import("./getEffectiveGasPrice.js").getEffectiveGasPrice;
+    };
     export { serialize };
     export { hash };
     export { getSigningHash };
@@ -41,10 +50,10 @@ export type TransactionEIP1559Constructor = import("./TransactionEIP1559Construc
 import { serialize } from "./serialize.js";
 import { getSender } from "./getSender.js";
 import { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
-import { deserialize } from "./deserialize.js";
 export const hash: (tx: import("./TransactionEIP1559Type.js").BrandedTransactionEIP1559) => Uint8Array;
 export const getSigningHash: (tx: import("./TransactionEIP1559Type.js").BrandedTransactionEIP1559) => Uint8Array;
 export const verifySignature: (tx: import("./TransactionEIP1559Type.js").BrandedTransactionEIP1559) => boolean;
+import { deserialize } from "./deserialize.js";
 import { GetSigningHash } from "./getSigningHash.js";
 import { Hash } from "./hash.js";
 import { VerifySignature } from "./verifySignature.js";

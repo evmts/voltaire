@@ -1,5 +1,9 @@
 import { MAX } from "./constants.js";
-import { Uint64NegativeError, Uint64OverflowError } from "./errors.js";
+import {
+	Uint64NegativeError,
+	Uint64NotIntegerError,
+	Uint64OverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint64 from bigint
@@ -8,6 +12,7 @@ import { Uint64NegativeError, Uint64OverflowError } from "./errors.js";
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint64Type.js').Uint64Type} Uint64 value
+ * @throws {Uint64NotIntegerError} If value is not a bigint
  * @throws {Uint64NegativeError} If value is negative
  * @throws {Uint64OverflowError} If value exceeds maximum
  * @example
@@ -17,6 +22,12 @@ import { Uint64NegativeError, Uint64OverflowError } from "./errors.js";
  * ```
  */
 export function fromBigInt(value) {
+	if (typeof value !== "bigint") {
+		throw new Uint64NotIntegerError(
+			`Uint64.fromBigInt requires bigint, got ${typeof value}`,
+			{ value },
+		);
+	}
 	if (value < 0n) {
 		throw new Uint64NegativeError(`Uint64 value cannot be negative: ${value}`, {
 			value,

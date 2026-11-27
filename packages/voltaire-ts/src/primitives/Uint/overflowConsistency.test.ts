@@ -1,11 +1,11 @@
 /**
- * Issue #67: overflow behavior must be predictable across every Uint size.
+ * Issue #67: uniform overflow behavior across every Uint size.
  *
  * Contract under test:
+ * - `plus` / `minus` / `times` are checked (throw IntegerOverflowError /
+ *   IntegerUnderflowError) by default across ALL 6 widths (Uint8..Uint256).
  * - `plusChecked` / `minusChecked` / `timesChecked` throw on every size.
  * - `plusWrapping` / `minusWrapping` / `timesWrapping` wrap mod 2^bits on every size.
- * - `plus` / `minus` / `times` keep their documented per-size default
- *   (Uint8 and Uint16 check, Uint32 and wider wrap).
  */
 
 import { describe, expect, it } from "vitest";
@@ -45,7 +45,6 @@ interface Size {
 	name: string;
 	bits: number;
 	big: boolean;
-	defaultMode: "checked" | "wrapping";
 	api: Arithmetic & { MAX: Value };
 	ctor: Arithmetic;
 }
@@ -55,7 +54,6 @@ const sizes: Size[] = [
 		name: "Uint8",
 		bits: 8,
 		big: false,
-		defaultMode: "checked",
 		api: Uint8,
 		ctor: Uint8Ctor,
 	},
@@ -63,7 +61,6 @@ const sizes: Size[] = [
 		name: "Uint16",
 		bits: 16,
 		big: false,
-		defaultMode: "checked",
 		api: Uint16,
 		ctor: Uint16Ctor,
 	},
@@ -71,7 +68,6 @@ const sizes: Size[] = [
 		name: "Uint32",
 		bits: 32,
 		big: false,
-		defaultMode: "wrapping",
 		api: Uint32,
 		ctor: Uint32Ctor,
 	},
@@ -79,7 +75,6 @@ const sizes: Size[] = [
 		name: "Uint64",
 		bits: 64,
 		big: true,
-		defaultMode: "wrapping",
 		api: Uint64,
 		ctor: Uint64Ctor,
 	},
@@ -87,7 +82,6 @@ const sizes: Size[] = [
 		name: "Uint128",
 		bits: 128,
 		big: true,
-		defaultMode: "wrapping",
 		api: Uint128,
 		ctor: Uint128Ctor,
 	},
@@ -95,7 +89,6 @@ const sizes: Size[] = [
 		name: "Uint256",
 		bits: 256,
 		big: true,
-		defaultMode: "wrapping",
 		api: Uint256,
 		ctor: Uint256Ctor,
 	},
@@ -184,43 +177,44 @@ describe.each(sizes)("$name overflow semantics", (size) => {
 		});
 	});
 
-	describe("documented default", () => {
-		if (size.defaultMode === "checked") {
-			it("plus, minus and times check, like the *Checked functions", () => {
-				expect(() => call(size.api.plus, max, 1n)).toThrow(
-					IntegerOverflowError,
-				);
-				expect(() => call(size.api.minus, 0n, 1n)).toThrow(
-					IntegerUnderflowError,
-				);
-				expect(() => call(size.api.times, max, 2n)).toThrow(
-					IntegerOverflowError,
-				);
-			});
-		} else {
-			it("plus, minus and times wrap, like the *Wrapping functions", () => {
-				expect(call(size.api.plus, max, 1n)).toBe(v(0n));
-				expect(call(size.api.minus, 0n, 1n)).toBe(v(max));
-				expect(call(size.api.times, max, 2n)).toBe(v(max - 1n));
-			});
-		}
+	describe("uniform checked default", () => {
+		it("plus, minus and times throw on overflow/underflow for every width", () => {
+			expect(() => call(size.api.plus, max, 1n)).toThrow(IntegerOverflowError);
+			expect(() => call(size.api.plus, max, max)).toThrow(IntegerOverflowError);
+			expect(() => call(size.api.minus, 0n, 1n)).toThrow(IntegerUnderflowError);
+			expect(() => call(size.api.minus, 1n, max)).toThrow(
+				IntegerUnderflowError,
+			);
+			expect(() => call(size.api.times, half, half)).toThrow(
+				IntegerOverflowError,
+			);
+			expect(() => call(size.api.times, max, 2n)).toThrow(IntegerOverflowError);
+			expect(() => call(size.api.times, max, max)).toThrow(
+				IntegerOverflowError,
+			);
+		});
 
-		it("agrees with the explicit function of the same mode in range", () => {
-			const explicit =
-				size.defaultMode === "checked"
-					? {
-							plus: size.api.plusChecked,
-							minus: size.api.minusChecked,
-							times: size.api.timesChecked,
-						}
-					: {
-							plus: size.api.plusWrapping,
-							minus: size.api.minusWrapping,
-							times: size.api.timesWrapping,
-						};
-			expect(call(size.api.plus, 7n, 9n)).toBe(call(explicit.plus, 7n, 9n));
-			expect(call(size.api.minus, 9n, 7n)).toBe(call(explicit.minus, 9n, 7n));
-			expect(call(size.api.times, 7n, 9n)).toBe(call(explicit.times, 7n, 9n));
+		it("handles 0 and MAX boundaries without throwing", () => {
+			expect(call(size.api.plus, 0n, 0n)).toBe(v(0n));
+			expect(call(size.api.plus, max, 0n)).toBe(v(max));
+			expect(call(size.api.plus, max - 1n, 1n)).toBe(v(max));
+			expect(call(size.api.minus, 0n, 0n)).toBe(v(0n));
+			expect(call(size.api.minus, max, 0n)).toBe(v(max));
+			expect(call(size.api.minus, max, max)).toBe(v(0n));
+			expect(call(size.api.times, max, 0n)).toBe(v(0n));
+			expect(call(size.api.times, max, 1n)).toBe(v(max));
+		});
+
+		it("agrees with *Checked in range", () => {
+			expect(call(size.api.plus, 7n, 9n)).toBe(
+				call(size.api.plusChecked, 7n, 9n),
+			);
+			expect(call(size.api.minus, 9n, 7n)).toBe(
+				call(size.api.minusChecked, 9n, 7n),
+			);
+			expect(call(size.api.times, 7n, 9n)).toBe(
+				call(size.api.timesChecked, 7n, 9n),
+			);
 		});
 	});
 

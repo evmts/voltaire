@@ -188,20 +188,22 @@ describe("Chain metadata - Classification", () => {
 		expect(Chain.getL1Chain(mainnet)).toBeUndefined();
 	});
 
-	it("getL1Chain returns undefined for Optimism (L1 not in metadata)", () => {
-		// getL1Chain uses fromId which won't find mainnet in @tevm/chains
+	it("getL1Chain returns Ethereum Mainnet for Optimism", () => {
 		const l1 = Chain.getL1Chain(optimism);
-		expect(l1).toBeUndefined(); // Because fromId(1) returns undefined
+		expect(l1?.chainId).toBe(1);
+		expect(l1?.name).toBe("Ethereum Mainnet");
 	});
 
-	it("getL1Chain returns undefined for Arbitrum (L1 not in metadata)", () => {
+	it("getL1Chain returns Ethereum Mainnet for Arbitrum", () => {
 		const l1 = Chain.getL1Chain(arbitrum);
-		expect(l1).toBeUndefined(); // Because fromId(1) returns undefined
+		expect(l1?.chainId).toBe(1);
+		expect(l1?.name).toBe("Ethereum Mainnet");
 	});
 
-	it("getL1Chain returns undefined for Optimism Sepolia (L1 not in metadata)", () => {
+	it("getL1Chain returns Sepolia for Optimism Sepolia", () => {
 		const l1 = Chain.getL1Chain(optimismSepolia);
-		expect(l1).toBeUndefined(); // Because fromId(11155111) returns undefined
+		expect(l1?.chainId).toBe(11155111);
+		expect(l1?.name).toBe("Sepolia");
 	});
 });
 
@@ -309,7 +311,7 @@ describe("Chain metadata - Multiple chains", () => {
 	it("handles Base metadata", () => {
 		expect(Chain.isL2(base)).toBe(true);
 		expect(Chain.isTestnet(base)).toBe(false);
-		expect(Chain.getL1Chain(base)).toBeUndefined(); // L1 not in metadata
+		expect(Chain.getL1Chain(base)?.chainId).toBe(1);
 		expect(Chain.getBlockTime(base)).toBe(2);
 	});
 

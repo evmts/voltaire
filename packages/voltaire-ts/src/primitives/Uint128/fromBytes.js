@@ -17,6 +17,12 @@ import { from } from "./from.js";
  * ```
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new Uint128InvalidLengthError("Uint128 bytes must be a Uint8Array", {
+			value: bytes,
+			expected: "up to 16 bytes",
+		});
+	}
 	if (bytes.length > 16) {
 		throw new Uint128InvalidLengthError(
 			`Uint128 bytes length exceeds 16: ${bytes.length}`,

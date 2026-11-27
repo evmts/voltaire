@@ -1,3 +1,5 @@
+import { encodeData as encodeDataImpl } from "./encodeData.js";
+import { encodeValue as encodeValueImpl } from "./encodeValue.js";
 export type { DomainType } from "./DomainType.js";
 export type { ERC5267Response } from "./ERC5267Type.js";
 export { ERC5267_FIELDS } from "./ERC5267Type.js";
@@ -21,7 +23,7 @@ export declare function from(domain: {
 export declare function toHash(domain: import("./DomainType.js").DomainType, crypto: {
     keccak256: (data: Uint8Array) => Uint8Array;
 }): import("../DomainSeparator/DomainSeparatorType.js").DomainSeparatorType;
-export declare function encodeData(primaryType: string, data: any, types: Record<string, readonly {
+export declare function encodeData(primaryType: string, data: Parameters<typeof encodeDataImpl>[1], types: Record<string, readonly {
     readonly name: string;
     readonly type: string;
 }[]>, crypto: {
@@ -31,7 +33,7 @@ export declare function encodeType(primaryType: string, types: Record<string, re
     readonly name: string;
     readonly type: string;
 }[]>): string;
-export declare function encodeValue(type: string, value: any, types: Record<string, readonly {
+export declare function encodeValue(type: string, value: Parameters<typeof encodeValueImpl>[1], types: Record<string, readonly {
     readonly name: string;
     readonly type: string;
 }[]>, crypto: {

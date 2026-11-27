@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BLS12-381 Aggregate Signature Verification
  *
@@ -123,10 +122,16 @@ export function batchVerify(aggregatedSignature, messages, publicKeys) {
 		// Deserialize signature
 		const sig = bls.Signature.fromBytes(aggregatedSignature);
 		// Build items array for verifyBatch
-		const items = messages.map((msg, i) => ({
-			message: bls.hash(msg),
-			publicKey: bls12_381.G2.Point.fromBytes(publicKeys[i]),
-		}));
+		const items = messages.map((msg, i) => {
+			const pk = publicKeys[i];
+			if (!pk) {
+				throw new SignatureError(`Missing public key at index ${i}`);
+			}
+			return {
+				message: bls.hash(msg),
+				publicKey: bls12_381.G2.Point.fromBytes(pk),
+			};
+		});
 		// noble provides verifyBatch for this use case
 		return bls.verifyBatch(sig, items);
 	} catch (_error) {

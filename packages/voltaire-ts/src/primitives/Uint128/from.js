@@ -42,8 +42,13 @@ export function from(value) {
 			);
 		}
 		bigintValue = BigInt(value);
-	} else {
+	} else if (typeof value === "bigint") {
 		bigintValue = value;
+	} else {
+		throw new Uint128NotIntegerError(
+			`Invalid Uint128 value type: ${typeof value}`,
+			{ value },
+		);
 	}
 
 	if (bigintValue < 0n) {

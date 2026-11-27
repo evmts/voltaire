@@ -17,7 +17,15 @@
  * published), `name`, `version` and `published_packages` (JSON array).
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+	appendFileSync,
+	existsSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -197,18 +205,73 @@ function publishTarball(name, version, tarball) {
 	}
 }
 
+/**
+ * Discover prebuilt @tevm/voltaire-<platform> packages packaged in dist-native/npm
+ * whose exact version is already published on npm so @tevm/voltaire can safely
+ * advertise them in optionalDependencies without breaking dev installs.
+ *
+ * @param {string} targetVersion
+ * @returns {Record<string, string>}
+ */
+function resolvePublishedNativeOptionalDeps(targetVersion) {
+	const nativeNpmDir = path.join(rootDir, "dist-native", "npm");
+	if (!existsSync(nativeNpmDir)) return {};
+	/** @type {Record<string, string>} */
+	const optionalDeps = {};
+	for (const entry of readdirSync(nativeNpmDir, { withFileTypes: true })) {
+		if (!entry.isDirectory()) continue;
+		const manifestPath = path.join(nativeNpmDir, entry.name, "package.json");
+		if (!existsSync(manifestPath)) continue;
+		const pkg = JSON.parse(readFileSync(manifestPath, "utf8"));
+		if (
+			typeof pkg.name === "string" &&
+			pkg.version === targetVersion &&
+			(dryRun || publishedVersions(pkg.name).includes(targetVersion))
+		) {
+			optionalDeps[pkg.name] = targetVersion;
+		}
+	}
+	return optionalDeps;
+}
+
 const published = [];
 for (const { name, version, dir } of packages) {
 	if (publishedVersions(name).includes(version)) {
 		say(`${name}@${version} is already published; skipping.`);
 		continue;
 	}
+	const nativeOptionalDeps =
+		name === PRIMARY ? resolvePublishedNativeOptionalDeps(version) : {};
+	const nativeDepNames = Object.keys(nativeOptionalDeps).sort();
 	if (dryRun) {
-		say(`${name}@${version} would be published.`);
+		const extra =
+			nativeDepNames.length > 0
+				? ` (with optionalDependencies: ${nativeDepNames.join(", ")})`
+				: "";
+		say(`${name}@${version} would be published${extra}.`);
 		continue;
 	}
+	const primaryManifestPath = path.join(
+		rootDir,
+		"packages",
+		"voltaire-ts",
+		"package.json",
+	);
+	let originalPrimaryManifest = null;
 	const packDir = mkdtempSync(path.join(os.tmpdir(), "voltaire-publish-"));
 	try {
+		if (name === PRIMARY && nativeDepNames.length > 0) {
+			originalPrimaryManifest = readFileSync(primaryManifestPath, "utf8");
+			const parsed = JSON.parse(originalPrimaryManifest);
+			parsed.optionalDependencies = {
+				...(parsed.optionalDependencies ?? {}),
+				...nativeOptionalDeps,
+			};
+			writeFileSync(
+				primaryManifestPath,
+				`${JSON.stringify(parsed, null, "\t")}\n`,
+			);
+		}
 		// Pack with --ignore-scripts so the exact verified artifacts ship unchanged,
 		// then publish via npm CLI (>= 11.5.1) for full OIDC Trusted Publishing support.
 		const packJson = execFileSync(
@@ -220,6 +283,9 @@ for (const { name, version, dir } of packages) {
 		const tarball = path.join(packDir, filename);
 		publishTarball(name, version, tarball);
 	} finally {
+		if (originalPrimaryManifest !== null) {
+			writeFileSync(primaryManifestPath, originalPrimaryManifest);
+		}
 		rmSync(packDir, { recursive: true, force: true });
 	}
 	published.push({ name, version });

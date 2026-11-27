@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { blake2b as nobleBlake2b } from "@noble/hashes/blake2.js";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
@@ -14,17 +15,21 @@ import {
 	calculateCreateAddress,
 	compressPublicKey,
 	eip191HashMessage,
+	ensureWasmLoaded,
 	generatePrivateKey,
 	getExports,
 	hashEquals,
 	hashFromHex,
 	hashToHex,
 	hexToBytes,
+	isWasmLoaded,
 	keccak256,
 	kzgFreeTrustedSetup,
 	kzgIsInitialized,
 	kzgLoadTrustedSetup,
+	kzgLoadTrustedSetupBytes,
 	loadWasm,
+	loadWasmSync,
 	p256Sign,
 	p256Verify,
 	resetMemory,
@@ -44,6 +49,8 @@ import {
 	solidityKeccak256,
 	u256FromHex,
 	u256ToHex,
+	unloadWasm,
+	WasmNotInitializedError,
 } from "./loader.js";
 
 const WASM_PATH = new URL("../../wasm/primitives.wasm", import.meta.url);
@@ -127,11 +134,108 @@ describe("WASM Loader Infrastructure", () => {
 			expect(typeof exports.primitives_keccak256).toBe("function");
 		});
 
-		it("getExports throws before loadWasm", async () => {
-			// Create a new loader instance would be needed to test this properly
-			// For now, we test the error message format
-			const exports = getExports();
-			expect(exports).toBeDefined();
+		it("getExports throws WasmNotInitializedError before loadWasm", () => {
+			unloadWasm();
+			expect(isWasmLoaded()).toBe(false);
+			expect(() => getExports()).toThrow(WasmNotInitializedError);
+			loadWasmSync(WASM_PATH);
+			expect(isWasmLoaded()).toBe(true);
+		});
+
+		it("loadWasmSync loads default path, explicit URL, and raw Uint8Array synchronously", () => {
+			unloadWasm();
+			expect(isWasmLoaded()).toBe(false);
+
+			loadWasmSync();
+			expect(isWasmLoaded()).toBe(true);
+			expect(keccak256(new Uint8Array(0))).toHaveLength(32);
+
+			const rawBytes = new Uint8Array(readFileSync(WASM_PATH));
+			const prevExports = getExports();
+			loadWasmSync(rawBytes);
+			expect(getExports()).not.toBe(prevExports);
+
+			// Reload default URL for downstream tests
+			loadWasmSync(WASM_PATH, true);
+		});
+
+		it("ensureWasmLoaded auto-loads synchronously in Node/Bun", () => {
+			unloadWasm();
+			expect(isWasmLoaded()).toBe(false);
+			ensureWasmLoaded();
+			expect(isWasmLoaded()).toBe(true);
+		});
+	});
+
+	describe("KZG Trusted Setup Bytes API", () => {
+		it("kzgLoadTrustedSetup throws clear guidance on sub-350 kB WASM build", () => {
+			loadWasmSync(WASM_PATH, true);
+			expect(kzgIsInitialized()).toBe(false);
+			expect(() => kzgLoadTrustedSetup()).toThrow(/kzgLoadTrustedSetupBytes/);
+		});
+
+		it("kzgLoadTrustedSetupBytes validates input and reports WASM error on invalid setup text", () => {
+			loadWasmSync(WASM_PATH, true);
+			expect(() => kzgLoadTrustedSetupBytes(new Uint8Array(0))).toThrow(
+				/non-empty Uint8Array/,
+			);
+			const invalidSetup = new TextEncoder().encode("not a valid kzg setup");
+			expect(() => kzgLoadTrustedSetupBytes(invalidSetup)).toThrow(
+				/Failed to load KZG trusted setup from bytes/,
+			);
+			expect(kzgIsInitialized()).toBe(false);
+		});
+
+		it("kzgLoadTrustedSetupBytes passes exact bytes into WASM memory and tracks initialized state", async () => {
+			const payload = new TextEncoder().encode("mock-kzg-trusted-setup-bytes");
+			let receivedBytes: Uint8Array | null = null;
+			let calls = 0;
+
+			const realInstantiate = WebAssembly.instantiate;
+			const spy = vi
+				.spyOn(WebAssembly, "instantiate")
+				.mockImplementation(async (...args: unknown[]) => {
+					const source = (await (
+						realInstantiate as (...a: unknown[]) => Promise<unknown>
+					)(...args)) as WebAssembly.WebAssemblyInstantiatedSource;
+					const memory = source.instance.exports.memory as WebAssembly.Memory;
+					const exports = {
+						...source.instance.exports,
+						kzg_load_trusted_setup_bytes: (ptr: number, len: number) => {
+							calls++;
+							receivedBytes = new Uint8Array(memory.buffer).slice(
+								ptr,
+								ptr + len,
+							);
+							return 0;
+						},
+						kzg_free_trusted_setup: () => 0,
+					};
+					return {
+						module: source.module,
+						instance: { exports } as unknown as WebAssembly.Instance,
+					};
+				});
+
+			try {
+				await loadWasm(WASM_PATH, true);
+				expect(kzgIsInitialized()).toBe(false);
+
+				kzgLoadTrustedSetupBytes(payload);
+				expect(kzgIsInitialized()).toBe(true);
+				expect(calls).toBe(1);
+				expect(receivedBytes).toEqual(payload);
+
+				// Idempotent when already initialized
+				kzgLoadTrustedSetupBytes(payload);
+				expect(calls).toBe(1);
+
+				kzgFreeTrustedSetup();
+				expect(kzgIsInitialized()).toBe(false);
+			} finally {
+				spy.mockRestore();
+				await loadWasm(WASM_PATH, true);
+			}
 		});
 	});
 

@@ -7,6 +7,7 @@
 
 import type { HashType } from "../primitives/Hash/HashType.js";
 import * as loader from "../wasm-loader/loader.js";
+import { WasmNotInitializedError } from "../wasm-loader/loader.js";
 import { validatePrivateKey as validateP256PrivateKey } from "./P256/validatePrivateKey.js";
 import { validatePublicKey as validateP256PublicKey } from "./P256/validatePublicKey.js";
 
@@ -95,6 +96,7 @@ export namespace P256Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			const result = loader.p256Sign(messageHash, privateKey);
 			return {
@@ -102,6 +104,7 @@ export namespace P256Wasm {
 				s: result.slice(32, 64),
 			};
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new P256Error(`Signing failed: ${error}`);
 		}
 	}
@@ -157,12 +160,14 @@ export namespace P256Wasm {
 		// A signature can never be valid under an invalid public key
 		if (!validateP256PublicKey(publicKey)) return false;
 
+		loader.ensureWasmLoaded();
 		try {
 			const sig = new Uint8Array(64);
 			sig.set(signature.r, 0);
 			sig.set(signature.s, 32);
 			return loader.p256Verify(messageHash, sig, publicKey);
-		} catch {
+		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			return false;
 		}
 	}
@@ -183,9 +188,11 @@ export namespace P256Wasm {
 			throw new InvalidPrivateKeyError("Private key must be in range [1, n-1]");
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			return loader.p256DerivePublicKey(privateKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new InvalidPrivateKeyError(`Failed to derive public key: ${error}`);
 		}
 	}
@@ -217,9 +224,11 @@ export namespace P256Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			return loader.p256Ecdh(privateKey, publicKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new P256Error(`ECDH failed: ${error}`);
 		}
 	}

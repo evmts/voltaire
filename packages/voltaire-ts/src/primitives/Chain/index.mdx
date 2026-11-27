@@ -73,44 +73,38 @@ export interface Explorer {
 }
 ```
 
-Chain configuration object extending from [@tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains). Provides complete chain metadata including network name, chain ID, RPC endpoints, native currency details, and block explorer URLs.
+Chain configuration object defined by Voltaire's built-in EVM chain schema. Provides complete chain metadata including network name, chain ID, RPC endpoints, native currency details, and block explorer URLs.
 
-Source: [ChainType.ts:1](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/ChainType.ts#L1)
+Source: [ChainType.ts](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/ChainType.ts)
 </Tab>
 </Tabs>
 
-## Chain Constants
+## Built-in Chain Registry
 
-Chain objects imported from [@tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains):
+Canonical EVM chains are built directly into Voltaire with zero external chain-registry dependencies:
 
 ```typescript
-import {
-  // Mainnets
-  flr14,
-  quai9,
-  injective1776,
-  ronin2020,
-  moca2288,
+import { Chain } from '@tevm/voltaire/Chain'
 
-  // Popular networks (via chain ID)
-  // Use Chain.fromId(id) or Chain.byId[id]
-} from '@tevm/chains'
+const mainnet = Chain.fromId(1)!
+const optimism = Chain.byId[10]!
 
 // Access chain metadata
-console.log(quai9.name)          // "Quai Mainnet"
-console.log(quai9.chainId)       // 9
-console.log(quai9.nativeCurrency.symbol) // "QUAI"
+console.log(mainnet.name)                   // "Ethereum Mainnet"
+console.log(mainnet.chainId)                // 1
+console.log(mainnet.nativeCurrency.symbol)  // "ETH"
 
-// Use with Chain constructor
-const chain = Chain(quai9)
+// Wrap custom or built-in chain objects
+const chain = Chain(mainnet)
 ```
 
-**Available constants:**
-- 800+ chain configurations from @tevm/chains
-- Includes testnets, mainnets, L2s, and sidechains
-- Each constant includes full metadata (RPC, explorer, currency)
+**Built-in chains include:**
+- Ethereum Mainnet (1), Sepolia (11155111), Holesky (17000), Hoodi (560048)
+- L2s and rollups: OP Mainnet (10), Arbitrum One (42161), Base (8453), Linea (59144), Scroll (534352), zkSync Era (324), Blast (81457), Mode (34443), Zora (7777777)
+- Alt-L1s & sidechains: Polygon (137), Gnosis (100), BNB Smart Chain (56), Avalanche C-Chain (43114)
+- Custom chain objects can also be passed directly to `Chain(...)` or `Chain.from(...)`
 
-See [@tevm/chains documentation](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains) for complete list.
+See [Chain registry source](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/byId.js) for the complete built-in list.
 
 ## API Methods
 
@@ -127,7 +121,7 @@ See [@tevm/chains documentation](https://github.com/evmts/voltaire-monorepo/tree
 - [network-comparison](network-comparison) - Compare gas fees, costs, and characteristics across networks
 
 <Tip title="Chain objects are plain JavaScript objects">
-Chain is a lightweight wrapper around plain JavaScript objects from @tevm/chains. The Chain class adds prototype methods while keeping the underlying data structure simple and serializable.
+Chain is a lightweight wrapper around plain JavaScript chain configuration objects. The Chain class adds prototype methods while keeping the underlying data structure simple and serializable.
 </Tip>
 
 ## Related Types

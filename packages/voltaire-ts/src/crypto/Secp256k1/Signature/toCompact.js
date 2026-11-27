@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Convert signature to EIP-2098 compact format (64 bytes: r || s with yParity in bit 255)
  *
@@ -42,7 +41,7 @@ export function toCompact(signature) {
 	}
 
 	if (yParity === 1) {
-		compact[32] |= 0x80; // Set bit 255
+		compact[32] = (compact[32] ?? 0) | 0x80; // Set bit 255
 	}
 
 	return compact;

@@ -30,7 +30,15 @@ export function fromHex(hex) {
 		);
 	}
 
-	const value = BigInt(hex.startsWith("0x") ? hex : `0x${hex}`);
+	if (!/^(?:0[xX])?[0-9a-fA-F]+$/.test(hex)) {
+		throw new Uint32InvalidHexError(`Invalid Uint32 hex string: ${hex}`, {
+			value: hex,
+		});
+	}
+
+	const normalized =
+		hex.startsWith("0x") || hex.startsWith("0X") ? hex : `0x${hex}`;
+	const value = BigInt(normalized);
 
 	if (value < 0n) {
 		throw new Uint32NegativeError(`Uint32 value cannot be negative: ${value}`, {

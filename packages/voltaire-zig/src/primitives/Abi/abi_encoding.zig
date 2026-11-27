@@ -1415,30 +1415,6 @@ pub fn encodeEventTopics(allocator: std.mem.Allocator, event_signature: []const 
 
 pub const PackedError = error{ UnsupportedType, OutOfMemory };
 
-fn wordU256(val: u256) [32]u8 {
-    var word: [32]u8 = undefined;
-    std.mem.writeInt(u256, &word, val, .big);
-    return word;
-}
-
-fn wordAddress(bytes: [20]u8) [32]u8 {
-    var word: [32]u8 = @splat(0);
-    @memcpy(word[12..32], &bytes);
-    return word;
-}
-
-fn wordBool(val: bool) [32]u8 {
-    var word: [32]u8 = @splat(0);
-    word[31] = @intFromBool(val);
-    return word;
-}
-
-fn wordBytes4(val: [4]u8) [32]u8 {
-    var word: [32]u8 = @splat(0);
-    @memcpy(word[0..4], &val);
-    return word;
-}
-
 /// Append `values` in Solidity's non-standard packed mode.
 ///
 /// - Elementary values use their natural width with no padding
@@ -1452,6 +1428,30 @@ fn wordBytes4(val: [4]u8) [32]u8 {
 /// nested arrays (`uint256[][]`) and arrays of dynamic types (`string[]`):
 /// `UnsupportedType` when strict, otherwise the viem/ethers encoding
 /// (elements concatenated; `string` elements unpadded).
+fn wordU256(val: u256) [32]u8 {
+    var word = @as([32]u8, @splat(0));
+    std.mem.writeInt(u256, &word, val, .big);
+    return word;
+}
+
+fn wordAddress(val: address.Address) [32]u8 {
+    var word = @as([32]u8, @splat(0));
+    @memcpy(word[12..32], &val.bytes);
+    return word;
+}
+
+fn wordBool(val: bool) [32]u8 {
+    var word = @as([32]u8, @splat(0));
+    word[31] = @intFromBool(val);
+    return word;
+}
+
+fn wordBytes4(val: [4]u8) [32]u8 {
+    var word = @as([32]u8, @splat(0));
+    @memcpy(word[0..4], &val);
+    return word;
+}
+
 fn appendPacked(result: *std.array_list.AlignedManaged(u8, null), values: []const AbiValue, comptime strict: bool) (if (strict) PackedError else error{OutOfMemory})!void {
     for (values) |value| {
         switch (value) {
@@ -1474,10 +1474,10 @@ fn appendPacked(result: *std.array_list.AlignedManaged(u8, null), values: []cons
             // Arrays: every element is a 32-byte word
             .@"bytes32[]" => |val| for (val) |item| try result.appendSlice(&item),
             .@"uint256[]" => |val| for (val) |item| try result.appendSlice(&wordU256(item)),
-            .@"address[]" => |val| for (val) |item| try result.appendSlice(&wordAddress(item.bytes)),
+            .@"address[]" => |val| for (val) |item| try result.appendSlice(&wordAddress(item)),
             .@"bool[]" => |val| for (val) |item| try result.appendSlice(&wordBool(item)),
             inline .@"uint256[2]", .@"uint256[3]" => |arr| for (arr) |item| try result.appendSlice(&wordU256(item)),
-            .@"address[2]" => |arr| for (arr) |item| try result.appendSlice(&wordAddress(item.bytes)),
+            .@"address[2]" => |arr| for (arr) |item| try result.appendSlice(&wordAddress(item)),
             .@"bool[4]" => |arr| for (arr) |item| try result.appendSlice(&wordBool(item)),
             .@"bytes4[2]" => |arr| for (arr) |item| try result.appendSlice(&wordBytes4(item)),
 

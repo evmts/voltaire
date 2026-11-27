@@ -1,5 +1,4 @@
 import { InvalidRangeError } from "../errors/index.js";
-// @ts-nocheck
 import * as constants from "./constants.js";
 
 /**

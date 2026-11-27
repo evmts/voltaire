@@ -15,21 +15,21 @@ import { InvalidSignatureLengthError } from "./errors.js";
  * ```
  */
 export function fromSecp256k1(r, s, v) {
-	// Validate r and s lengths
-	if (r.length !== COMPONENT_SIZE) {
+	// Validate r and s are Uint8Arrays of length 32
+	if (!(r instanceof Uint8Array) || r.length !== COMPONENT_SIZE) {
 		throw new InvalidSignatureLengthError(
-			`Invalid r component length: expected ${COMPONENT_SIZE} bytes, got ${r.length}`,
+			`Invalid r component length: expected ${COMPONENT_SIZE} bytes, got ${r instanceof Uint8Array ? r.length : typeof r}`,
 			{
-				value: r.length,
+				value: r instanceof Uint8Array ? r.length : r,
 				expected: `${COMPONENT_SIZE} bytes`,
 			},
 		);
 	}
-	if (s.length !== COMPONENT_SIZE) {
+	if (!(s instanceof Uint8Array) || s.length !== COMPONENT_SIZE) {
 		throw new InvalidSignatureLengthError(
-			`Invalid s component length: expected ${COMPONENT_SIZE} bytes, got ${s.length}`,
+			`Invalid s component length: expected ${COMPONENT_SIZE} bytes, got ${s instanceof Uint8Array ? s.length : typeof s}`,
 			{
-				value: s.length,
+				value: s instanceof Uint8Array ? s.length : s,
 				expected: `${COMPONENT_SIZE} bytes`,
 			},
 		);

@@ -7,8 +7,8 @@
  *
  * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
  * @since 0.0.0
- * @param {import('../TxFeeParams.js').TxFeeParams} params - Transaction fee parameters
- * @returns {import('../TxFee.js').TxFee} Calculated fee breakdown
+ * @param {import('./TxFeeParams.js').TxFeeParams} params - Transaction fee parameters
+ * @returns {import('./TxFee.js').TxFee} Calculated fee breakdown
  * @throws {never}
  * @example
  * ```javascript
@@ -20,5 +20,5 @@
  * });
  * ```
  */
-export function calculateTxFee(params: any): any;
+export function calculateTxFee(params: import("./TxFeeParams.js").TxFeeParams): import("./TxFee.js").TxFee;
 //# sourceMappingURL=calculateTxFee.d.ts.map

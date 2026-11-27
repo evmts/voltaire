@@ -1,15 +1,15 @@
 /**
- * Add Uint64 value with wrapping
+ * Add two Uint64 values with overflow checking
  *
- * Overflow mode: wrapping. `plusWrapping` is the explicit name for this behavior
- * and `plusChecked` throws instead of wrapping. Both exist on every Uint size.
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * `plusChecked` is an explicit alias and `plusWrapping` wraps mod 2^64.
  *
  * @see https://voltaire.tevm.sh/primitives/uint64 for Uint64 documentation
  * @since 0.0.0
  * @param {import('./Uint64Type.js').Uint64Type} uint - First operand
  * @param {import('./Uint64Type.js').Uint64Type} b - Second operand
- * @returns {import('./Uint64Type.js').Uint64Type} Sum (uint + b) mod 2^64
- * @throws {never}
+ * @returns {import('./Uint64Type.js').Uint64Type} Sum (uint + b)
+ * @throws {Uint64OverflowError} If the result exceeds 2^64 - 1
  * @example
  * ```javascript
  * import * as Uint64 from './primitives/Uint64/index.js';

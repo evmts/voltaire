@@ -1,149 +1,234 @@
-import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
-
 /**
- * Keccak256 native implementation using FFI
- * Auto-detects Bun FFI or Node-API
+ * Keccak256 synchronous native implementation using Zig C ABI (Bun FFI / Node-API).
+ * Matches the pure JS Keccak256 API 1:1 with zero async overhead.
  */
 
 import {
 	allocateOutput,
 	checkError,
-	loadNative,
+	loadNativeSync,
+	safeBufferPtr,
 } from "../../native-loader/index.js";
-import * as Hex from "../../primitives/Hex/index.js";
-import { Keccak256NativeNotLoadedError } from "./errors.js";
+import {
+	InvalidFormatError,
+	InvalidLengthError,
+} from "../../primitives/errors/ValidationError.js";
+import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
+import { encodeList } from "../../primitives/Rlp/encodeList.js";
+import { DIGEST_SIZE, RATE, STATE_SIZE } from "./constants.js";
 import type { Keccak256Hash as Keccak256HashType } from "./Keccak256HashType.js";
 
-// Lazy-load native library
-let nativeLib: Awaited<ReturnType<typeof loadNative>> | null = null;
+const MAX_U64 = 0xffffffffffffffffn;
+const utf8Encoder = new TextEncoder();
 
-async function ensureLoaded() {
-	if (!nativeLib) {
-		nativeLib = await loadNative();
+function nonceToBytes(nonce: bigint): Uint8Array {
+	if (nonce === 0n) {
+		return new Uint8Array(0);
 	}
-	return nativeLib;
+	const hex = nonce.toString(16);
+	const paddedHex = hex.length % 2 ? `0${hex}` : hex;
+	const bytes = new Uint8Array(paddedHex.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = parseHexByte(paddedHex, i * 2);
+	}
+	return bytes;
 }
 
 /**
- * Hash data with Keccak-256 using native implementation
- *
- * @param data - Data to hash
- * @returns 32-byte hash
- * @throws {Keccak256Error} If native operation fails
+ * Hash raw bytes with Keccak-256 using native Zig FFI.
  */
-export async function hash(data: Uint8Array): Promise<Keccak256HashType> {
-	const lib = await ensureLoaded();
-	const output = allocateOutput(32);
-
-	const result = lib.primitives_keccak256(data, data.length, output);
-	checkError(result, "keccak256");
-
+export function hash(data: Uint8Array): Keccak256HashType {
+	const lib = loadNativeSync();
+	const output = allocateOutput(DIGEST_SIZE);
+	const code = lib.primitives_keccak256(
+		safeBufferPtr(data),
+		data.length,
+		output,
+	);
+	checkError(code, "keccak256");
 	return output as Keccak256HashType;
 }
 
 /**
- * Hash hex string with Keccak-256 using native implementation
- *
- * @param hex - Hex string to hash
- * @returns 32-byte hash
- * @throws {Keccak256Error} If native operation fails
+ * Synchronous hash alias (retained for backward compatibility).
  */
-export async function hashHex(hex: string): Promise<Keccak256HashType> {
-	const bytes = Hex.toBytes(hex);
+export function hashSync(data: Uint8Array): Keccak256HashType {
+	return hash(data);
+}
+
+/**
+ * Hash hex string (with or without 0x prefix) with Keccak-256 using native FFI.
+ */
+export function hashHex(hex: string): Keccak256HashType {
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (!/^[0-9a-fA-F]*$/.test(normalized)) {
+		throw new InvalidFormatError("Invalid hex string", {
+			code: -32602,
+			value: hex,
+			expected: "Hex string (0-9, a-f, A-F)",
+			docsPath: "/crypto/keccak256/hash-hex#error-handling",
+		});
+	}
+	if (normalized.length % 2 !== 0) {
+		throw new InvalidFormatError("Hex string must have even length", {
+			code: -32602,
+			value: hex,
+			expected: "Even number of hex characters",
+			docsPath: "/crypto/keccak256/hash-hex#error-handling",
+		});
+	}
+	const bytes = new Uint8Array(normalized.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = parseHexByte(normalized, i * 2);
+	}
 	return hash(bytes);
 }
 
 /**
- * Hash UTF-8 string with Keccak-256 using native implementation
- *
- * @param str - String to hash
- * @returns 32-byte hash
- * @throws {Keccak256Error} If native operation fails
+ * Hash UTF-8 string with Keccak-256 using native FFI.
  */
-export async function hashString(str: string): Promise<Keccak256HashType> {
-	const encoder = new TextEncoder();
-	const bytes = encoder.encode(str);
-	return hash(bytes);
+export function hashString(str: string): Keccak256HashType {
+	return hash(utf8Encoder.encode(str));
 }
 
 /**
- * Universal constructor - accepts hex, string, or bytes
- *
- * @param input - Hex string, UTF-8 string, or Uint8Array
- * @returns 32-byte hash
- * @throws {Keccak256Error} If native operation fails
+ * Universal constructor - accepts hex string, UTF-8 string, or Uint8Array.
  */
-export async function from(
-	input: string | Uint8Array,
-): Promise<Keccak256HashType> {
+export function from(input: Uint8Array | string): Keccak256HashType {
+	if (input instanceof Uint8Array) {
+		return hash(input);
+	}
 	if (typeof input === "string") {
-		// Check if hex string
-		if (input.startsWith("0x")) {
+		if (input.startsWith("0x") || /^[0-9a-fA-F]*$/.test(input)) {
 			return hashHex(input);
 		}
 		return hashString(input);
 	}
-	return hash(input);
+	throw new TypeError(
+		`Invalid input type. Expected Uint8Array or string, got ${typeof input}`,
+	);
 }
 
 /**
- * Compute function selector (first 4 bytes of keccak256)
- *
- * @param signature - Function signature (e.g., "transfer(address,uint256)")
- * @returns First 4 bytes of hash as hex string
+ * Hash multiple byte chunks sequentially.
  */
-export async function selector(signature: string): Promise<string> {
-	const fullHash = await hashString(signature);
-	const selectorBytes = fullHash.slice(0, 4);
-	return `0x${encodeHexDigits(selectorBytes)}`;
+export function hashMultiple(chunks: readonly Uint8Array[]): Keccak256HashType {
+	let totalLength = 0;
+	for (const chunk of chunks) {
+		totalLength += chunk.length;
+	}
+	const combined = new Uint8Array(totalLength);
+	let offset = 0;
+	for (const chunk of chunks) {
+		combined.set(chunk, offset);
+		offset += chunk.length;
+	}
+	return hash(combined);
 }
 
 /**
- * Compute event topic hash
- *
- * @param signature - Event signature (e.g., "Transfer(address,address,uint256)")
- * @returns 32-byte topic hash
+ * Compute 4-byte Ethereum function selector (first 4 bytes of keccak256(signature)).
  */
-export async function topic(signature: string): Promise<Keccak256HashType> {
+export function selector(signature: string): Uint8Array {
+	return hashString(signature).slice(0, 4);
+}
+
+/**
+ * Compute 32-byte Ethereum event topic hash.
+ */
+export function topic(signature: string): Keccak256HashType {
 	return hashString(signature);
 }
 
 /**
- * Synchronous hash (for backward compatibility)
- * @throws {Keccak256NativeNotLoadedError} If native library not loaded
+ * Compute CREATE contract address from deployer address and nonce.
  */
-export function hashSync(data: Uint8Array): Keccak256HashType {
-	if (!nativeLib) {
-		throw new Keccak256NativeNotLoadedError();
+export function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array {
+	if (sender.length !== 20) {
+		throw new InvalidLengthError("Sender must be 20 bytes", {
+			code: -32602,
+			value: sender,
+			expected: "20 bytes",
+			context: { length: sender.length, nonce },
+			docsPath: "/crypto/keccak256/contract-address#error-handling",
+		});
 	}
-
-	const output = allocateOutput(32);
-	const result = nativeLib.primitives_keccak256(data, data.length, output);
-	checkError(result, "keccak256");
-
-	return output as Keccak256HashType;
+	if (nonce >= 0n && nonce <= MAX_U64) {
+		const lib = loadNativeSync();
+		const output = allocateOutput(20);
+		const code = lib.primitives_calculate_create_address(sender, nonce, output);
+		checkError(code, "calculate_create_address");
+		return output;
+	}
+	const rlpEncoded = encodeList([sender, nonceToBytes(nonce)]);
+	return hash(rlpEncoded).slice(12);
 }
 
-// Re-export constants from pure TS implementation
-export { DIGEST_SIZE, RATE, STATE_SIZE } from "./constants.js";
+/**
+ * Compute CREATE2 contract address from sender, 32-byte salt, and 32-byte initCodeHash.
+ */
+export function create2Address(
+	sender: Uint8Array,
+	salt: Uint8Array,
+	initCodeHash: Uint8Array,
+): Uint8Array {
+	if (sender.length !== 20) {
+		throw new InvalidLengthError("Sender must be 20 bytes", {
+			code: -32602,
+			value: sender,
+			expected: "20 bytes",
+			context: { length: sender.length },
+			docsPath: "/crypto/keccak256/create2-address#error-handling",
+		});
+	}
+	if (salt.length !== 32) {
+		throw new InvalidLengthError("Salt must be 32 bytes", {
+			code: -32602,
+			value: salt,
+			expected: "32 bytes",
+			context: { length: salt.length },
+			docsPath: "/crypto/keccak256/create2-address#error-handling",
+		});
+	}
+	if (initCodeHash.length !== 32) {
+		throw new InvalidLengthError("Init code hash must be 32 bytes", {
+			code: -32602,
+			value: initCodeHash,
+			expected: "32 bytes",
+			context: { length: initCodeHash.length },
+			docsPath: "/crypto/keccak256/create2-address#error-handling",
+		});
+	}
+	const data = new Uint8Array(85);
+	data[0] = 0xff;
+	data.set(sender, 1);
+	data.set(salt, 21);
+	data.set(initCodeHash, 53);
+	return hash(data).slice(12);
+}
+
+export { DIGEST_SIZE, RATE, STATE_SIZE };
 
 /**
- * Native Keccak256 namespace object
+ * Synchronous Native Keccak256 namespace matching pure JS Keccak256 1:1.
  */
 export const Keccak256Hash = Object.assign(from, {
 	from,
 	fromString: hashString,
 	fromHex: hashHex,
+	fromTopic: topic,
 	hash,
 	hashString,
 	hashHex,
+	hashMultiple,
 	hashSync,
 	selector,
 	topic,
-	// Constants
-	DIGEST_SIZE: 32,
-	RATE: 136,
-	STATE_SIZE: 200,
+	contractAddress,
+	create2Address,
+	DIGEST_SIZE,
+	RATE,
+	STATE_SIZE,
 });
 
 export const Keccak256 = Keccak256Hash;

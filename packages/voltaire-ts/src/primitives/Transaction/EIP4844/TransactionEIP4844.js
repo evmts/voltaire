@@ -1,4 +1,3 @@
-// @ts-nocheck
 export * from "./TransactionEIP4844Type.js";
 
 // Import crypto dependencies
@@ -54,6 +53,7 @@ export {
  * Factory function for creating EIP-4844 Transaction instances
  *
  * @type {TransactionEIP4844Constructor}
+ * @param {Parameters<TransactionEIP4844Constructor>[0]} tx
  */
 export function TransactionEIP4844(tx) {
 	// Validate maxPriorityFeePerGas <= maxFeePerGas

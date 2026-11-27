@@ -1017,13 +1017,14 @@ pub const Trie = struct {
                 if (nibbles.len < ext.nibbles.len) return node_hash;
                 if (!std.mem.eql(u8, ext.nibbles, nibbles[0..ext.nibbles.len])) return node_hash;
 
-                const remaining = nibbles[ext.nibbles.len..];
+                const ext_nibbles_copy = try self.allocator.dupe(u8, ext.nibbles);
+                defer self.allocator.free(ext_nibbles_copy);
+
+                const remaining = nibbles[ext_nibbles_copy.len..];
                 const new_child_hash = try self.delete_at(ext.child_hash, remaining);
 
                 if (new_child_hash) |child_hash| {
-                    const new_ext = try ExtensionNode.init(self.allocator, ext.nibbles, child_hash);
-                    const new_node = Node{ .Extension = new_ext };
-                    return try self.store_node(new_node);
+                    return try self.collapse_extension(ext_nibbles_copy, child_hash);
                 } else {
                     return null;
                 }
@@ -1032,18 +1033,13 @@ pub const Trie = struct {
                 if (nibbles.len == 0) {
                     // Delete branch value
                     var new_branch = try branch.clone(self.allocator);
+                    errdefer new_branch.deinit(self.allocator);
                     if (new_branch.value) |v| {
                         self.allocator.free(v);
                         new_branch.value = null;
                     }
 
-                    // Check if branch should collapse
-                    if (new_branch.is_empty()) {
-                        return null;
-                    }
-
-                    const new_node = Node{ .Branch = new_branch };
-                    return try self.store_node(new_node);
+                    return try self.collapse_branch(&new_branch);
                 }
 
                 const nibble: u4 = @intCast(nibbles[0]);
@@ -1052,6 +1048,7 @@ pub const Trie = struct {
                 const child_hash = branch.get_child(nibble) orelse return node_hash;
 
                 var new_branch = try branch.clone(self.allocator);
+                errdefer new_branch.deinit(self.allocator);
                 const new_child_hash = try self.delete_at(child_hash, remaining);
 
                 if (new_child_hash) |child| {
@@ -1060,15 +1057,75 @@ pub const Trie = struct {
                     new_branch.remove_child(nibble);
                 }
 
-                // Check if branch should collapse
-                if (new_branch.is_empty()) {
-                    return null;
-                }
-
-                const new_node = Node{ .Branch = new_branch };
-                return try self.store_node(new_node);
+                return try self.collapse_branch(&new_branch);
             },
         }
+    }
+
+    fn collapse_extension(self: *Trie, prefix: []const u8, child_hash: [32]u8) ![32]u8 {
+        const child_hash_str = try hash_to_string(self.allocator, &child_hash);
+        defer self.allocator.free(child_hash_str);
+
+        if (self.nodes.get(child_hash_str)) |child_node| {
+            switch (child_node) {
+                .Leaf => |child_leaf| {
+                    const merged = try self.allocator.alloc(u8, prefix.len + child_leaf.nibbles.len);
+                    defer self.allocator.free(merged);
+                    @memcpy(merged[0..prefix.len], prefix);
+                    @memcpy(merged[prefix.len..], child_leaf.nibbles);
+                    const new_leaf = try LeafNode.init(self.allocator, merged, child_leaf.value);
+                    return try self.store_node(Node{ .Leaf = new_leaf });
+                },
+                .Extension => |child_ext| {
+                    const merged = try self.allocator.alloc(u8, prefix.len + child_ext.nibbles.len);
+                    defer self.allocator.free(merged);
+                    @memcpy(merged[0..prefix.len], prefix);
+                    @memcpy(merged[prefix.len..], child_ext.nibbles);
+                    const new_ext = try ExtensionNode.init(self.allocator, merged, child_ext.child_hash);
+                    return try self.store_node(Node{ .Extension = new_ext });
+                },
+                else => {},
+            }
+        }
+
+        const new_ext = try ExtensionNode.init(self.allocator, prefix, child_hash);
+        return try self.store_node(Node{ .Extension = new_ext });
+    }
+
+    fn collapse_branch(self: *Trie, new_branch: *BranchNode) !?[32]u8 {
+        var child_count: usize = 0;
+        var only_nibble: u8 = 0;
+        var only_child_hash: [32]u8 = undefined;
+        for (new_branch.children, 0..) |maybe_child, idx| {
+            if (maybe_child) |h| {
+                child_count += 1;
+                only_nibble = @intCast(idx);
+                only_child_hash = h;
+            }
+        }
+
+        if (child_count == 0) {
+            if (new_branch.value) |val| {
+                const new_leaf = try LeafNode.init(self.allocator, &.{}, val);
+                const hash = try self.store_node(Node{ .Leaf = new_leaf });
+                new_branch.deinit(self.allocator);
+                new_branch.value = null;
+                return hash;
+            }
+            new_branch.deinit(self.allocator);
+            new_branch.value = null;
+            return null;
+        }
+
+        if (child_count == 1 and new_branch.value == null) {
+            const single = [_]u8{only_nibble};
+            const collapsed = try self.collapse_extension(&single, only_child_hash);
+            new_branch.deinit(self.allocator);
+            new_branch.value = null;
+            return collapsed;
+        }
+
+        return try self.store_node(Node{ .Branch = new_branch.* });
     }
 
     /// Split a leaf node when inserting a divergent key
@@ -1951,4 +2008,129 @@ test "Trie - clear and reuse" {
     try trie.put(&[_]u8{ 0xAB, 0xCD }, "value3");
     try testing.expectEqualStrings("value3", (try trie.get(&[_]u8{ 0xAB, 0xCD })).?);
     try testing.expect((try trie.get(&[_]u8{ 0x12, 0x34 })) == null);
+}
+
+test "Trie - delete collapse: branch to leaf produces canonical root" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Two keys diverging at the very first nibble form a root Branch with two Leaf children.
+    // Deleting one must collapse the Branch into a single Leaf matching a fresh insert.
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+    try trie.put(&[_]u8{ 0x12, 0x34 }, "alpha");
+    try trie.put(&[_]u8{ 0x56, 0x78 }, "beta");
+    try trie.delete(&[_]u8{ 0x56, 0x78 });
+
+    var fresh = Trie.init(allocator);
+    defer fresh.deinit();
+    try fresh.put(&[_]u8{ 0x12, 0x34 }, "alpha");
+
+    try testing.expectEqual(fresh.root_hash().?, trie.root_hash().?);
+    try testing.expectEqualStrings("alpha", (try trie.get(&[_]u8{ 0x12, 0x34 })).?);
+
+    // Branch with value + one child: deleting child collapses branch into leaf holding value.
+    var trie_val = Trie.init(allocator);
+    defer trie_val.deinit();
+    try trie_val.put(&[_]u8{0x12}, "prefix");
+    try trie_val.put(&[_]u8{ 0x12, 0x34 }, "child");
+    try trie_val.delete(&[_]u8{ 0x12, 0x34 });
+
+    var fresh_val = Trie.init(allocator);
+    defer fresh_val.deinit();
+    try fresh_val.put(&[_]u8{0x12}, "prefix");
+
+    try testing.expectEqual(fresh_val.root_hash().?, trie_val.root_hash().?);
+    try testing.expectEqualStrings("prefix", (try trie_val.get(&[_]u8{0x12})).?);
+}
+
+test "Trie - delete collapse: branch to extension produces canonical root" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Root Branch has child 0x1 -> Branch(0x2 -> Leaf, 0x3 -> Leaf) and child 0x9 -> Leaf.
+    // Deleting 0x9 leaves Root Branch with a single child (0x1 -> Branch), so Root Branch
+    // collapses into Extension([1]) pointing to the inner Branch.
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+    try trie.put(&[_]u8{ 0x12, 0x00 }, "v1");
+    try trie.put(&[_]u8{ 0x13, 0x00 }, "v2");
+    try trie.put(&[_]u8{ 0x90, 0x00 }, "v3");
+    try trie.delete(&[_]u8{ 0x90, 0x00 });
+
+    var fresh = Trie.init(allocator);
+    defer fresh.deinit();
+    try fresh.put(&[_]u8{ 0x12, 0x00 }, "v1");
+    try fresh.put(&[_]u8{ 0x13, 0x00 }, "v2");
+
+    try testing.expectEqual(fresh.root_hash().?, trie.root_hash().?);
+    try testing.expectEqualStrings("v1", (try trie.get(&[_]u8{ 0x12, 0x00 })).?);
+    try testing.expectEqualStrings("v2", (try trie.get(&[_]u8{ 0x13, 0x00 })).?);
+}
+
+test "Trie - delete collapse: extension to leaf produces canonical root" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Shared prefix [0xA, 0xB] creates Extension([A, B]) -> Branch(1 -> Leaf, 2 -> Leaf).
+    // Deleting one key collapses the Branch into a Leaf, which must merge into the parent
+    // Extension to produce a single canonical Leaf.
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+    try trie.put(&[_]u8{ 0xAB, 0x10 }, "first");
+    try trie.put(&[_]u8{ 0xAB, 0x20 }, "second");
+    try trie.delete(&[_]u8{ 0xAB, 0x20 });
+
+    var fresh = Trie.init(allocator);
+    defer fresh.deinit();
+    try fresh.put(&[_]u8{ 0xAB, 0x10 }, "first");
+
+    try testing.expectEqual(fresh.root_hash().?, trie.root_hash().?);
+    try testing.expectEqualStrings("first", (try trie.get(&[_]u8{ 0xAB, 0x10 })).?);
+
+    // Also test deleting the value directly stored on a branch beneath an extension.
+    var trie_ext_val = Trie.init(allocator);
+    defer trie_ext_val.deinit();
+    try trie_ext_val.put(&[_]u8{0xAB}, "root_val");
+    try trie_ext_val.put(&[_]u8{ 0xAB, 0xCD }, "deep_val");
+    try trie_ext_val.delete(&[_]u8{0xAB});
+
+    var fresh_ext_val = Trie.init(allocator);
+    defer fresh_ext_val.deinit();
+    try fresh_ext_val.put(&[_]u8{ 0xAB, 0xCD }, "deep_val");
+
+    try testing.expectEqual(fresh_ext_val.root_hash().?, trie_ext_val.root_hash().?);
+    try testing.expectEqualStrings("deep_val", (try trie_ext_val.get(&[_]u8{ 0xAB, 0xCD })).?);
+}
+
+test "Trie - delete collapse: extension to extension produces canonical root" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Keys 0xAB1230, 0xAB1240, 0xAB9000 build:
+    // Extension([A,B]) -> Branch(1 -> Extension([2]) -> Branch(3,4), 9 -> Leaf).
+    // Deleting 0xAB9000 collapses the outer Branch into Extension([1]), which merges with
+    // child Extension([2]) and parent Extension([A,B]) into Extension([A,B,1,2]) -> Branch(3,4).
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+    try trie.put(&[_]u8{ 0xAB, 0x12, 0x30 }, "deep1");
+    try trie.put(&[_]u8{ 0xAB, 0x12, 0x40 }, "deep2");
+    try trie.put(&[_]u8{ 0xAB, 0x90, 0x00 }, "side");
+    try trie.delete(&[_]u8{ 0xAB, 0x90, 0x00 });
+
+    var fresh = Trie.init(allocator);
+    defer fresh.deinit();
+    try fresh.put(&[_]u8{ 0xAB, 0x12, 0x30 }, "deep1");
+    try fresh.put(&[_]u8{ 0xAB, 0x12, 0x40 }, "deep2");
+
+    try testing.expectEqual(fresh.root_hash().?, trie.root_hash().?);
+    try testing.expectEqualStrings("deep1", (try trie.get(&[_]u8{ 0xAB, 0x12, 0x30 })).?);
+    try testing.expectEqualStrings("deep2", (try trie.get(&[_]u8{ 0xAB, 0x12, 0x40 })).?);
+
+    // Deleting a second key collapses all the way down to a single Leaf.
+    try trie.delete(&[_]u8{ 0xAB, 0x12, 0x40 });
+    var fresh_one = Trie.init(allocator);
+    defer fresh_one.deinit();
+    try fresh_one.put(&[_]u8{ 0xAB, 0x12, 0x30 }, "deep1");
+    try testing.expectEqual(fresh_one.root_hash().?, trie.root_hash().?);
 }

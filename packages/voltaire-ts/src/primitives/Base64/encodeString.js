@@ -1,4 +1,6 @@
-import * as OxBase64 from "ox/Base64";
+import { encode } from "./encode.js";
+
+const textEncoder = new TextEncoder();
 
 /**
  * Encode string to base64
@@ -12,5 +14,5 @@ import * as OxBase64 from "ox/Base64";
  * ```
  */
 export function encodeString(str) {
-	return OxBase64.fromString(str);
+	return encode(textEncoder.encode(str));
 }

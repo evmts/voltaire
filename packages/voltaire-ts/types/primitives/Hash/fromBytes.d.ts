@@ -5,6 +5,7 @@
  * @since 0.0.0
  * @param {Uint8Array} bytes - Raw bytes (must be 32 bytes)
  * @returns {import('./HashType.js').HashType} Hash bytes
+ * @throws {InvalidFormatError} If input is not a Uint8Array
  * @throws {InvalidLengthError} If bytes is wrong length
  * @example
  * ```javascript

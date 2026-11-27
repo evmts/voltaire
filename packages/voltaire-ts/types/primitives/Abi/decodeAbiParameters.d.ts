@@ -1,7 +1,7 @@
 /**
  * Factory: decode ABI parameters with viem `decodeAbiParameters` output semantics
  *
- * `Abi.decodeParameters` returns Voltaire-native values: lowercase address
+ * `Abi.decodeParameters` returns Voltaire-native values by default: lowercase address
  * strings, `Uint8Array` for `bytes`/`bytesN`, `bigint` for every integer, and
  * arrays for every tuple. The function this factory returns decodes the same
  * data and returns what viem returns:
@@ -41,7 +41,8 @@ export function DecodeAbiParameters({ keccak256 }: {
  * Decode ABI parameters with viem `decodeAbiParameters` output semantics
  *
  * Same argument order and return shape as viem. See {@link DecodeAbiParameters}
- * for the full mapping. Use `Abi.decodeParameters` for Voltaire-native values.
+ * for the full mapping. Use `Abi.decodeParameters` for Voltaire-native values
+ * or pass `{ format: 'viem' }` to `Abi.decodeParameters`.
  *
  * @see https://voltaire.tevm.sh/primitives/abi
  * @since 0.0.0

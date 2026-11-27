@@ -1,8 +1,6 @@
-// @ts-nocheck
 import { getName } from "../Opcode/getName.js";
 import { getStackInput } from "../Opcode/getStackInput.js";
 import { getStackOutput } from "../Opcode/getStackOutput.js";
-// @ts-nocheck
 import { parseInstructions } from "./parseInstructions.js";
 
 /**
@@ -61,14 +59,16 @@ export function analyzeStack(bytecode, options = {}) {
 		if (!instr) continue;
 
 		const { opcode, position } = instr;
+		const typedOpcode =
+			/** @type {import('../Opcode/OpcodeType.js').OpcodeType} */ (opcode);
 
 		// Get stack inputs/outputs
-		const inputs = getStackInput(opcode) ?? 0;
-		const outputs = getStackOutput(opcode) ?? 0;
+		const inputs = getStackInput(typedOpcode) ?? 0;
+		const outputs = getStackOutput(typedOpcode) ?? 0;
 
 		// Check underflow
 		if (depth < inputs) {
-			const opcodeName = getName(opcode);
+			const opcodeName = getName(typedOpcode);
 			issues.push({
 				type: "underflow",
 				pc: position,
@@ -96,7 +96,7 @@ export function analyzeStack(bytecode, options = {}) {
 
 			// Check overflow
 			if (depth > maxDepth) {
-				const opcodeName = getName(opcode);
+				const opcodeName = getName(typedOpcode);
 				issues.push({
 					type: "overflow",
 					pc: position,

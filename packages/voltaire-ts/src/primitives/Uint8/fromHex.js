@@ -23,28 +23,27 @@ import {
  * ```
  */
 export function fromHex(hex) {
-	const cleanHex =
-		hex.startsWith("0x") || hex.startsWith("0X") ? hex : `0x${hex}`;
-	const value = Number.parseInt(cleanHex, 16);
-
-	if (Number.isNaN(value)) {
+	if (typeof hex !== "string" || !/^(?:0[xX])?[0-9a-fA-F]+$/.test(hex)) {
 		throw new Uint8InvalidHexError(`Invalid hex string: ${hex}`, {
 			value: hex,
 		});
 	}
+	const cleanHex =
+		hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
+	const value = BigInt(`0x${cleanHex}`);
 
-	if (value < 0) {
+	if (value < 0n) {
 		throw new Uint8NegativeError(`Uint8 value cannot be negative: ${value}`, {
 			value,
 		});
 	}
 
-	if (value > MAX) {
+	if (value > BigInt(MAX)) {
 		throw new Uint8OverflowError(
 			`Uint8 value exceeds maximum (255): ${value}`,
 			{ value },
 		);
 	}
 
-	return /** @type {import('./Uint8Type.js').Uint8Type} */ (value);
+	return /** @type {import('./Uint8Type.js').Uint8Type} */ (Number(value));
 }

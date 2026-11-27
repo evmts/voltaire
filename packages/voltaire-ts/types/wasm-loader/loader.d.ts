@@ -11,21 +11,53 @@ import type { HashType } from "../primitives/Hash/HashType.js";
 import type { PrivateKeyType } from "../primitives/PrivateKey/PrivateKeyType.js";
 import type { WasmExports } from "./types.js";
 /**
- * Load and instantiate the WASM module.
+ * Accepted input sources for WASM instantiation.
+ */
+export type WasmInput = string | URL | Uint8Array | ArrayBuffer;
+/**
+ * Thrown when a synchronous WASM call runs before WASM has been initialized
+ * in an environment without synchronous filesystem access (e.g. browsers).
+ */
+export declare class WasmNotInitializedError extends Error {
+    readonly _tag: "WasmNotInitializedError";
+    constructor(message?: string);
+}
+/**
+ * Load and instantiate the WASM module asynchronously.
+ * Works in browsers (fetch / instantiateStreaming) and Node/Bun (node:fs/promises).
  *
  * @see https://voltaire.tevm.sh/getting-started for documentation
  * @since 0.0.0
- * @param wasmPath - Path to WASM file, URL, or ArrayBuffer
- * @param forceReload - Force reload even if already loaded (for benchmarking different modes)
+ * @param wasmPath - Optional path, URL, Uint8Array, or ArrayBuffer (defaults to primitives.wasm)
+ * @param forceReload - Force reload even if already loaded
  * @returns Promise that resolves when WASM is loaded
  * @throws {Error} If WASM module does not export memory or instantiation fails
- * @example
- * ```javascript
- * import { loadWasm } from './wasm-loader/loader.js';
- * await loadWasm('./wasm/primitives.wasm');
- * ```
  */
-export declare function loadWasm(wasmPath: string | URL | ArrayBuffer, forceReload?: boolean): Promise<void>;
+export declare function loadWasm(wasmPath?: WasmInput, forceReload?: boolean): Promise<void>;
+/**
+ * Load and instantiate the WASM module synchronously.
+ * Supported in Node.js and Bun via `process.getBuiltinModule('node:fs')`, or anywhere
+ * when passed raw WASM bytes (`Uint8Array` or `ArrayBuffer`).
+ *
+ * @param wasmPath - Optional path, URL, Uint8Array, or ArrayBuffer (defaults to primitives.wasm)
+ * @param forceReload - Force reload even if already loaded
+ * @throws {WasmNotInitializedError} In browsers when called without raw WASM bytes
+ */
+export declare function loadWasmSync(wasmPath?: WasmInput, forceReload?: boolean): void;
+/**
+ * Check whether the unified primitives WASM module is currently loaded.
+ */
+export declare function isWasmLoaded(): boolean;
+/**
+ * Unload the currently instantiated WASM module and reset loader state.
+ */
+export declare function unloadWasm(): void;
+/**
+ * Ensure the WASM module is initialized.
+ * Auto-initializes synchronously in Node/Bun; throws `WasmNotInitializedError`
+ * in browsers if `await initWasm()` has not been called.
+ */
+export declare function ensureWasmLoaded(): void;
 /**
  * Get the WASM exports for direct access if needed.
  *
@@ -800,14 +832,25 @@ export declare const KZG_FIELD_ELEMENT_SIZE = 32;
  */
 export declare function kzgIsInitialized(): boolean;
 /**
- * Load KZG trusted setup from embedded data
+ * Load KZG trusted setup from embedded data (native builds) or fail with
+ * guidance on WASM builds where the 788 KB setup is not embedded.
  *
  * Idempotent - safe to call multiple times (no-op if already loaded).
- * Uses the embedded trusted setup from c-kzg-4844.
  *
- * @throws {Error} If loading fails
+ * @throws {Error} If loading fails or embedded setup is omitted in WASM
  */
 export declare function kzgLoadTrustedSetup(): void;
+/**
+ * Load KZG trusted setup dynamically from raw `trusted_setup.txt` bytes.
+ *
+ * Idempotent - safe to call multiple times (no-op if already loaded).
+ * Required for WASM builds where the 788 KB trusted setup is omitted from
+ * `primitives.wasm` to keep the binary under 350 kB.
+ *
+ * @param setupBytes - Raw UTF-8 bytes of `trusted_setup.txt`
+ * @throws {Error} If setupBytes is empty or loading fails
+ */
+export declare function kzgLoadTrustedSetupBytes(setupBytes: Uint8Array): void;
 /**
  * Free KZG trusted setup resources
  *

@@ -1,1 +1,1 @@
-{"version":3,"file":"validateTxFeeParams.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/validateTxFeeParams.js"],"names":[],"mappings":"AAGA;;;;;;;;;;;;;;;;;GAiBG;AACH,4CAbW,GAAuC,GAAG,GAA+C,GACvF,MAAM,EAAE,CAmDpB"}
+{"version":3,"file":"validateTxFeeParams.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/validateTxFeeParams.js"],"names":[],"mappings":"AAEA;;;;;;;;;;;;;;;;;GAiBG;AACH,4CAbW,OAAO,kBAAkB,EAAE,WAAW,GAAG,OAAO,sBAAsB,EAAE,eAAe,GACrF,MAAM,EAAE,CAmDpB"}

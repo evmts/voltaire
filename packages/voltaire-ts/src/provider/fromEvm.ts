@@ -11,6 +11,7 @@
 
 import { Frame } from "../evm/Frame/index.js";
 import type { BrandedHost } from "../evm/Host/HostType.js";
+import type { AddressType } from "../primitives/Address/AddressType.js";
 import { Address } from "../primitives/Address/index.js";
 import * as Hex from "../primitives/Hex/index.js";
 import type { Provider } from "./Provider.js";
@@ -19,6 +20,14 @@ import type {
 	ProviderEventMap,
 	RequestArguments,
 } from "./types.js";
+
+interface RpcCallParams {
+	from?: string;
+	to?: string;
+	gas?: string;
+	value?: string;
+	data?: string;
+}
 
 export interface FromEvmOptions {
 	host: BrandedHost;
@@ -75,15 +84,14 @@ class EvmBackedProvider implements Provider {
 
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: RPC switch inherently needs many branches
 	async request(args: RequestArguments): Promise<unknown> {
-		// biome-ignore lint/suspicious/noExplicitAny: batch check requires any
-		if (Array.isArray(args as any)) {
+		if (Array.isArray(args)) {
 			// Batch support (best-effort): execute sequentially
 			const batch = args as unknown as RequestArguments[];
 			return Promise.all(batch.map((a) => this.request(a)));
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: params type varies by method
-		const { method, params = [] } = args as { method: string; params?: any[] };
+		const { method, params = [] } = args;
+		const paramList = Array.isArray(params) ? params : [];
 		switch (method) {
 			// Chain/meta
 			case "eth_chainId":
@@ -99,47 +107,41 @@ class EvmBackedProvider implements Provider {
 
 			// Basic reads via Host
 			case "eth_getBalance": {
-				const [addrHex] = params as [string, string?];
-				const addr = Address(addrHex);
-				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
-				const bal = this.host.getBalance(addr as any);
+				const [addrHex] = paramList as [string, string?];
+				const addr = Address(addrHex) as AddressType;
+				const bal = this.host.getBalance(addr);
 				return `0x${bal.toString(16)}`;
 			}
 			case "eth_getCode": {
-				const [addrHex] = params as [string, string?];
-				const addr = Address(addrHex);
-				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
-				const code = this.host.getCode(addr as any);
+				const [addrHex] = paramList as [string, string?];
+				const addr = Address(addrHex) as AddressType;
+				const code = this.host.getCode(addr);
 				return Hex.fromBytes(code);
 			}
 			case "eth_getTransactionCount": {
-				const [addrHex] = params as [string, string?];
-				const addr = Address(addrHex);
-				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
-				const nonce = this.host.getNonce(addr as any);
+				const [addrHex] = paramList as [string, string?];
+				const addr = Address(addrHex) as AddressType;
+				const nonce = this.host.getNonce(addr);
 				return `0x${BigInt(nonce).toString(16)}`;
 			}
 
 			// Calls (simplified: prepare frame and return default output)
 			case "eth_call": {
-				// biome-ignore lint/suspicious/noExplicitAny: tx params are dynamic
-				const [tx] = params as [any, string?];
-				const to = (tx.to as string | undefined)?.toLowerCase();
-				const data = (tx.data as string | undefined) ?? "0x";
+				const [tx] = paramList as [RpcCallParams, string?];
+				const to = tx.to?.toLowerCase();
+				const data = tx.data ?? "0x";
 				const gas = tx.gas ? BigInt(tx.gas) : 30_000_000n;
 				if (!to) return "0x"; // create not supported here
-				// biome-ignore lint/suspicious/noExplicitAny: host expects branded type
-				const code = this.host.getCode(Address(to) as any);
+				const toAddr = Address(to) as AddressType;
+				const code = this.host.getCode(toAddr);
 				if (!code || code.length === 0) return "0x";
 				const frame = Frame({
 					bytecode: code,
 					gas,
 					caller: Address(
 						tx.from ?? "0x0000000000000000000000000000000000000000",
-						// biome-ignore lint/suspicious/noExplicitAny: Frame accepts branded types
-					) as any,
-					// biome-ignore lint/suspicious/noExplicitAny: Frame accepts branded types
-					address: Address(to) as any,
+					) as AddressType,
+					address: toAddr,
 					value: tx.value ? BigInt(tx.value) : 0n,
 					calldata: Hex.toBytes(data as `0x${string}`),
 					isStatic: true,
@@ -150,9 +152,8 @@ class EvmBackedProvider implements Provider {
 
 			// Gas
 			case "eth_estimateGas": {
-				// biome-ignore lint/suspicious/noExplicitAny: tx params are dynamic
-				const [tx] = params as [any];
-				const data = (tx?.data as string | undefined) ?? "0x";
+				const [tx] = paramList as [RpcCallParams?];
+				const data = tx?.data ?? "0x";
 				const base = 21_000n;
 				const dataGas = BigInt(((data.length - 2) / 2) * 16);
 				return `0x${(base + dataGas).toString(16)}`;
@@ -166,7 +167,7 @@ class EvmBackedProvider implements Provider {
 
 			// Hardhat/Anvil compatible reset (no-op; wiring to fork can be added)
 			case "hardhat_reset": {
-				const [config] = params as [
+				const [config] = paramList as [
 					{ forking?: { jsonRpcUrl?: string; blockNumber?: number } }?,
 				];
 				if (config?.forking?.blockNumber != null) {
@@ -188,9 +189,6 @@ class EvmBackedProvider implements Provider {
  */
 export function fromEvm(evmOrOptions: BrandedHost | FromEvmOptions): Provider {
 	const opts: FromEvmOptions =
-		// biome-ignore lint/suspicious/noExplicitAny: duck-type check for BrandedHost
-		"getBalance" in (evmOrOptions as any)
-			? { host: evmOrOptions as BrandedHost }
-			: (evmOrOptions as FromEvmOptions);
+		"getBalance" in evmOrOptions ? { host: evmOrOptions } : evmOrOptions;
 	return new EvmBackedProvider(opts);
 }

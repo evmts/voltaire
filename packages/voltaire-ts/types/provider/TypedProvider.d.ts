@@ -25,7 +25,7 @@ import type { EIP1193RequestFn } from "./request/EIP1193RequestFn.js";
  * type CustomProvider = TypedProvider<MyCustomSchema, MyEventMap>;
  * ```
  */
-export interface TypedProvider<TRpcSchema extends RpcSchema = RpcSchema, TEventMap extends Record<string, (...args: any[]) => void> = EIP1193EventMap> {
+export interface TypedProvider<TRpcSchema extends RpcSchema = RpcSchema, TEventMap extends object = EIP1193EventMap> {
     /**
      * Execute JSON-RPC request
      *

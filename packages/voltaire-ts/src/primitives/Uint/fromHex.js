@@ -1,5 +1,9 @@
 import { MAX } from "./constants.js";
-import { UintNegativeError, UintOverflowError } from "./errors.js";
+import {
+	UintInvalidHexError,
+	UintNegativeError,
+	UintOverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint256 from hex string
@@ -8,6 +12,7 @@ import { UintNegativeError, UintOverflowError } from "./errors.js";
  * @since 0.0.0
  * @param {string} hex - Hex string to convert
  * @returns {import('./BrandedUint.js').BrandedUint} Uint256 value
+ * @throws {UintInvalidHexError} If hex string is invalid
  * @throws {UintNegativeError} If value is negative
  * @throws {UintOverflowError} If value exceeds maximum
  * @example
@@ -18,7 +23,13 @@ import { UintNegativeError, UintOverflowError } from "./errors.js";
  * ```
  */
 export function fromHex(hex) {
-	const normalized = hex.startsWith("0x") ? hex : `0x${hex}`;
+	if (typeof hex !== "string" || !/^(?:0[xX])?[0-9a-fA-F]+$/.test(hex)) {
+		throw new UintInvalidHexError(`Invalid Uint256 hex string: ${hex}`, {
+			value: hex,
+		});
+	}
+	const normalized =
+		hex.startsWith("0x") || hex.startsWith("0X") ? hex : `0x${hex}`;
 	const value = BigInt(normalized);
 
 	if (value < 0n) {

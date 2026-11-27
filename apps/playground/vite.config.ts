@@ -22,6 +22,7 @@ function voltaireSubpathResolver(): Plugin {
 		"Base64",
 		"BinaryTree",
 		"Blob",
+		"BlockAccessList",
 		"BloomFilter",
 		"Bytecode",
 		"Bytes",
@@ -30,6 +31,7 @@ function voltaireSubpathResolver(): Plugin {
 		"Denomination",
 		"Ens",
 		"EventLog",
+		"ExecutionPayloadBid",
 		"errors",
 		"FeeMarket",
 		"GasConstants",
@@ -63,6 +65,8 @@ function voltaireSubpathResolver(): Plugin {
 		"Keccak256",
 		"Keystore",
 		"KZG",
+		"ModExp",
+		"P256",
 		"PBKDF2",
 		"Ripemd160",
 		"Scrypt",
@@ -71,58 +75,76 @@ function voltaireSubpathResolver(): Plugin {
 		"X25519",
 	];
 
-	const topLevel = ["block", "contract", "transaction", "stream"];
+	const topLevel = ["block", "contract", "evm", "precompiles", "transaction", "stream"];
+	const voltaireSrc = resolve(__dirname, "../../packages/voltaire-ts/src");
 
 	return {
 		name: "voltaire-subpath-resolver",
 		resolveId(source) {
 			// Handle @tevm/voltaire main entry
 			if (source === "@tevm/voltaire") {
-				return resolve(__dirname, "../src/index.ts");
+				return resolve(voltaireSrc, "index.ts");
 			}
 			// Handle @tevm/voltaire/wasm
 			if (source === "@tevm/voltaire/wasm") {
-				return resolve(__dirname, "../src/wasm/index.ts");
+				return resolve(voltaireSrc, "wasm/index.ts");
 			}
 			// Handle @tevm/voltaire subpath imports
 			if (source.startsWith("@tevm/voltaire/")) {
 				const subpath = source.replace("@tevm/voltaire/", "");
 				const basePath = subpath.split("/")[0];
 
-				// Handle /effect subpaths like Hash/effect
-				if (subpath.endsWith("/effect")) {
-					const primName = subpath.replace("/effect", "");
-					if (primitives.includes(primName)) {
-						return resolve(__dirname, `../src/primitives/${primName}/effect.ts`);
-					}
-				}
-
 				// Helper to find index file with .ts or .js extension
 				const findIndex = (dir: string) => {
-					const tsPath = resolve(__dirname, `${dir}/index.ts`);
+					const tsPath = resolve(voltaireSrc, `${dir}/index.ts`);
 					if (existsSync(tsPath)) return tsPath;
-					const jsPath = resolve(__dirname, `${dir}/index.js`);
+					const jsPath = resolve(voltaireSrc, `${dir}/index.js`);
 					if (existsSync(jsPath)) return jsPath;
 					return null;
 				};
 
+				if (subpath === "precompiles") {
+					return resolve(voltaireSrc, "evm/precompiles/precompiles.js");
+				}
 				if (primitives.includes(basePath)) {
-					return findIndex(`../src/primitives/${subpath}`);
+					return findIndex(`primitives/${subpath}`);
 				}
 				if (crypto.includes(basePath)) {
-					return findIndex(`../src/crypto/${subpath}`);
+					return findIndex(`crypto/${subpath}`);
 				}
 				if (topLevel.includes(basePath)) {
-					return findIndex(`../src/${subpath}`);
+					return findIndex(subpath);
 				}
 
 				// Fallback: try primitives then crypto
-				const primPath = findIndex(`../src/primitives/${subpath}`);
+				const primPath = findIndex(`primitives/${subpath}`);
 				if (primPath) return primPath;
-				const cryptoPath = findIndex(`../src/crypto/${subpath}`);
+				const cryptoPath = findIndex(`crypto/${subpath}`);
 				if (cryptoPath) return cryptoPath;
 			}
 			return null;
+		},
+	};
+}
+
+// Plugin to copy fresh Voltaire WASM artifacts to public/wasm/ for runtime access
+function copyVoltaireWasmPlugin(): Plugin {
+	return {
+		name: "copy-voltaire-wasm",
+		buildStart() {
+			const wasmOutDir = resolve(__dirname, "public/wasm");
+			if (!existsSync(wasmOutDir)) {
+				mkdirSync(wasmOutDir, { recursive: true });
+			}
+			const artifacts = [
+				[resolve(__dirname, "../../wasm/primitives.wasm"), resolve(wasmOutDir, "primitives.wasm")],
+				[resolve(__dirname, "../../wasm/crypto/keccak256.wasm"), resolve(wasmOutDir, "keccak256.wasm")],
+			];
+			for (const [src, dest] of artifacts) {
+				if (existsSync(src)) {
+					copyFileSync(src, dest);
+				}
+			}
 		},
 	};
 }
@@ -200,7 +222,7 @@ function modernMonacoPlugin(): Plugin {
 
 				// Serve voltaire .d.ts files for Monaco LSP from tsup build
 				if (req.url === "/voltaire.d.ts") {
-					const dtsPath = resolve(__dirname, "../dist/index.d.ts");
+					const dtsPath = resolve(__dirname, "../../packages/voltaire-ts/dist/index.d.ts");
 					try {
 						const content = readFileSync(dtsPath, "utf-8");
 						res.setHeader("Content-Type", "application/typescript");
@@ -218,7 +240,7 @@ function modernMonacoPlugin(): Plugin {
 				}
 
 				if (req.url === "/voltaire/wasm.d.ts") {
-					const dtsPath = resolve(__dirname, "../dist/wasm/index.d.ts");
+					const dtsPath = resolve(__dirname, "../../packages/voltaire-ts/dist/wasm/index.d.ts");
 					try {
 						const content = readFileSync(dtsPath, "utf-8");
 						res.setHeader("Content-Type", "application/typescript");
@@ -238,7 +260,7 @@ function modernMonacoPlugin(): Plugin {
 				// We need to map these .js requests to the actual .d.ts files
 				if (req.url?.endsWith(".js") || req.url?.endsWith(".d.ts")) {
 					const fileName = req.url.replace(/^\//, "").replace(/\.js$/, ".d.ts");
-					const dtsPath = resolve(__dirname, "../dist", fileName);
+					const dtsPath = resolve(__dirname, "../../packages/voltaire-ts/dist", fileName);
 					if (existsSync(dtsPath)) {
 						try {
 							const content = readFileSync(dtsPath, "utf-8");
@@ -284,6 +306,7 @@ export default defineConfig({
 		voltaireSubpathResolver(),
 		modernMonacoPlugin(),
 		copyEsbuildWasmPlugin(),
+		copyVoltaireWasmPlugin(),
 		copyModernMonacoPlugin(),
 	],
 	test: {
@@ -307,13 +330,13 @@ export default defineConfig({
 			),
 			// Note: @tevm/voltaire is handled by voltaireSubpathResolver plugin
 			// to properly resolve subpath imports like @tevm/voltaire/Blob
-			"voltaire/wasm": resolve(__dirname, "../src/wasm/index.ts"),
-			voltaire: resolve(__dirname, "../src/index.ts"),
+			"voltaire/wasm": resolve(__dirname, "../../packages/voltaire-ts/src/wasm/index.ts"),
+			voltaire: resolve(__dirname, "../../packages/voltaire-ts/src/index.ts"),
 		},
 	},
 	server: {
 		fs: {
-			allow: [".."],
+			allow: ["../.."],
 		},
 	},
 });

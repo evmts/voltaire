@@ -66,7 +66,8 @@ const Unit = struct {
     }
 
     fn push(self: *Unit, cp: u21) void {
-        self.len += std.unicode.utf8Encode(cp, self.buf[self.len..]) catch unreachable;
+        const n = std.unicode.utf8Encode(cp, self.buf[self.len..]) catch return;
+        self.len += n;
     }
 };
 
@@ -140,10 +141,22 @@ const Iter = struct {
             e.buf[0] = b[0];
             return e;
         }
-        const n = std.unicode.utf8ByteSequenceLength(b[self.off]) catch unreachable;
+        const n = std.unicode.utf8ByteSequenceLength(b[self.off]) catch {
+            e.buf[0] = b[self.off];
+            return e;
+        };
+        if (self.off + n > b.len) {
+            e.buf[0] = b[self.off];
+            return e;
+        }
         @memcpy(e.buf[0..n], b[self.off..][0..n]);
         e.len = n;
-        e.ccc = combiningClass(std.unicode.utf8Decode(b[self.off..][0..n]) catch unreachable);
+        const cp = std.unicode.utf8Decode(b[self.off..][0..n]) catch {
+            e.len = 1;
+            e.buf[0] = b[self.off];
+            return e;
+        };
+        e.ccc = combiningClass(cp);
         return e;
     }
 

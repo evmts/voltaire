@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MAX, ZERO } from "./constants.js";
+import { UintOverflowError } from "./errors.js";
 import { from } from "./from.js";
 import { plus } from "./plus.js";
+import { plusWrapping } from "./plusWrapping.js";
 
 describe("Uint256.plus", () => {
 	describe("known values", () => {
@@ -42,14 +44,14 @@ describe("Uint256.plus", () => {
 			expect(result).toBe(MAX);
 		});
 
-		it("wraps on overflow", () => {
-			const result = plus(MAX, from(1n));
-			expect(result).toBe(0n);
+		it("throws on overflow", () => {
+			expect(() => plus(MAX, from(1n))).toThrow(UintOverflowError);
+			expect(plusWrapping(MAX, from(1n))).toBe(0n);
 		});
 
-		it("wraps on large overflow", () => {
-			const result = plus(MAX, from(2n));
-			expect(result).toBe(1n);
+		it("throws on large overflow", () => {
+			expect(() => plus(MAX, from(2n))).toThrow(UintOverflowError);
+			expect(plusWrapping(MAX, from(2n))).toBe(1n);
 		});
 	});
 

@@ -17,6 +17,14 @@ import { InvalidLengthError, InvalidRangeError } from "../errors/index.js";
  * ```
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidLengthError("Private key must be a 32-byte Uint8Array", {
+			code: "PRIVATE_KEY_INVALID_LENGTH",
+			value: bytes,
+			expected: "32 bytes",
+			docsPath: "/primitives/private-key",
+		});
+	}
 	if (bytes.length !== 32) {
 		throw new InvalidLengthError(
 			`Private key must be 32 bytes, got ${bytes.length}`,

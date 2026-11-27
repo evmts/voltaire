@@ -1,10 +1,9 @@
 /**
- * Record mapping chain IDs to chain objects
+ * Built-in registry of canonical EVM chains indexed by EIP-155 chain ID
  *
  * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
  * @since 0.0.0
  * @type {Record<number, import('./ChainType.js').Chain>}
- * @throws {never}
  * @example
  * ```javascript
  * import * as Chain from './primitives/Chain/index.js';

@@ -18,6 +18,12 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function fromAbiEncoded(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new Uint128InvalidLengthError(
+			"ABI-encoded Uint128 must be a 32-byte Uint8Array",
+			{ value: bytes, expected: "32 bytes" },
+		);
+	}
 	if (bytes.length !== 32) {
 		throw new Uint128InvalidLengthError(
 			`ABI-encoded Uint128 must be 32 bytes: ${bytes.length}`,

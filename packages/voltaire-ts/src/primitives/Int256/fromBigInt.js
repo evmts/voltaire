@@ -1,6 +1,7 @@
 import {
 	IntegerOverflowError,
 	IntegerUnderflowError,
+	InvalidFormatError,
 } from "../errors/index.js";
 import { MAX, MIN } from "./constants.js";
 
@@ -11,6 +12,7 @@ import { MAX, MIN } from "./constants.js";
  * @since 0.0.0
  * @param {bigint} value - BigInt value
  * @returns {import('./Int256Type.js').BrandedInt256} Int256 value
+ * @throws {InvalidFormatError} If value is not a bigint
  * @throws {IntegerOverflowError} If value exceeds maximum
  * @throws {IntegerUnderflowError} If value is below minimum
  * @example
@@ -21,6 +23,12 @@ import { MAX, MIN } from "./constants.js";
  * ```
  */
 export function fromBigInt(value) {
+	if (typeof value !== "bigint") {
+		throw new InvalidFormatError(
+			`Int256.fromBigInt requires bigint, got ${typeof value}`,
+			{ value, expected: "bigint", docsPath: "/primitives/int256#from-bigint" },
+		);
+	}
 	if (value > MAX) {
 		throw new IntegerOverflowError(
 			`Int256 value exceeds maximum (${MAX}): ${value}`,

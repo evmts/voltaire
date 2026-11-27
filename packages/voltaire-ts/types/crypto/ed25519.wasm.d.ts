@@ -1,8 +1,8 @@
 /**
- * Ed25519 operations implementation
+ * WASM implementation of Ed25519 digital signatures.
  *
- * Uses @noble/curves Ed25519 implementation since WASM exports
- * are not yet available in Zig 0.15.1 (API changed).
+ * Uses Zig's audited std.crypto Ed25519 implementation via WebAssembly
+ * (`ed25519Sign`, `ed25519Verify`, `ed25519DerivePublicKey`).
  */
 export declare namespace Ed25519Wasm {
     type Signature = Uint8Array;

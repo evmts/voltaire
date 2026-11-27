@@ -14,6 +14,16 @@ import { InvalidSignatureLengthError } from "./errors.js";
  * ```
  */
 export function fromEd25519(signature) {
+	if (!(signature instanceof Uint8Array)) {
+		throw new InvalidSignatureLengthError(
+			"Ed25519 signature must be a Uint8Array",
+			{
+				value: signature,
+				expected: `${ED25519_SIZE} bytes`,
+				docsPath: "/primitives/signature/from-ed25519#error-handling",
+			},
+		);
+	}
 	if (signature.length !== ED25519_SIZE) {
 		throw new InvalidSignatureLengthError(
 			`Ed25519 signature must be ${ED25519_SIZE} bytes, got ${signature.length}`,

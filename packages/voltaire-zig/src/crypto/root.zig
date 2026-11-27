@@ -116,6 +116,7 @@ pub const keccak_asm = @import("keccak_asm.zig");
 // KZG commitments for EIP-4844
 // c-kzg-4844 works in WASM as pure C (no platform-specific dependencies)
 const builtin = @import("builtin");
+const build_options = @import("build_options");
 pub const kzg_trusted_setup = @import("kzg_trusted_setup.zig");
 pub const kzg_setup = @import("kzg_setup.zig");
 pub const c_kzg = @import("c_kzg");
@@ -123,14 +124,15 @@ pub const c_kzg = @import("c_kzg");
 // EIP-7594 PeerDAS: cells and cell KZG proofs
 pub const peerdas = @import("peerdas.zig");
 
-// BN254 elliptic curve - dual implementations
+// BN254 elliptic curve - dual implementations (pure Zig default; optional Rust arkworks via -Dwith-rust=true)
 pub const bn254 = @import("bn254.zig"); // Pure Zig implementation
-pub const bn254_arkworks = if (builtin.target.cpu.arch != .wasm32)
+pub const bn254_arkworks = if (build_options.with_rust and builtin.target.cpu.arch != .wasm32)
     @import("bn254_arkworks.zig") // Rust arkworks - production-grade, audited
 else
     struct {
-        // Stub for WASM builds - Rust FFI not supported
+        // Stub when built without Rust (-Dwith-rust=false, default) or on WASM
         pub const BN254Error = error{NotSupported};
+        pub const BLS12381Error = error{NotSupported};
         pub fn init() BN254Error!void {
             return error.NotSupported;
         }
@@ -143,6 +145,46 @@ else
             _ = input;
             _ = output;
             return error.NotSupported;
+        }
+        pub fn ecmulOutputSize() u32 {
+            return 64;
+        }
+        pub fn ecpairingOutputSize() u32 {
+            return 32;
+        }
+        pub fn validateEcmulInput(input: []const u8) BN254Error!void {
+            _ = input;
+            return error.NotSupported;
+        }
+        pub fn validateEcpairingInput(input: []const u8) BN254Error!void {
+            _ = input;
+            return error.NotSupported;
+        }
+        pub fn bls12381G1Add(input: []const u8, output: []u8) BLS12381Error!void {
+            _ = input;
+            _ = output;
+            return error.NotSupported;
+        }
+        pub fn bls12381G1Mul(input: []const u8, output: []u8) BLS12381Error!void {
+            _ = input;
+            _ = output;
+            return error.NotSupported;
+        }
+        pub fn bls12381G1Multiexp(input: []const u8, output: []u8) BLS12381Error!void {
+            _ = input;
+            _ = output;
+            return error.NotSupported;
+        }
+        pub fn bls12381Pairing(input: []const u8, output: []u8) BLS12381Error!void {
+            _ = input;
+            _ = output;
+            return error.NotSupported;
+        }
+        pub fn bls12381G1OutputSize() u32 {
+            return 128;
+        }
+        pub fn bls12381PairingOutputSize() u32 {
+            return 32;
         }
     };
 

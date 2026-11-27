@@ -104,9 +104,68 @@ jobs:
         if: steps.head_check.outputs.is_head == 'true'
         run: pnpm install --frozen-lockfile
 
+      - name: Fetch verified native artifacts for this commit (if built)
+        id: fetch_native
+        if: steps.head_check.outputs.is_head == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh api \
+            "repos/$REPO/actions/workflows/build-native.yml/runs?head_sha=$RELEASE_SHA&branch=main&status=success&per_page=1" \
+            --jq '.workflow_runs[0].id // empty')
+          if [ -z "$run_id" ]; then
+            echo "No completed Build Native Bindings run found for $RELEASE_SHA; skipping native platform packages."
+            echo "has_native=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p native
+          gh run download "$run_id" --repo "$REPO" --name native-all-platforms --dir native
+          node scripts/package-native-platforms.mjs \
+            --input-dir native \
+            --out-dir dist-native \
+            --allow-partial \
+            --verify
+          echo "has_native=true" >> "$GITHUB_OUTPUT"
+
+      # Publish prebuilt @tevm/voltaire-<platform> packages before @tevm/voltaire
+      # so optionalDependencies resolve immediately on install. Preserves the
+      # CI_VERIFIED_SHA safety gate and prefers OIDC Trusted Publishing over NPM_TOKEN.
+      - name: Publish native platform npm packages
+        if: steps.head_check.outputs.is_head == 'true' && steps.fetch_native.outputs.has_native == 'true'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CI_VERIFIED_SHA: ${{ env.RELEASE_SHA }}
+        run: |
+          set -euo pipefail
+          head_sha=$(git rev-parse HEAD)
+          if [ "$CI_VERIFIED_SHA" != "$head_sha" ]; then
+            echo "::error::CI_VERIFIED_SHA ($CI_VERIFIED_SHA) does not match HEAD ($head_sha); refusing to publish native platform packages."
+            exit 1
+          fi
+          for pkg_dir in dist-native/npm/voltaire-*; do
+            [ -d "$pkg_dir" ] || continue
+            name=$(node -p "JSON.parse(require('node:fs').readFileSync('$pkg_dir/package.json', 'utf8')).name")
+            version=$(node -p "JSON.parse(require('node:fs').readFileSync('$pkg_dir/package.json', 'utf8')).version")
+            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+              echo "${name}@${version} is already published; skipping."
+              continue
+            fi
+            if env -u NPM_TOKEN -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/dev/null npm publish "$pkg_dir" --registry=https://registry.npmjs.org --access public --provenance --ignore-scripts; then
+              continue
+            fi
+            if [ -n "${NPM_TOKEN:-}" ]; then
+              env NPM_CONFIG_USERCONFIG=/dev/null "npm_config_//registry.npmjs.org/:_authToken=${NPM_TOKEN}" npm publish "$pkg_dir" --registry=https://registry.npmjs.org --access public --provenance --ignore-scripts || echo "::warning::Skipping ${name}@${version}; configure npm Trusted Publishing or rotate NPM_TOKEN."
+            else
+              echo "::warning::Skipping ${name}@${version}; configure npm Trusted Publishing for ${name}."
+            fi
+          done
+
       # `pnpm release` builds WASM and every package, verifies them with
       # --load, then publishes those exact files with --ignore-scripts.
       - name: Create Release Pull Request or Publish
+        id: changesets
         if: steps.head_check.outputs.is_head == 'true'
         uses: changesets/action@v1
         with:
@@ -123,3 +182,28 @@ jobs:
           # publish-npm.mjs refuses to publish unless this matches HEAD; it is
           # set only after CI success for RELEASE_SHA is established above.
           CI_VERIFIED_SHA: ${{ env.RELEASE_SHA }}
+
+      - name: Attach C99 ABI release tarballs to GitHub Release
+        if: steps.head_check.outputs.is_head == 'true' && steps.fetch_native.outputs.has_native == 'true' && steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "JSON.parse(require('node:fs').readFileSync('packages/voltaire-ts/package.json', 'utf8')).version")
+          tag="@tevm/voltaire@${version}"
+          if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$tag" \
+              dist-native/c-abi/voltaire-c-abi-*.tar.gz \
+              dist-native/c-abi/SHA256SUMS.txt \
+              --repo "$REPO" \
+              --clobber
+          else
+            gh release create "$tag" \
+              dist-native/c-abi/voltaire-c-abi-*.tar.gz \
+              dist-native/c-abi/SHA256SUMS.txt \
+              --repo "$REPO" \
+              --target "$RELEASE_SHA" \
+              --title "$tag" \
+              --notes "Voltaire v${version} release with prebuilt C99 ABI tarballs and SHA256SUMS."
+          fi

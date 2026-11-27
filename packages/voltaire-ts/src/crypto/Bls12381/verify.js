@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BLS12-381 Signature Verification
  *
@@ -101,7 +100,7 @@ export function verifyPoint(signaturePoint, messagePoint, publicKeyPoint) {
 		const rhs = bls12_381.pairing(g1, sig);
 
 		// Compare pairing results
-		return bls12_381.Fp12.eql(lhs, rhs);
+		return bls12_381.fields.Fp12.eql(lhs, rhs);
 	} catch (_error) {
 		return false;
 	}

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { InvalidSignatureError } from "../../../primitives/errors/index.js";
 
 /**
@@ -38,18 +37,20 @@ export function fromCompact(compact, v) {
 	}
 
 	// EIP-2098: Extract yParity from bit 255 of s
-	const yParityFromBit = (compact[32] & 0x80) >> 7;
+	const yParityFromBit = ((compact[32] ?? 0) & 0x80) >> 7;
 
 	// Use explicit v if provided, otherwise use extracted yParity
 	const recoveryV = v !== undefined ? v : yParityFromBit;
 
 	// Clear bit 255 from s to restore original value
 	const s = compact.slice(32, 64);
-	s[0] = s[0] & 0x7f;
+	s[0] = (s[0] ?? 0) & 0x7f;
 
 	return {
-		r: compact.slice(0, 32),
-		s,
+		r: /** @type {import('../../../primitives/Hash/index.js').HashType} */ (
+			compact.slice(0, 32)
+		),
+		s: /** @type {import('../../../primitives/Hash/index.js').HashType} */ (s),
 		v: recoveryV,
 	};
 }

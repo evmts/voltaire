@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Opcode from "../Opcode/index.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
 import { buildBlocks } from "./buildBlocks.js";
@@ -68,7 +67,7 @@ export function analyzeBlocks(bytecode, options = {}) {
 /**
  * Find basic block boundaries
  * @param {Array<import('./BytecodeType.js').Instruction>} instructions
- * @param {Set<number>} jumpDests
+ * @param {Set<number>} _jumpDests
  * @returns {Set<number>}
  */
 function findBlockBoundaries(instructions, _jumpDests) {
@@ -76,6 +75,7 @@ function findBlockBoundaries(instructions, _jumpDests) {
 
 	for (let i = 0; i < instructions.length; i++) {
 		const inst = instructions[i];
+		if (!inst) continue;
 		const opcode = inst.opcode;
 
 		// JUMPDEST starts new block
@@ -86,7 +86,9 @@ function findBlockBoundaries(instructions, _jumpDests) {
 		// Instruction after terminator starts new block
 		if (isTerminatorOpcode(opcode) && i + 1 < instructions.length) {
 			const nextInst = instructions[i + 1];
-			boundaries.add(nextInst.position);
+			if (nextInst) {
+				boundaries.add(nextInst.position);
+			}
 		}
 	}
 

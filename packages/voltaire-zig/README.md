@@ -9,7 +9,7 @@ Voltaire's Zig core (published to npm as `@tevm/zig`) serves both as a standalon
 ```mermaid
 flowchart LR
     Core["Zig Core\n(primitives, crypto, precompiles,\nstate-manager, blockchain, jsonrpc)"]
-    Deps["Native Crypto Backends\n(blst, c-kzg-4844, Rust crypto_wrappers)"]
+    Deps["Native Crypto Backends\n(blst, c-kzg-4844, optional Rust crypto_wrappers)"]
 
     Deps --> Core
 
@@ -25,7 +25,7 @@ flowchart LR
 
 ## Exported Zig Modules
 
-`build.zig` exports seven modules (plus `*_wasm` variants for WASM builds) from the repository root (`build.zig.zon` package `.primitives`, `minimum_zig_version = "0.17.1"`):
+`build.zig` exports seven modules (plus `*_wasm` variants for WASM builds) from the repository root (`build.zig.zon` package `.voltaire`, version `0.5.0`, `minimum_zig_version = "0.17.1"`):
 
 | Module | Root Source | Contents |
 | :--- | :--- | :--- |
@@ -39,19 +39,24 @@ flowchart LR
 
 ## Prerequisites
 
-- Zig `0.17.1` or newer
-- Rust / `cargo` (compiles `crypto_wrappers`: `bn254` arkworks + `keccak` FFI)
-- C compiler toolchain (for vendored `blst` and `c-kzg-4844`)
+- Zig `0.17.1` or newer (default builds require **zero Rust / Cargo** — pure-Zig BN254/Keccak plus C `blst` and `c-kzg-4844` compiled directly by Zig)
+- Optional: Rust / `cargo` only if opting into `-Dwith-rust=true` (`arkworks` BN254 + `keccak-asm`)
 
-## Installation
+## Installation (`zig fetch --save`)
 
-Add Voltaire to `build.zig.zon`:
+Fetch Voltaire directly into your project's `build.zig.zon` with one command:
+
+```bash
+zig fetch --save https://github.com/evmts/voltaire/archive/refs/heads/main.tar.gz
+```
+
+This adds a `.voltaire` entry to `build.zig.zon` with its verified package hash:
 
 ```zig
 .dependencies = .{
     .voltaire = .{
         .url = "https://github.com/evmts/voltaire/archive/refs/heads/main.tar.gz",
-        // Run `zig fetch --save <url>` to populate .hash
+        .hash = "...", // populated by `zig fetch --save`
     },
 },
 ```
@@ -137,8 +142,11 @@ pub fn main() !void {
 Run from the repository root:
 
 ```bash
-# Run all Zig test suites (primitives, crypto, precompiles, state-manager, blockchain)
+# Run all Zig test suites (zero Rust/Cargo required by default)
 zig build test
+
+# Run all Zig test suites with optional Rust arkworks + keccak-asm wrappers
+zig build test -Dwith-rust=true
 
 # Run state-manager tests only
 zig build test-state-manager

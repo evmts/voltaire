@@ -144,4 +144,23 @@ describe("Trie integration", () => {
 			new Uint8Array([3]),
 		);
 	});
+
+	it("matches official Ethereum Yellow Paper puppy/reindeer/cat canonical MPT root", () => {
+		const enc = new TextEncoder();
+		let trie = init();
+		trie = put(trie, enc.encode("doe"), enc.encode("reindeer"));
+		trie = put(trie, enc.encode("dog"), enc.encode("puppy"));
+		trie = put(trie, enc.encode("dogglesworth"), enc.encode("cat"));
+		const hex = Array.from(rootHash(trie))
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		expect(hex).toBe(
+			"8aad789dff2f538bca5d8ea56e8abe10f4c7ba3a5dea95fea4cd6e7c3a1168d3",
+		);
+		// Verify Merkle proof against the canonical root with inline (< 32B) child nodes
+		const p = prove(trie, enc.encode("dog"));
+		const v = verify(rootHash(trie), enc.encode("dog"), p.proof);
+		expect(v.valid).toBe(true);
+		expect(v.value).toEqual(enc.encode("puppy"));
+	});
 });

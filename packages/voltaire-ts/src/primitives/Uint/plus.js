@@ -1,17 +1,18 @@
 import { MAX } from "./constants.js";
+import { UintOverflowError } from "./errors.js";
 
 /**
- * Add Uint256 value with wrapping
+ * Add two Uint256 values with overflow checking
  *
- * Overflow mode: wrapping. `plusWrapping` is the explicit name for this behavior
- * and `plusChecked` throws instead of wrapping. Both exist on every Uint size.
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * `plusChecked` is an explicit alias and `plusWrapping` wraps mod 2^256.
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - First operand
  * @param {import('./BrandedUint.js').BrandedUint} b - Second operand
- * @returns {import('./BrandedUint.js').BrandedUint} Sum (uint + b) mod 2^256
- * @throws {never}
+ * @returns {import('./BrandedUint.js').BrandedUint} Sum (uint + b)
+ * @throws {UintOverflowError} If the result exceeds 2^256 - 1
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -22,5 +23,11 @@ import { MAX } from "./constants.js";
  */
 export function plus(uint, b) {
 	const sum = uint + b;
-	return sum & MAX;
+	if (sum > MAX) {
+		throw new UintOverflowError(
+			`Uint256 overflow: ${uint} + ${b} exceeds maximum (2^256 - 1)`,
+			{ value: sum, context: { a: uint, b, operation: "addition" } },
+		);
+	}
+	return /** @type {import('./BrandedUint.js').BrandedUint} */ (sum);
 }

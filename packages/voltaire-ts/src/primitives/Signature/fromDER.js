@@ -18,6 +18,13 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
  * ```
  */
 export function fromDER(der, algorithm, v) {
+	if (!(der instanceof Uint8Array)) {
+		throw new InvalidDERError("DER signature must be a Uint8Array", {
+			value: der,
+			expected: "Uint8Array",
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
+	}
 	if (algorithm !== "secp256k1" && algorithm !== "p256") {
 		throw new InvalidDERError(
 			`DER decoding only supported for ECDSA signatures, got ${algorithm}`,
@@ -104,8 +111,18 @@ export function fromDER(der, algorithm, v) {
 	const rStart = rBytes[0] === 0x00 ? 1 : 0;
 	const sStart = sBytes[0] === 0x00 ? 1 : 0;
 
-	r.set(rBytes.slice(rStart), COMPONENT_SIZE - (rBytes.length - rStart));
-	s.set(sBytes.slice(sStart), COMPONENT_SIZE - (sBytes.length - sStart));
+	const rTrimmed = rBytes.slice(rStart);
+	const sTrimmed = sBytes.slice(sStart);
+	if (rTrimmed.length > COMPONENT_SIZE || sTrimmed.length > COMPONENT_SIZE) {
+		throw new InvalidDERError("DER integer component exceeds 32 bytes", {
+			value: { rLength: rTrimmed.length, sLength: sTrimmed.length },
+			expected: `<= ${COMPONENT_SIZE} bytes`,
+			docsPath: "/primitives/signature/from-der#error-handling",
+		});
+	}
+
+	r.set(rTrimmed, COMPONENT_SIZE - rTrimmed.length);
+	s.set(sTrimmed, COMPONENT_SIZE - sTrimmed.length);
 
 	if (algorithm === "secp256k1") {
 		return fromSecp256k1(r, s, v);

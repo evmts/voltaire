@@ -70,7 +70,9 @@ export function decodeParametersWasm<const TParams extends readonly Parameter[]>
 ): ParametersToPrimitiveTypes<TParams> {
   const types = params.map((p: Parameter) => p.type);
   const decoded = loader.abiDecodeParameters(data, types);
-  return decoded.map((d: unknown, i: number) => parseValueFromWasm(params[i]!.type, d)) as any;
+  return decoded.map((d: unknown, i: number) =>
+    parseValueFromWasm(params[i]!.type, d),
+  ) as unknown as ParametersToPrimitiveTypes<TParams>;
 }
 
 export function encodeFunctionDataWasm<const TParams extends readonly Parameter[]>(
@@ -90,7 +92,9 @@ export function decodeFunctionDataWasm<const TParams extends readonly Parameter[
 ): ParametersToPrimitiveTypes<TParams> {
   const types = params.map((p: Parameter) => p.type);
   const result = loader.abiDecodeFunctionData(data, types);
-  return result.parameters.map((d: string, i: number) => parseValueFromWasm(params[i]!.type, d)) as any;
+  return result.parameters.map((d: string, i: number) =>
+    parseValueFromWasm(params[i]!.type, d),
+  ) as unknown as ParametersToPrimitiveTypes<TParams>;
 }
 
 export function encodePackedWasm(

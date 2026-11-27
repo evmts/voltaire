@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { InvalidPrivateKeyError } from "../../primitives/errors/index.js";
 
@@ -51,7 +50,7 @@ export function derivePublicKey(privateKey) {
 			code: "KEY_DERIVATION_FAILED",
 			context: { privateKeyLength: privateKey.length },
 			docsPath: "/crypto/secp256k1/derive-public-key#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

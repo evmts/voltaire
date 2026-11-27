@@ -15,7 +15,27 @@ import { InvalidValueError } from "./errors.js";
  * ```
  */
 export function fromNumber(value) {
-	const bigintValue = typeof value === "number" ? BigInt(value) : value;
+	/** @type {bigint} */
+	let bigintValue;
+	if (typeof value === "number") {
+		if (!Number.isInteger(value)) {
+			throw new InvalidValueError(
+				`Address value must be a finite integer, got ${value}`,
+				{
+					value,
+					expected: "non-negative finite integer or bigint",
+				},
+			);
+		}
+		bigintValue = BigInt(value);
+	} else if (typeof value === "bigint") {
+		bigintValue = value;
+	} else {
+		throw new InvalidValueError("Address value must be a number or bigint", {
+			value,
+			expected: "non-negative finite integer or bigint",
+		});
+	}
 
 	if (bigintValue < 0n) {
 		throw new InvalidValueError("Address value cannot be negative", {

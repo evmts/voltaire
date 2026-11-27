@@ -6,8 +6,9 @@
  * Factory function for creating EIP-4844 Transaction instances
  *
  * @type {TransactionEIP4844Constructor}
+ * @param {Parameters<TransactionEIP4844Constructor>[0]} tx
  */
-export function TransactionEIP4844(tx: any): TransactionEIP4844Type;
+export function TransactionEIP4844(tx: Parameters<TransactionEIP4844Constructor>[0]): TransactionEIP4844Type;
 export class TransactionEIP4844 {
     /**
      * @typedef {import('./TransactionEIP4844Type.js').TransactionEIP4844Type} TransactionEIP4844Type
@@ -17,8 +18,9 @@ export class TransactionEIP4844 {
      * Factory function for creating EIP-4844 Transaction instances
      *
      * @type {TransactionEIP4844Constructor}
+     * @param {Parameters<TransactionEIP4844Constructor>[0]} tx
      */
-    constructor(tx: any);
+    constructor(tx: Parameters<TransactionEIP4844Constructor>[0]);
     serialize: typeof serialize;
     hash: (tx: import("./TransactionEIP4844Type.js").TransactionEIP4844Type) => Uint8Array;
     getSigningHash: (tx: import("./TransactionEIP4844Type.js").TransactionEIP4844Type) => Uint8Array;

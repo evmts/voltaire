@@ -117,9 +117,8 @@ export declare namespace Eip712Wasm {
      */
     function format(typedData: TypedData): string;
     /**
-     * Initialize WASM modules
-     *
-     * Must be called before using any Eip712Wasm functions.
+     * Initialize WASM modules (standalone keccak256 micro-WASM + primitives WASM for secp256k1).
+     * Required before calling in browsers; Node/Bun auto-inits synchronously.
      */
     function init(): Promise<void>;
 }

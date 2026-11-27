@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Opcode from "../Opcode/index.js";
 import { analyzeBlocks } from "./analyzeBlocks.js";
 import { scan } from "./scan.js";
@@ -89,7 +88,9 @@ export function prettyPrint(bytecode, options = {}) {
 		withGas: showGas,
 		withStack: showStack,
 	})) {
-		const name = Opcode.getName(inst.opcode);
+		const name = Opcode.getName(
+			/** @type {import('../Opcode/OpcodeType.js').OpcodeType} */ (inst.opcode),
+		);
 		const parts = [];
 
 		// Show block boundaries
@@ -119,7 +120,7 @@ export function prettyPrint(bytecode, options = {}) {
 		);
 
 		// Value (for PUSH instructions)
-		if (inst.type === "push") {
+		if (inst.type === "push" && inst.value !== undefined) {
 			let hexValue = inst.value.toString(16);
 			// Pad to even length for proper hex display
 			if (hexValue.length % 2 !== 0) {
@@ -183,7 +184,7 @@ function formatStackEffect(pop, push) {
 
 /**
  * Get ANSI color codes
- * @returns {object}
+ * @returns {{ reset: string; cyan: string; yellow: string; green: string; magenta: string; gray: string }}
  */
 function getColors() {
 	return {
@@ -198,7 +199,7 @@ function getColors() {
 
 /**
  * Get empty color codes (no colors)
- * @returns {object}
+ * @returns {{ reset: string; cyan: string; yellow: string; green: string; magenta: string; gray: string }}
  */
 function noColors() {
 	return {

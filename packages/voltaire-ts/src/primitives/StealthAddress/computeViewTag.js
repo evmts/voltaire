@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Compute view tag from hashed shared secret
  *
@@ -24,5 +22,5 @@
  * ```
  */
 export function computeViewTag(hashedSharedSecret) {
-	return hashedSharedSecret[0];
+	return hashedSharedSecret[0] ?? 0;
 }

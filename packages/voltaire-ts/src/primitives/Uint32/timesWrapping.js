@@ -1,5 +1,3 @@
-import { times } from "./times.js";
-
 /**
  * Multiply two Uint32 values with wrapping
  *
@@ -19,5 +17,7 @@ import { times } from "./times.js";
  * ```
  */
 export function timesWrapping(a, b) {
-	return times(a, b);
+	return /** @type {import('./Uint32Type.js').Uint32Type} */ (
+		Math.imul(a, b) >>> 0
+	);
 }

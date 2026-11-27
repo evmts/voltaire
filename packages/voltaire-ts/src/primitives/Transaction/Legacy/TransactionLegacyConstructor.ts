@@ -30,10 +30,12 @@ export interface TransactionLegacyConstructor {
 	}): TransactionLegacyPrototype;
 	prototype: TransactionLegacyPrototype;
 	deserialize(bytes: Uint8Array): TransactionLegacyPrototype;
-	serialize: typeof serialize;
-	hash: typeof hash;
-	getChainId: typeof getChainId;
-	getSigningHash: typeof getSigningHash;
-	getSender: typeof getSender;
-	verifySignature: typeof verifySignature;
+	serialize(tx: TransactionLegacyType): ReturnType<typeof serialize>;
+	hash(tx: TransactionLegacyType): ReturnType<typeof hash>;
+	getChainId(tx: TransactionLegacyType): ReturnType<typeof getChainId>;
+	getSigningHash(tx: TransactionLegacyType): ReturnType<typeof getSigningHash>;
+	getSender(tx: TransactionLegacyType): ReturnType<typeof getSender>;
+	verifySignature(
+		tx: TransactionLegacyType,
+	): ReturnType<typeof verifySignature>;
 }

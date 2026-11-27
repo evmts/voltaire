@@ -50,8 +50,18 @@ export function from(value) {
 			);
 		}
 		bigintValue = BigInt(value);
-	} else {
+	} else if (typeof value === "bigint") {
 		bigintValue = value;
+	} else {
+		throw new InvalidFormatError(
+			`Invalid Uint256 value type: ${typeof value}`,
+			{
+				code: "UINT256_INVALID_TYPE",
+				value,
+				expected: "bigint, integer number, or decimal/hex string",
+				docsPath: "/primitives/uint#error-handling",
+			},
+		);
 	}
 
 	if (bigintValue < 0n) {

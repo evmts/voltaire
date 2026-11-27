@@ -1,6 +1,6 @@
 {
 	"name": "@tevm/voltaire",
-	"version": "0.5.1",
+	"version": "0.6.0",
 	"private": false,
 	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
 	"keywords": [
@@ -686,6 +686,7 @@
 		"happy-dom": "^21.0.4",
 		"mintlify": "^4.3.93",
 		"mitata": "^1.0.34",
+		"ox": "^1.9.0",
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",
 		"size-limit": "^14.3.0",
@@ -720,8 +721,6 @@
 		"@noble/curves": "^2.4.0",
 		"@noble/hashes": "^2.4.0",
 		"@scure/bip32": "^2.4.0",
-		"@scure/bip39": "^2.4.0",
-		"@tevm/chains": "^0.0.1",
-		"ox": "^1.9.0"
+		"@scure/bip39": "^2.4.0"
 	}
 }

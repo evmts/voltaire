@@ -1,1 +1,1 @@
-{"version":3,"file":"assertValid.d.ts","sourceRoot":"","sources":["../../../src/primitives/BlockAccessList/assertValid.js"],"names":[],"mappings":"AAqDA;;;;;;;;;;;;GAYG;AAEH,kCALW,SAAS,OAAO,0BAA0B,EAAE,cAAc,EAAE,GAC1D,QAAQ,IAAI,IAAI,OAAO,0BAA0B,EAAE,mBAAmB,CA+GlF"}
+{"version":3,"file":"assertValid.d.ts","sourceRoot":"","sources":["../../../src/primitives/BlockAccessList/assertValid.js"],"names":[],"mappings":"AAgJA;;;;;;;;;;;;GAYG;AACH,kCAJW,SAAS,OAAO,0BAA0B,EAAE,cAAc,EAAE,GAC1D,QAAQ,IAAI,IAAI,OAAO,0BAA0B,EAAE,mBAAmB,CAoClF"}

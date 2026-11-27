@@ -130,6 +130,7 @@ export interface WasmExports {
     primitives_blob_calculate_gas_price: (excessBlobGas: bigint) => bigint;
     primitives_blob_calculate_excess_gas: (parentExcess: bigint, parentUsed: bigint) => bigint;
     kzg_load_trusted_setup: () => number;
+    kzg_load_trusted_setup_bytes: (dataPtr: number, dataLen: number) => number;
     kzg_free_trusted_setup: () => number;
     kzg_blob_to_commitment: (blobPtr: number, outCommitmentPtr: number) => number;
     kzg_compute_proof: (blobPtr: number, zPtr: number, outProofPtr: number, outYPtr: number) => number;
@@ -163,7 +164,7 @@ export interface WasmExports {
  * ```
  */
 export interface WasiImports {
-    [key: string]: (...args: number[]) => number | never;
+    [key: string]: (...args: never[]) => number | never;
     args_get: (argv: number, argv_buf: number) => number;
     args_sizes_get: (argc_ptr: number, argv_buf_size_ptr: number) => number;
     environ_get: (environ: number, environ_buf: number) => number;
@@ -176,7 +177,8 @@ export interface WasiImports {
     fd_read: (fd: number, iovs: number, iovs_len: number, nread: number) => number;
     fd_pread: (fd: number, iovs: number, iovs_len: number, offset: number, nread: number) => number;
     fd_pwrite: (fd: number, iovs: number, iovs_len: number, offset: number, nwritten: number) => number;
-    clock_time_get: () => number;
+    clock_res_get: (id: number, res_ptr: number) => number;
+    clock_time_get: (id: number, precision: bigint, time_ptr: number) => number;
     random_get: (buf: number, len: number) => number;
     proc_exit: (code: number) => never;
     sched_yield: () => number;

@@ -4,7 +4,7 @@
  * @param {import('./PermitType.js').PermitType} permit - Permit message
  * @param {import('./PermitType.js').PermitDomainType} domain - EIP-712 domain
  * @param {Uint8Array} privateKey - Private key (32 bytes)
- * @returns {Uint8Array} Compact signature (64 bytes + recovery id)
+ * @returns {import('../../crypto/EIP712/EIP712Type.js').Signature} EIP-712 signature
  *
  * @example
  * ```typescript
@@ -30,5 +30,5 @@
  * const signature = Permit.createPermitSignature(permit, domain, privateKey);
  * ```
  */
-export function createPermitSignature(permit: import("./PermitType.js").PermitType, domain: import("./PermitType.js").PermitDomainType, privateKey: Uint8Array): Uint8Array;
+export function createPermitSignature(permit: import("./PermitType.js").PermitType, domain: import("./PermitType.js").PermitDomainType, privateKey: Uint8Array): import("../../crypto/EIP712/EIP712Type.js").Signature;
 //# sourceMappingURL=createPermitSignature.d.ts.map

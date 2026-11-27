@@ -22,6 +22,14 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
  * ```
  */
 export function from(hex: string): PublicKeyType {
+	if (typeof hex !== "string") {
+		throw new InvalidFormatError("Public key hex must be a string", {
+			value: hex,
+			expected: "Valid 128-char hex string",
+			code: -32602,
+			docsPath: "/primitives/public-key/from#error-handling",
+		});
+	}
 	const hexStr = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!HEX_REGEX.test(hexStr)) {
 		throw new InvalidFormatError("Invalid hex string", {

@@ -8,12 +8,12 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import type { HashType } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
+import { WasmNotInitializedError } from "../wasm-loader/loader.js";
 import { constantTimeEqual } from "./ConstantTime/constantTimeEqual.js";
 import {
 	InvalidPrivateKeyError,
 	InvalidPublicKeyError,
 	InvalidSignatureError,
-	Secp256k1 as NobleSecp256k1,
 	Secp256k1Error,
 } from "./Secp256k1/index.js";
 import { isValidPrivateKey as validatePrivateScalar } from "./Secp256k1/isValidPrivateKey.js";
@@ -60,6 +60,7 @@ export namespace Secp256k1Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			const result = loader.secp256k1Sign(messageHash, privateKey);
 			// Convert v from 0-1 to Ethereum 27-28
@@ -69,6 +70,7 @@ export namespace Secp256k1Wasm {
 				v: 27 + result.v,
 			};
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new Secp256k1Error(`Signing failed: ${error}`);
 		}
 	}
@@ -87,20 +89,21 @@ export namespace Secp256k1Wasm {
 				`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
 			);
 		}
-
 		if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
 			throw new InvalidSignatureError(
 				`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
 			);
 		}
-
 		if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
 			throw new InvalidSignatureError(
 				`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
 			);
 		}
+		if (signature.v !== 27 && signature.v !== 28) {
+			return false;
+		}
 
-		// First try the WASM verifier for performance
+		loader.ensureWasmLoaded();
 		try {
 			const ok = loader.secp256k1Verify(
 				messageHash,
@@ -108,26 +111,16 @@ export namespace Secp256k1Wasm {
 				signature.s,
 				publicKey,
 			);
-			if (ok) return true;
-		} catch {
-			// ignore and fall through to recovery-based check
-		}
-
-		// Fallback: recover the public key and compare
-		try {
-			const recovered = recoverPublicKey(signature, messageHash);
-			// Constant-time compare via noble point parsing (also validates key)
-			// Add 0x04 prefix for uncompressed form expected by Noble
-			const prefixed = new Uint8Array(PUBLIC_KEY_SIZE + 1);
-			prefixed[0] = 0x04;
-			prefixed.set(publicKey, 1);
-			const recPrefixed = new Uint8Array(PUBLIC_KEY_SIZE + 1);
-			recPrefixed[0] = 0x04;
-			recPrefixed.set(recovered, 1);
-
-			// Compare points by serialized bytes in constant time to avoid coordinate leaks
-			return constantTimeEqual(prefixed, recPrefixed);
-		} catch {
+			if (!ok) return false;
+			const recovered = loader.secp256k1RecoverPubkey(
+				messageHash,
+				signature.r,
+				signature.s,
+				signature.v,
+			);
+			return constantTimeEqual(recovered, publicKey);
+		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			return false;
 		}
 	}
@@ -145,44 +138,34 @@ export namespace Secp256k1Wasm {
 				`Signature r must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.r.length}`,
 			);
 		}
-
 		if (signature.s.length !== SIGNATURE_COMPONENT_SIZE) {
 			throw new InvalidSignatureError(
 				`Signature s must be ${SIGNATURE_COMPONENT_SIZE} bytes, got ${signature.s.length}`,
 			);
 		}
 
-		// Convert Ethereum v to recovery bit
-		let recoveryBit: number;
+		let ethV: number;
 		if (signature.v === 27 || signature.v === 28) {
-			recoveryBit = signature.v - 27;
+			ethV = signature.v;
 		} else if (signature.v === 0 || signature.v === 1) {
-			recoveryBit = signature.v;
+			ethV = signature.v + 27;
 		} else {
 			throw new InvalidSignatureError(
 				`Invalid v value: ${signature.v} (expected 0, 1, 27, or 28)`,
 			);
 		}
 
-		// Prefer Noble’s recovery to ensure exact cross-implementation match
+		loader.ensureWasmLoaded();
 		try {
-			const nobleRecovered = NobleSecp256k1.recoverPublicKey(
-				{ r: signature.r, s: signature.s, v: signature.v },
+			return loader.secp256k1RecoverPubkey(
 				messageHash,
+				signature.r,
+				signature.s,
+				ethV,
 			);
-			return nobleRecovered;
-		} catch {
-			// Fallback to WASM recovery
-			try {
-				return loader.secp256k1RecoverPubkey(
-					messageHash,
-					signature.r,
-					signature.s,
-					recoveryBit,
-				);
-			} catch (error) {
-				throw new InvalidSignatureError(`Public key recovery failed: ${error}`);
-			}
+		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
+			throw new InvalidSignatureError(`Public key recovery failed: ${error}`);
 		}
 	}
 
@@ -197,9 +180,11 @@ export namespace Secp256k1Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
 			return loader.secp256k1PubkeyFromPrivate(privateKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new InvalidPrivateKeyError(`Key derivation failed: ${error}`);
 		}
 	}

@@ -36,7 +36,7 @@ export function getAddress(signer: Signer): string {
  *
  * @see https://voltaire.tevm.sh/crypto for crypto documentation
  * @since 0.0.0
- * @param {any} _transaction - The transaction to recover the address from
+ * @param {unknown} _transaction - The transaction to recover the address from
  * @returns {Promise<string>} The recovered Ethereum address
  * @throws {Error} Always throws as this function is not yet implemented
  * @example
@@ -50,8 +50,7 @@ export function getAddress(signer: Signer): string {
  * ```
  */
 export async function recoverTransactionAddress(
-	// biome-ignore lint/suspicious/noExplicitAny: transaction type varies
-	_transaction: any,
+	_transaction: unknown,
 ): Promise<string> {
 	// Note: Transaction address recovery requires:
 	// 1. Deserialize transaction from RLP

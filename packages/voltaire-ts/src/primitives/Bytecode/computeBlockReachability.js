@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { buildControlFlowGraph } from "./buildControlFlowGraph.js";
 
 /**
@@ -17,12 +16,17 @@ export function computeBlockReachability(blocks, hasCFG) {
 	}
 
 	// BFS from entry block
+	const entryBlock = blocks[0];
+	if (!entryBlock) {
+		return;
+	}
 	const queue = [0];
 	const visited = new Set([0]);
-	blocks[0].isReachable = true;
+	entryBlock.isReachable = true;
 
 	while (queue.length > 0) {
 		const blockIndex = queue.shift();
+		if (blockIndex === undefined) continue;
 		const block = blocks[blockIndex];
 
 		if (!block) continue;
@@ -30,8 +34,11 @@ export function computeBlockReachability(blocks, hasCFG) {
 		for (const successorIndex of block.successors) {
 			if (!visited.has(successorIndex)) {
 				visited.add(successorIndex);
-				blocks[successorIndex].isReachable = true;
-				queue.push(successorIndex);
+				const successor = blocks[successorIndex];
+				if (successor) {
+					successor.isReachable = true;
+					queue.push(successorIndex);
+				}
 			}
 		}
 	}

@@ -1,5 +1,9 @@
 import { MAX } from "./constants.js";
-import { Uint32NegativeError, Uint32OverflowError } from "./errors.js";
+import {
+	Uint32NegativeError,
+	Uint32NotIntegerError,
+	Uint32OverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint32 from bigint
@@ -8,6 +12,7 @@ import { Uint32NegativeError, Uint32OverflowError } from "./errors.js";
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint32Type.js').Uint32Type} Uint32 value
+ * @throws {Uint32NotIntegerError} If value is not a bigint
  * @throws {Uint32NegativeError} If value is negative
  * @throws {Uint32OverflowError} If value exceeds maximum
  * @example
@@ -17,6 +22,12 @@ import { Uint32NegativeError, Uint32OverflowError } from "./errors.js";
  * ```
  */
 export function fromBigInt(value) {
+	if (typeof value !== "bigint") {
+		throw new Uint32NotIntegerError(
+			`Uint32.fromBigInt requires bigint, got ${typeof value}`,
+			{ value },
+		);
+	}
 	if (value < 0n) {
 		throw new Uint32NegativeError(`Uint32 value cannot be negative: ${value}`, {
 			value,

@@ -1,4 +1,4 @@
-import * as OxBase64 from "ox/Base64";
+import { encode } from "./encode.js";
 
 /**
  * Encode bytes to URL-safe base64 string
@@ -18,6 +18,6 @@ import * as OxBase64 from "ox/Base64";
  */
 export function encodeUrlSafe(data) {
 	return /** @type {import('./BrandedBase64Url.js').BrandedBase64Url} */ (
-		OxBase64.fromBytes(data, { url: true }).replace(/=/g, "")
+		encode(data).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
 	);
 }

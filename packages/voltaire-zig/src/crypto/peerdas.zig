@@ -205,7 +205,7 @@ fn loadSetup() !void {
 }
 
 fn freeSetup() void {
-    ckzg.freeTrustedSetup() catch unreachable;
+    ckzg.freeTrustedSetup() catch {};
 }
 
 test "peerdas constants match EIP-7594" {

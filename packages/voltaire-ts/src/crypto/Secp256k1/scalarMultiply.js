@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { Secp256k1Error } from "./errors.js";
 
@@ -26,7 +25,7 @@ import { Secp256k1Error } from "./errors.js";
 export function scalarMultiply(scalar) {
 	if (scalar.length !== 32) {
 		throw new Secp256k1Error(`Scalar must be 32 bytes, got ${scalar.length}`, {
-			code: "INVALID_SCALAR_LENGTH",
+			code: -32000,
 			context: { actualLength: scalar.length },
 			docsPath: "/crypto/secp256k1/scalar-multiply#error-handling",
 		});
@@ -40,7 +39,7 @@ export function scalarMultiply(scalar) {
 			throw new Secp256k1Error(
 				"Invalid point format after scalar multiplication",
 				{
-					code: "INVALID_POINT_FORMAT",
+					code: -32000,
 					context: { prefix: result[0] },
 					docsPath: "/crypto/secp256k1/scalar-multiply#error-handling",
 				},
@@ -53,10 +52,10 @@ export function scalarMultiply(scalar) {
 		);
 	} catch (error) {
 		throw new Secp256k1Error(`Scalar multiplication failed: ${error}`, {
-			code: "SCALAR_MULTIPLY_FAILED",
+			code: -32000,
 			context: { scalarLength: scalar.length },
 			docsPath: "/crypto/secp256k1/scalar-multiply#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

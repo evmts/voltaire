@@ -1,1 +1,1 @@
-{"version":3,"file":"nextState.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/nextState.js"],"names":[],"mappings":"AAQA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;GA+BG;AACH,iCApBW,OAAO,oBAAoB,EAAE,aAAa,YAC1C,OAAO,uBAAuB,EAAE,eAAe,GAC7C,OAAO,oBAAoB,EAAE,aAAa,CAgDtD"}
+{"version":3,"file":"nextState.d.ts","sourceRoot":"","sources":["../../../src/primitives/FeeMarket/nextState.js"],"names":[],"mappings":"AAOA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;GA+BG;AACH,iCApBW,OAAO,oBAAoB,EAAE,aAAa,YAC1C,OAAO,uBAAuB,EAAE,eAAe,GAC7C,OAAO,oBAAoB,EAAE,aAAa,CAgDtD"}

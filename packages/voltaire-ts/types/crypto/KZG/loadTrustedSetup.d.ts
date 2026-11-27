@@ -1,24 +1,18 @@
 /**
- * Load trusted setup from embedded data
+ * Load trusted setup for KZG operations.
  *
- * Uses the embedded trusted setup from c-kzg-4844.
  * Call this once during application startup before using any KZG operations.
- *
- * Available in both native FFI and WASM environments.
+ * In Node/Bun, loads the standalone `trusted_setup.txt` file lazily on demand
+ * without embedding 788 KB into `primitives.wasm`. In browsers, pass the raw
+ * `trusted_setup.txt` `Uint8Array` bytes directly.
  *
  * @see https://voltaire.tevm.sh/crypto/kzg
  * @since 0.0.0
- * @param {string} [_filePath] - Optional path (ignored, uses embedded setup)
+ * @param {string | Uint8Array} [filePathOrBytes] - Optional path to `trusted_setup.txt` (Node/Bun) or raw UTF-8 setup bytes (browser/edge)
  * @returns {void}
  * @throws {KzgError} If loading fails
- * @example
- * ```javascript
- * import { loadTrustedSetup } from './crypto/KZG/index.js';
- *
- * loadTrustedSetup();
- * ```
  */
-export function loadTrustedSetup(_filePath?: string): void;
+export function loadTrustedSetup(filePathOrBytes?: string | Uint8Array): void;
 /**
  * Free trusted setup resources
  *

@@ -1,3 +1,4 @@
+import { InvalidFormatError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
 import { validate } from "./validate.js";
 
@@ -8,7 +9,7 @@ import { validate } from "./validate.js";
  * @since 0.0.0
  * @param {string | Uint8Array} value - Hex string or bytes
  * @returns {import('./HexType.js').HexType} Hex value
- * @throws {import('./errors.js').InvalidFormatError} If string is missing 0x prefix
+ * @throws {import('./errors.js').InvalidFormatError} If input is not a string/Uint8Array or string is missing 0x prefix
  * @throws {import('./errors.js').InvalidCharacterError} If string contains invalid hex characters
  * @example
  * ```javascript
@@ -20,6 +21,12 @@ import { validate } from "./validate.js";
 export function from(value) {
 	if (typeof value === "string") {
 		return /** @type {import('./HexType.js').HexType} */ (validate(value));
+	}
+	if (!(value instanceof Uint8Array)) {
+		throw new InvalidFormatError("Hex value must be a string or Uint8Array", {
+			value,
+			expected: "0x-prefixed hex string or Uint8Array",
+		});
 	}
 	return fromBytes(value);
 }

@@ -5,6 +5,7 @@
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint32Type.js').Uint32Type} Uint32 value
+ * @throws {Uint32NotIntegerError} If value is not a bigint
  * @throws {Uint32NegativeError} If value is negative
  * @throws {Uint32OverflowError} If value exceeds maximum
  * @example

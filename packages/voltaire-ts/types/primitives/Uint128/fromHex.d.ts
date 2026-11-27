@@ -5,7 +5,8 @@
  * @since 0.0.0
  * @param {string} value - Hex string (with or without 0x prefix)
  * @returns {import('./Uint128Type.js').Uint128Type} Uint128 value
- * @throws {Error} If value is invalid or out of range
+ * @throws {Uint128NotIntegerError} If hex string is invalid
+ * @throws {import('./errors.js').Uint128OverflowError} If value exceeds maximum
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';

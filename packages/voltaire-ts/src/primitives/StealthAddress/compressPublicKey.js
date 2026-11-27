@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
 	COMPRESSED_PUBLIC_KEY_SIZE,
 	UNCOMPRESSED_PUBLIC_KEY_SIZE,
@@ -42,7 +41,7 @@ export function compressPublicKey(uncompressed) {
 
 	// Determine prefix based on y parity
 	const y = uncompressed.slice(32, 64);
-	const isEven = (y[y.length - 1] & 1) === 0;
+	const isEven = ((y[y.length - 1] ?? 0) & 1) === 0;
 	compressed[0] = isEven ? 0x02 : 0x03;
 
 	return compressed;

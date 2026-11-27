@@ -23,7 +23,7 @@
 //!
 //! // Key generation
 //! const sk = try bls.SecretKey.generate(std.testing.io);
-//! const pk = sk.toPublicKey();
+//! const pk = try sk.toPublicKey();
 //!
 //! // Signing
 //! const sig = try bls.sign(&sk, message, dst);
@@ -160,8 +160,8 @@ pub const SecretKey = struct {
     }
 
     /// Derive public key from secret key (minimal-pubkey-size: PK in G1)
-    pub fn toPublicKey(self: *const SecretKey) PublicKey {
-        if (builtin.target.cpu.arch == .wasm32) @panic("WASM not supported");
+    pub fn toPublicKey(self: *const SecretKey) Error!PublicKey {
+        if (builtin.target.cpu.arch == .wasm32) return Error.NotSupported;
 
         var pk: blst.blst_p1 = undefined;
         blst.blst_sk_to_pk_in_g1(&pk, &self.data);
@@ -824,7 +824,7 @@ test "public key derivation" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
     const sk = try SecretKey.generate(std.testing.io);
-    const pk = sk.toPublicKey();
+    const pk = try sk.toPublicKey();
 
     // Public key should not be infinity
     try testing.expect(!pk.isInfinity());
@@ -837,7 +837,7 @@ test "public key serialization roundtrip" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
     const sk = try SecretKey.generate(std.testing.io);
-    const pk = sk.toPublicKey();
+    const pk = try sk.toPublicKey();
 
     // Compressed roundtrip
     const compressed = pk.toCompressed();
@@ -854,7 +854,7 @@ test "sign and verify" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
     const sk = try SecretKey.generate(std.testing.io);
-    const pk = sk.toPublicKey();
+    const pk = try sk.toPublicKey();
 
     const message = "Hello, BLS12-381!";
     const dst = DST.ETH2_SIGNATURE;
@@ -869,7 +869,7 @@ test "verify wrong message fails" {
     if (builtin.target.cpu.arch == .wasm32) return error.SkipZigTest;
 
     const sk = try SecretKey.generate(std.testing.io);
-    const pk = sk.toPublicKey();
+    const pk = try sk.toPublicKey();
 
     const message = "Hello, BLS12-381!";
     const wrong_message = "Wrong message";
@@ -886,7 +886,7 @@ test "verify wrong public key fails" {
 
     const sk1 = try SecretKey.generate(std.testing.io);
     const sk2 = try SecretKey.generate(std.testing.io);
-    const pk2 = sk2.toPublicKey();
+    const pk2 = try sk2.toPublicKey();
 
     const message = "Hello, BLS12-381!";
     const dst = DST.ETH2_SIGNATURE;
@@ -928,9 +928,9 @@ test "aggregate signatures - same message" {
     const sk2 = try SecretKey.generate(std.testing.io);
     const sk3 = try SecretKey.generate(std.testing.io);
 
-    const pk1 = sk1.toPublicKey();
-    const pk2 = sk2.toPublicKey();
-    const pk3 = sk3.toPublicKey();
+    const pk1 = try sk1.toPublicKey();
+    const pk2 = try sk2.toPublicKey();
+    const pk3 = try sk3.toPublicKey();
 
     // Sign with each key
     const sig1 = try sign(&sk1, message, dst);
@@ -954,8 +954,8 @@ test "aggregate public keys" {
     const sk1 = try SecretKey.generate(std.testing.io);
     const sk2 = try SecretKey.generate(std.testing.io);
 
-    const pk1 = sk1.toPublicKey();
-    const pk2 = sk2.toPublicKey();
+    const pk1 = try sk1.toPublicKey();
+    const pk2 = try sk2.toPublicKey();
 
     const pks = [_]*const PublicKey{ &pk1, &pk2 };
     const agg_pk = try aggregatePublicKeys(&pks);
@@ -1185,7 +1185,7 @@ test "BLS signature test vector - Ethereum style" {
     sk_bytes[31] = 1;
 
     const sk = try SecretKey.fromBytes(&sk_bytes);
-    const pk = sk.toPublicKey();
+    const pk = try sk.toPublicKey();
 
     // Verify public key is not infinity
     try testing.expect(!pk.isInfinity());
@@ -1235,9 +1235,9 @@ test "signature aggregation is commutative" {
     try testing.expect(agg_312.isEqual(&agg_231));
 
     // Verify all produce valid aggregated signatures
-    const pk1 = sk1.toPublicKey();
-    const pk2 = sk2.toPublicKey();
-    const pk3 = sk3.toPublicKey();
+    const pk1 = try sk1.toPublicKey();
+    const pk2 = try sk2.toPublicKey();
+    const pk3 = try sk3.toPublicKey();
     const pks = [_]*const PublicKey{ &pk1, &pk2, &pk3 };
 
     const valid = try verifyAggregate(&agg_123, &pks, message, dst);
@@ -1253,9 +1253,9 @@ test "public key aggregation is commutative" {
     const sk2 = try SecretKey.generate(std.testing.io);
     const sk3 = try SecretKey.generate(std.testing.io);
 
-    const pk1 = sk1.toPublicKey();
-    const pk2 = sk2.toPublicKey();
-    const pk3 = sk3.toPublicKey();
+    const pk1 = try sk1.toPublicKey();
+    const pk2 = try sk2.toPublicKey();
+    const pk3 = try sk3.toPublicKey();
 
     // Aggregate in order: 1, 2, 3
     const order_123 = [_]*const PublicKey{ &pk1, &pk2, &pk3 };

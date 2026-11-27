@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MAX, ZERO } from "./constants.js";
+import { UintNegativeError } from "./errors.js";
 import { from } from "./from.js";
 import { minus } from "./minus.js";
+import { minusWrapping } from "./minusWrapping.js";
 
 describe("Uint256.minus", () => {
 	describe("known values", () => {
@@ -52,24 +54,24 @@ describe("Uint256.minus", () => {
 			expect(result).toBe(0n);
 		});
 
-		it("wraps on underflow", () => {
-			const result = minus(ZERO, from(1n));
-			expect(result).toBe(MAX);
+		it("throws on underflow", () => {
+			expect(() => minus(ZERO, from(1n))).toThrow(UintNegativeError);
+			expect(minusWrapping(ZERO, from(1n))).toBe(MAX);
 		});
 
-		it("wraps on large underflow", () => {
-			const result = minus(ZERO, from(2n));
-			expect(result).toBe(MAX - 1n);
+		it("throws on large underflow", () => {
+			expect(() => minus(ZERO, from(2n))).toThrow(UintNegativeError);
+			expect(minusWrapping(ZERO, from(2n))).toBe(MAX - 1n);
 		});
 
-		it("1 - 2 wraps to MAX", () => {
-			const result = minus(from(1n), from(2n));
-			expect(result).toBe(MAX);
+		it("1 - 2 throws underflow (and wraps with minusWrapping)", () => {
+			expect(() => minus(from(1n), from(2n))).toThrow(UintNegativeError);
+			expect(minusWrapping(from(1n), from(2n))).toBe(MAX);
 		});
 
 		it("handles underflow with larger values", () => {
-			const result = minus(from(100n), from(200n));
-			expect(result).toBe(MAX - 99n);
+			expect(() => minus(from(100n), from(200n))).toThrow(UintNegativeError);
+			expect(minusWrapping(from(100n), from(200n))).toBe(MAX - 99n);
 		});
 	});
 

@@ -18,6 +18,7 @@
 
 import type { AddressType as BrandedAddress } from "../primitives/Address/AddressType.js";
 import type { HashType } from "../primitives/Hash/index.js";
+import * as loader from "../wasm-loader/loader.js";
 import { constantTimeEqual } from "./ConstantTime/constantTimeEqual.js";
 import type {
 	Domain,
@@ -135,10 +136,7 @@ export namespace Eip712Wasm {
 				const typeFields = types[typeName];
 				if (!typeFields) return "";
 				const fields = typeFields
-					.map(
-						(field: { name: string; type: string }) =>
-							`${field.type} ${field.name}`,
-					)
+					.map((field: TypeProperty) => `${field.type} ${field.name}`)
 					.join(",");
 				return `${typeName}(${fields})`;
 			})
@@ -176,23 +174,9 @@ export namespace Eip712Wasm {
 		const concatenated = new Uint8Array(encodedElements.length * 32);
 		for (let i = 0; i < encodedElements.length; i++) {
 			const elem = encodedElements[i];
-			if (elem) {
-				concatenated.set(elem, i * 32);
-			}
+			if (elem) concatenated.set(elem, i * 32);
 		}
 		return Keccak256Wasm.hash(concatenated) as Uint8Array;
-	}
-
-	function encodeIntWord(
-		value: bigint | number,
-		result: Uint8Array,
-	): Uint8Array {
-		const bigNum = typeof value === "bigint" ? value : BigInt(value);
-		const hex = bigNum.toString(16).padStart(64, "0");
-		for (let i = 0; i < 32; i++) {
-			result[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-		}
-		return result;
 	}
 
 	/**
@@ -203,27 +187,24 @@ export namespace Eip712Wasm {
 	 * @param types - Type definitions (for structs)
 	 * @returns 32-byte encoded value
 	 */
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: EIP-712 encoding inherently complex
 	export function encodeValue(
 		type: string,
 		value: unknown,
 		types: Types,
 	): Uint8Array {
-		const result = new Uint8Array(32);
-
-		if (type.includes("[")) {
-			return encodeArrayValue(type, value, types);
-		}
+		if (type.includes("[")) return encodeArrayValue(type, value, types);
 		if (types[type]) {
 			return hashStruct(type, value as Message, types) as Uint8Array;
 		}
 		if (type === "string") {
-			return Keccak256Wasm.hash(
-				new TextEncoder().encode(value as string),
-			) as Uint8Array;
+			const bytes = new TextEncoder().encode(value as string);
+			return Keccak256Wasm.hash(bytes) as Uint8Array;
 		}
 		if (type === "bytes") {
 			return Keccak256Wasm.hash(value as Uint8Array) as Uint8Array;
 		}
+		const result = new Uint8Array(32);
 		if (type.startsWith("bytes")) {
 			const size = Number.parseInt(type.slice(5), 10);
 			result.set((value as Uint8Array).slice(0, size), 0);
@@ -240,9 +221,14 @@ export namespace Eip712Wasm {
 			return result;
 		}
 		if (type.startsWith("uint") || type.startsWith("int")) {
-			return encodeIntWord(value as bigint | number, result);
+			const num = value as bigint | number;
+			const bigNum = typeof num === "bigint" ? num : BigInt(num);
+			const hex = bigNum.toString(16).padStart(64, "0");
+			for (let i = 0; i < 32; i++) {
+				result[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+			}
+			return result;
 		}
-
 		throw new Eip712EncodingError(`Unsupported type: ${type}`);
 	}
 
@@ -417,13 +403,11 @@ export namespace Eip712Wasm {
 	}
 
 	/**
-	 * Initialize WASM modules
-	 *
-	 * Must be called before using any Eip712Wasm functions.
+	 * Initialize WASM modules (standalone keccak256 micro-WASM + primitives WASM for secp256k1).
+	 * Required before calling in browsers; Node/Bun auto-inits synchronously.
 	 */
 	export async function init(): Promise<void> {
-		await Keccak256Wasm.init();
-		// await Secp256k1Wasm.init();
+		await Promise.all([Keccak256Wasm.init(), loader.loadWasm()]);
 	}
 
 	// ==========================================================================

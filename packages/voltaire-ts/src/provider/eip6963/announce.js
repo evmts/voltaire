@@ -6,9 +6,10 @@
  * @module provider/eip6963/announce
  */
 
-/** @type {typeof globalThis & { addEventListener: Function; removeEventListener: Function; dispatchEvent: Function }} */
-// @ts-expect-error - window exists in browser environment
-const window = globalThis;
+const window =
+	/** @type {typeof globalThis & { addEventListener: (type: string, listener: () => void) => void; removeEventListener: (type: string, listener: () => void) => void; dispatchEvent: (event: Event) => boolean }} */ (
+		/** @type {unknown} */ (globalThis)
+	);
 
 import { InvalidArgumentError } from "./errors.js";
 import { assertBrowser } from "./getPlatform.js";

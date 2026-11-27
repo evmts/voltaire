@@ -14,8 +14,36 @@ import { createScratch, type Scratch, scratchAlloc } from "./scratch.js";
 import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
 
-// Cache for Node.js crypto module (loaded lazily)
-const nodeCryptoModule: typeof import("node:crypto") | null = null;
+/**
+ * Accepted input sources for WASM instantiation.
+ */
+export type WasmInput = string | URL | Uint8Array | ArrayBuffer;
+
+/**
+ * Thrown when a synchronous WASM call runs before WASM has been initialized
+ * in an environment without synchronous filesystem access (e.g. browsers).
+ */
+export class WasmNotInitializedError extends Error {
+	readonly _tag = "WasmNotInitializedError" as const;
+	constructor(
+		message = "Call await initWasm() before calling WASM methods in browser environments",
+	) {
+		super(message);
+		this.name = "WasmNotInitializedError";
+	}
+}
+
+interface NodeFsSync {
+	readFileSync: (path: string | URL) => Uint8Array;
+}
+
+interface NodeCryptoSync {
+	randomFillSync: (buffer: Uint8Array) => Uint8Array;
+}
+
+interface ProcessWithBuiltin {
+	getBuiltinModule?: (id: string) => unknown;
+}
 
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;
@@ -23,64 +51,63 @@ let wasmExports: WasmExports | null = null;
 let scratch: Scratch | null = null; // JS-owned region above module memory
 let memoryOffset = 0; // Bump pointer inside `scratch`
 let loadedWasmPath: string | null = null; // Track loaded WASM file or URL
-let loadedWasmBuffer: ArrayBuffer | null = null; // Track loaded ArrayBuffer by identity
+let loadedWasmBuffer: ArrayBuffer | Uint8Array | null = null; // Track loaded buffer by identity
 
 /**
- * Error messages for error codes
+ * Default URL for the unified primitives.wasm module.
+ * Resolves to src/wasm-loader/primitives.wasm in dev; tsup rewrites
+ * `wasm-loader/primitives.wasm` to the shipped dist/wasm/primitives.wasm.
  */
-const ErrorMessages: Record<ErrorCode, string> = {
-	[ErrorCode.SUCCESS]: "Success",
-	[ErrorCode.INVALID_HEX]: "Invalid hex string",
-	[ErrorCode.INVALID_LENGTH]: "Invalid length",
-	[ErrorCode.INVALID_CHECKSUM]: "Invalid checksum",
-	[ErrorCode.OUT_OF_MEMORY]: "Out of memory",
-	[ErrorCode.INVALID_INPUT]: "Invalid input",
-	[ErrorCode.INVALID_SIGNATURE]: "Invalid signature",
-	[ErrorCode.INVALID_SELECTOR]: "Invalid function selector",
-	[ErrorCode.UNSUPPORTED_TYPE]: "Unsupported ABI type",
-	[ErrorCode.MAX_LENGTH_EXCEEDED]: "Maximum length exceeded",
-	[ErrorCode.ACCESS_LIST_INVALID]: "Invalid access list",
-	[ErrorCode.AUTHORIZATION_INVALID]: "Invalid authorization",
-	[ErrorCode.KZG_NOT_LOADED]: "KZG trusted setup not loaded",
-	[ErrorCode.KZG_INVALID_BLOB]: "Invalid KZG blob",
-	[ErrorCode.KZG_INVALID_PROOF]: "Invalid KZG proof",
-};
+function getDefaultWasmUrl(): URL {
+	return new URL("../wasm-loader/primitives.wasm", import.meta.url);
+}
 
-/**
- * Load and instantiate the WASM module.
- *
- * @see https://voltaire.tevm.sh/getting-started for documentation
- * @since 0.0.0
- * @param wasmPath - Path to WASM file, URL, or ArrayBuffer
- * @param forceReload - Force reload even if already loaded (for benchmarking different modes)
- * @returns Promise that resolves when WASM is loaded
- * @throws {Error} If WASM module does not export memory or instantiation fails
- * @example
- * ```javascript
- * import { loadWasm } from './wasm-loader/loader.js';
- * await loadWasm('./wasm/primitives.wasm');
- * ```
- */
-export async function loadWasm(
-	wasmPath: string | URL | ArrayBuffer,
-	forceReload = false,
-): Promise<void> {
-	const pathStr =
-		wasmPath instanceof URL
-			? wasmPath.href
-			: typeof wasmPath === "string"
-				? wasmPath
-				: null;
-	const sameSource =
-		pathStr === null
-			? loadedWasmBuffer === wasmPath
-			: loadedWasmPath === pathStr;
-
-	if (wasmInstance && !forceReload && sameSource) {
-		return; // Already loaded same file or same ArrayBuffer object
+function getNodeBuiltin<T>(id: string): T | null {
+	const proc = (globalThis as { process?: ProcessWithBuiltin }).process;
+	if (typeof proc?.getBuiltinModule !== "function") {
+		return null;
 	}
+	const mod = proc.getBuiltinModule(id);
+	return (mod as T | undefined) ?? null;
+}
 
-	// Reset state for reload
+function getNodeFsSync(): NodeFsSync | null {
+	const mod = getNodeBuiltin<Partial<NodeFsSync>>("node:fs");
+	return mod && typeof mod.readFileSync === "function"
+		? (mod as NodeFsSync)
+		: null;
+}
+
+function toArrayBuffer(bytes: Uint8Array | ArrayBuffer): ArrayBuffer {
+	if (bytes instanceof ArrayBuffer) {
+		return bytes;
+	}
+	if (
+		bytes.buffer instanceof ArrayBuffer &&
+		bytes.byteOffset === 0 &&
+		bytes.byteLength === bytes.buffer.byteLength
+	) {
+		return bytes.buffer;
+	}
+	const copy = new Uint8Array(bytes.byteLength);
+	copy.set(bytes);
+	return copy.buffer;
+}
+
+function getSourcePathString(source: WasmInput): string | null {
+	if (source instanceof URL) return source.href;
+	if (typeof source === "string") return source;
+	return null;
+}
+
+function isSameSource(source: WasmInput): boolean {
+	const pathStr = getSourcePathString(source);
+	return pathStr === null
+		? loadedWasmBuffer === source
+		: loadedWasmPath === pathStr;
+}
+
+function resetWasmState(): void {
 	wasmInstance = null;
 	wasmMemory = null;
 	wasmExports = null;
@@ -90,179 +117,134 @@ export async function loadWasm(
 	loadedWasmBuffer = null;
 	// A new instance has fresh linear memory with no trusted setup loaded.
 	kzgInitialized = false;
+}
 
-	// Minimal WASI shim for wasm32-wasi modules
-	const wasi: WasiImports = {
-		// args
-		args_get: (_argv: number, _argv_buf: number): number => 0,
-		args_sizes_get: (argc_ptr: number, argv_buf_size_ptr: number): number => {
+function writeWasiZeroPair(ptrA: number, ptrB: number): number {
+	if (!wasmMemory) return -1;
+	const mem = new DataView(wasmMemory.buffer);
+	mem.setUint32(ptrA, 0, true);
+	mem.setUint32(ptrB, 0, true);
+	return 0;
+}
+
+function wasiFdWrite(
+	_fd: number,
+	iovs: number,
+	iovs_len: number,
+	nwritten: number,
+): number {
+	try {
+		if (!wasmMemory) return -1;
+		const memU32 = new Uint32Array(wasmMemory.buffer);
+		let bytes = 0;
+		for (let i = 0; i < iovs_len; i++) {
+			bytes += memU32[(iovs >> 2) + i * 2 + 1] ?? 0;
+		}
+		new DataView(wasmMemory.buffer).setUint32(nwritten, bytes, true);
+		return 0;
+	} catch {
+		return 0;
+	}
+}
+
+function wasiRandomGet(buf: number, len: number): number {
+	if (!wasmMemory) return -1;
+	const view = new Uint8Array(wasmMemory.buffer, buf, len);
+	if (
+		typeof globalThis.crypto !== "undefined" &&
+		typeof globalThis.crypto.getRandomValues === "function"
+	) {
+		globalThis.crypto.getRandomValues(view);
+		return 0;
+	}
+	const nodeCrypto = getNodeBuiltin<Partial<NodeCryptoSync>>("node:crypto");
+	if (nodeCrypto && typeof nodeCrypto.randomFillSync === "function") {
+		nodeCrypto.randomFillSync(view);
+		return 0;
+	}
+	throw new Error(
+		"No secure random source available for WASI random_get. " +
+			"Requires globalThis.crypto.getRandomValues or Node.js crypto.",
+	);
+}
+
+function createWasiImports(): WasiImports {
+	const writeZero = (ptr: number): number => {
+		if (!wasmMemory) return -1;
+		new DataView(wasmMemory.buffer).setUint32(ptr, 0, true);
+		return 0;
+	};
+	return {
+		args_get: () => 0,
+		args_sizes_get: writeWasiZeroPair,
+		environ_get: () => 0,
+		environ_sizes_get: writeWasiZeroPair,
+		fd_write: wasiFdWrite,
+		fd_fdstat_get: () => 0,
+		fd_filestat_get: () => 0,
+		fd_seek: () => 0,
+		fd_close: () => 0,
+		fd_read: (_fd, _iovs, _iovsLen, nread) => writeZero(nread),
+		fd_pread: (_fd, _iovs, _iovsLen, _offset, nread) => writeZero(nread),
+		fd_pwrite: (_fd, _iovs, _iovsLen, _offset, nwritten) => writeZero(nwritten),
+		clock_res_get: (_id, resPtr) => {
 			if (!wasmMemory) return -1;
-			const mem = new DataView(wasmMemory.buffer);
-			mem.setUint32(argc_ptr, 0, true);
-			mem.setUint32(argv_buf_size_ptr, 0, true);
+			new DataView(wasmMemory.buffer).setBigUint64(resPtr, 1_000_000n, true);
 			return 0;
 		},
-		// environment
-		environ_get: (_environ: number, _environ_buf: number): number => 0,
-		environ_sizes_get: (
-			environ_count_ptr: number,
-			environ_buf_size_ptr: number,
-		): number => {
-			if (!wasmMemory) return -1;
-			const mem = new DataView(wasmMemory.buffer);
-			mem.setUint32(environ_count_ptr, 0, true);
-			mem.setUint32(environ_buf_size_ptr, 0, true);
-			return 0;
-		},
-		// fds
-		fd_write: (
-			_fd: number,
-			iovs: number,
-			iovs_len: number,
-			nwritten: number,
-		): number => {
-			try {
-				if (!wasmMemory) return -1;
-				const memU32 = new Uint32Array(wasmMemory.buffer);
-				let bytes = 0;
-				for (let i = 0; i < iovs_len; i++) {
-					void (memU32[(iovs >> 2) + i * 2] ?? 0);
-					const len = memU32[(iovs >> 2) + i * 2 + 1] ?? 0;
-					bytes += len;
-				}
-				const mem = new DataView(wasmMemory.buffer);
-				mem.setUint32(nwritten, bytes, true);
-				return 0;
-			} catch {
-				return 0;
-			}
-		},
-		fd_fdstat_get: (): number => 0,
-		fd_filestat_get: (): number => 0,
-		fd_seek: (): number => 0,
-		fd_close: (): number => 0,
-		fd_read: (
-			_fd: number,
-			_iovs: number,
-			_iovs_len: number,
-			nread: number,
-		): number => {
-			if (!wasmMemory) return -1;
-			const mem = new DataView(wasmMemory.buffer);
-			mem.setUint32(nread, 0, true);
-			return 0;
-		},
-		fd_pread: (
-			_fd: number,
-			_iovs: number,
-			_iovs_len: number,
-			_offset: number,
-			nread: number,
-		): number => {
-			if (!wasmMemory) return -1;
-			const mem = new DataView(wasmMemory.buffer);
-			mem.setUint32(nread, 0, true);
-			return 0;
-		},
-		fd_pwrite: (
-			_fd: number,
-			_iovs: number,
-			_iovs_len: number,
-			_offset: number,
-			nwritten: number,
-		): number => {
-			if (!wasmMemory) return -1;
-			const mem = new DataView(wasmMemory.buffer);
-			mem.setUint32(nwritten, 0, true);
-			return 0;
-		},
-		// time
-		clock_res_get: (_id: number, resPtr: number): number => {
-			if (!wasmMemory) return -1;
-			const mem = new DataView(wasmMemory.buffer);
-			mem.setBigUint64(resPtr, 1_000_000n, true);
-			return 0;
-		},
-		clock_time_get: (
-			_id: number,
-			_precision: bigint,
-			timePtr: number,
-		): number => {
+		clock_time_get: (_id, _precision, timePtr) => {
 			if (!wasmMemory) return -1;
 			if (typeof timePtr === "number") {
-				const mem = new DataView(wasmMemory.buffer);
-				mem.setBigUint64(timePtr, BigInt(Date.now()) * 1_000_000n, true);
+				new DataView(wasmMemory.buffer).setBigUint64(
+					timePtr,
+					BigInt(Date.now()) * 1_000_000n,
+					true,
+				);
 			}
 			return 0;
 		},
-		// random
-		random_get: (buf: number, len: number): number => {
-			if (!wasmMemory) return -1;
-			const view = new Uint8Array(wasmMemory.buffer, buf, len);
-			// Use crypto.getRandomValues for secure random bytes
-			if (
-				typeof globalThis.crypto !== "undefined" &&
-				globalThis.crypto.getRandomValues
-			) {
-				globalThis.crypto.getRandomValues(view);
-			} else {
-				// Fallback for Node.js without global crypto (Node < 18)
-				try {
-					// Use cached module or attempt to load synchronously
-					// Note: In ESM, top-level await can be used to pre-load this module
-					// For now, we throw a helpful error since Node 18+ has globalThis.crypto
-					if (!nodeCryptoModule) {
-						throw new Error("Node.js crypto not available");
-					}
-					nodeCryptoModule.randomFillSync(view);
-				} catch {
-					// Last resort: throw error rather than return predictable zeros
-					throw new Error(
-						"No secure random source available for WASI random_get. " +
-							"This should not happen on Node.js 18+ or browsers. " +
-							"If using an older Node.js version, consider upgrading.",
-					);
-				}
-			}
-			return 0;
-		},
-		// process
+		random_get: wasiRandomGet,
 		proc_exit: (code: number): never => {
 			throw new Error(`WASI proc_exit(${code})`);
 		},
-		sched_yield: (): number => 0,
-		poll_oneoff: (): number => 0,
-		// path/stat
-		path_filestat_get: (): number => 0,
-		path_open: (): number => 0,
-		path_readlink: (): number => 0,
-		fd_prestat_get: (): number => 0,
-		fd_prestat_dir_name: (): number => 0,
-		fd_datasync: (): number => 0,
-		fd_sync: (): number => 0,
-		fd_advise: (): number => 0,
-		fd_allocate: (): number => 0,
-		fd_fdstat_set_flags: (): number => 0,
-		fd_fdstat_set_rights: (): number => 0,
-		fd_filestat_set_size: (): number => 0,
-		fd_filestat_set_times: (): number => 0,
-		fd_readdir: (): number => 0,
-		fd_renumber: (): number => 0,
-		fd_tell: (): number => 0,
-		path_create_directory: (): number => 0,
-		path_filestat_set_times: (): number => 0,
-		path_link: (): number => 0,
-		path_remove_directory: (): number => 0,
-		path_rename: (): number => 0,
-		path_symlink: (): number => 0,
-		path_unlink_file: (): number => 0,
-		sock_accept: (): number => 52,
-		sock_recv: (): number => 52,
-		sock_send: (): number => 52,
-		sock_shutdown: (): number => 52,
+		sched_yield: () => 0,
+		poll_oneoff: () => 0,
+		path_filestat_get: () => 0,
+		path_open: () => 0,
+		path_readlink: () => 0,
+		fd_prestat_get: () => 0,
+		fd_prestat_dir_name: () => 0,
+		fd_datasync: () => 0,
+		fd_sync: () => 0,
+		fd_advise: () => 0,
+		fd_allocate: () => 0,
+		fd_fdstat_set_flags: () => 0,
+		fd_fdstat_set_rights: () => 0,
+		fd_filestat_set_size: () => 0,
+		fd_filestat_set_times: () => 0,
+		fd_readdir: () => 0,
+		fd_renumber: () => 0,
+		fd_tell: () => 0,
+		path_create_directory: () => 0,
+		path_filestat_set_times: () => 0,
+		path_link: () => 0,
+		path_remove_directory: () => 0,
+		path_rename: () => 0,
+		path_symlink: () => 0,
+		path_unlink_file: () => 0,
+		sock_accept: () => 52,
+		sock_recv: () => 52,
+		sock_send: () => 52,
+		sock_shutdown: () => 52,
 	};
+}
 
-	const importObject = {
+type WasmImportObject = NonNullable<
+	ConstructorParameters<typeof WebAssembly.Instance>[1]
+>;
+
+function createWasmImports(): WasmImportObject {
+	return {
 		env: {
 			// BIP-39 / libwally-core stubs (not implemented in WASM)
 			bip39_mnemonic_from_bytes: (): number => 0,
@@ -288,39 +270,20 @@ export async function loadWasm(
 			verify_blob_kzg_proof: (): number => -1,
 			verify_blob_kzg_proof_batch: (): number => -1,
 		},
-		wasi_snapshot_preview1: wasi,
+		wasi_snapshot_preview1: createWasiImports(),
 	};
+}
 
-	let wasmModule: WebAssembly.WebAssemblyInstantiatedSource;
-	if (wasmPath instanceof ArrayBuffer) {
-		wasmModule = await WebAssembly.instantiate(wasmPath, importObject);
-		wasmInstance = wasmModule.instance;
-	} else {
-		let buffer: ArrayBuffer;
+function finalizeWasmInstance(
+	instance: WebAssembly.Instance,
+	source: WasmInput,
+): void {
+	wasmInstance = instance;
+	wasmExports = instance.exports as unknown as WasmExports;
 
-		// Handle file:// URLs in Node/Bun environment
-		if (wasmPath instanceof URL && wasmPath.protocol === "file:") {
-			// Use dynamic import to avoid bundler issues
-			const fs = await import("node:fs/promises");
-			const fileBuffer = await fs.readFile(wasmPath);
-			buffer = fileBuffer.buffer.slice(
-				fileBuffer.byteOffset,
-				fileBuffer.byteOffset + fileBuffer.byteLength,
-			);
-		} else {
-			const response = await fetch(wasmPath);
-			buffer = await response.arrayBuffer();
-		}
-
-		wasmModule = await WebAssembly.instantiate(buffer, importObject);
-		wasmInstance = wasmModule.instance;
-	}
-
-	wasmExports = wasmInstance.exports as unknown as WasmExports;
-
-	// Get memory from WASM exports (WASM creates its own memory)
 	wasmMemory = wasmExports.memory as WebAssembly.Memory;
 	if (!wasmMemory) {
+		resetWasmState();
 		throw new Error("WASM module does not export memory");
 	}
 
@@ -329,12 +292,189 @@ export async function loadWasm(
 	scratch = createScratch(wasmMemory);
 	memoryOffset = scratch.base;
 
-	// Track loaded source for reload detection
+	const pathStr = getSourcePathString(source);
 	if (pathStr === null) {
-		loadedWasmBuffer = wasmPath as ArrayBuffer;
+		loadedWasmBuffer = source as ArrayBuffer | Uint8Array;
 	} else {
 		loadedWasmPath = pathStr;
 	}
+}
+
+async function instantiateFromUrlOrPath(
+	source: string | URL,
+	importObject: WasmImportObject,
+): Promise<WebAssembly.Instance> {
+	const isFileUrl =
+		(source instanceof URL && source.protocol === "file:") ||
+		(typeof source === "string" && source.startsWith("file://"));
+	const isLocalPath =
+		typeof source === "string" &&
+		!/^https?:\/\//i.test(source) &&
+		getNodeFsSync() !== null;
+
+	if (isFileUrl || isLocalPath) {
+		const fs = await import("node:fs/promises");
+		const fileTarget =
+			typeof source === "string" && source.startsWith("file://")
+				? new URL(source)
+				: source;
+		const fileBuffer = await fs.readFile(fileTarget);
+		const wasmModule = await WebAssembly.instantiate(
+			toArrayBuffer(fileBuffer),
+			importObject,
+		);
+		return wasmModule.instance;
+	}
+
+	const response = await fetch(source);
+	if (response.ok === false) {
+		throw new Error(
+			`Failed to fetch WASM module: ${response.status} ${response.statusText}`,
+		);
+	}
+	if (
+		typeof WebAssembly.instantiateStreaming === "function" &&
+		response.headers?.get("content-type")?.includes("application/wasm")
+	) {
+		try {
+			const streamed = await WebAssembly.instantiateStreaming(
+				response.clone() as unknown as Parameters<
+					typeof WebAssembly.instantiateStreaming
+				>[0],
+				importObject,
+			);
+			return streamed.instance;
+		} catch {
+			// Fall through to ArrayBuffer instantiation
+		}
+	}
+	const buffer = await response.arrayBuffer();
+	const wasmModule = await WebAssembly.instantiate(buffer, importObject);
+	return wasmModule.instance;
+}
+
+function readWasmBytesSync(source: WasmInput): ArrayBuffer {
+	if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+		return toArrayBuffer(source);
+	}
+	if (
+		(source instanceof URL && source.protocol !== "file:") ||
+		(typeof source === "string" && /^https?:\/\//i.test(source))
+	) {
+		throw new WasmNotInitializedError(
+			"Call await initWasm() before calling WASM methods in browser environments",
+		);
+	}
+	const fs = getNodeFsSync();
+	if (!fs) {
+		throw new WasmNotInitializedError(
+			"Call await initWasm() before calling WASM methods in browser environments",
+		);
+	}
+	const target =
+		typeof source === "string" && source.startsWith("file://")
+			? new URL(source)
+			: source;
+	return toArrayBuffer(fs.readFileSync(target));
+}
+
+/**
+ * Error messages for error codes
+ */
+const ErrorMessages: Record<ErrorCode, string> = {
+	[ErrorCode.SUCCESS]: "Success",
+	[ErrorCode.INVALID_HEX]: "Invalid hex string",
+	[ErrorCode.INVALID_LENGTH]: "Invalid length",
+	[ErrorCode.INVALID_CHECKSUM]: "Invalid checksum",
+	[ErrorCode.OUT_OF_MEMORY]: "Out of memory",
+	[ErrorCode.INVALID_INPUT]: "Invalid input",
+	[ErrorCode.INVALID_SIGNATURE]: "Invalid signature",
+	[ErrorCode.INVALID_SELECTOR]: "Invalid function selector",
+	[ErrorCode.UNSUPPORTED_TYPE]: "Unsupported ABI type",
+	[ErrorCode.MAX_LENGTH_EXCEEDED]: "Maximum length exceeded",
+	[ErrorCode.ACCESS_LIST_INVALID]: "Invalid access list",
+	[ErrorCode.AUTHORIZATION_INVALID]: "Invalid authorization",
+	[ErrorCode.KZG_NOT_LOADED]: "KZG trusted setup not loaded",
+	[ErrorCode.KZG_INVALID_BLOB]: "Invalid KZG blob",
+	[ErrorCode.KZG_INVALID_PROOF]: "Invalid KZG proof",
+};
+
+/**
+ * Load and instantiate the WASM module asynchronously.
+ * Works in browsers (fetch / instantiateStreaming) and Node/Bun (node:fs/promises).
+ *
+ * @see https://voltaire.tevm.sh/getting-started for documentation
+ * @since 0.0.0
+ * @param wasmPath - Optional path, URL, Uint8Array, or ArrayBuffer (defaults to primitives.wasm)
+ * @param forceReload - Force reload even if already loaded
+ * @returns Promise that resolves when WASM is loaded
+ * @throws {Error} If WASM module does not export memory or instantiation fails
+ */
+export async function loadWasm(
+	wasmPath?: WasmInput,
+	forceReload = false,
+): Promise<void> {
+	const source = wasmPath ?? getDefaultWasmUrl();
+	if (wasmInstance && !forceReload && isSameSource(source)) {
+		return;
+	}
+
+	resetWasmState();
+	const importObject = createWasmImports();
+
+	const instance =
+		source instanceof ArrayBuffer || source instanceof Uint8Array
+			? (await WebAssembly.instantiate(toArrayBuffer(source), importObject))
+					.instance
+			: await instantiateFromUrlOrPath(source, importObject);
+
+	finalizeWasmInstance(instance, source);
+}
+
+/**
+ * Load and instantiate the WASM module synchronously.
+ * Supported in Node.js and Bun via `process.getBuiltinModule('node:fs')`, or anywhere
+ * when passed raw WASM bytes (`Uint8Array` or `ArrayBuffer`).
+ *
+ * @param wasmPath - Optional path, URL, Uint8Array, or ArrayBuffer (defaults to primitives.wasm)
+ * @param forceReload - Force reload even if already loaded
+ * @throws {WasmNotInitializedError} In browsers when called without raw WASM bytes
+ */
+export function loadWasmSync(wasmPath?: WasmInput, forceReload = false): void {
+	const source = wasmPath ?? getDefaultWasmUrl();
+	if (wasmInstance && !forceReload && isSameSource(source)) {
+		return;
+	}
+
+	resetWasmState();
+	const bytes = readWasmBytesSync(source);
+	const mod = new WebAssembly.Module(bytes);
+	const instance = new WebAssembly.Instance(mod, createWasmImports());
+	finalizeWasmInstance(instance, source);
+}
+
+/**
+ * Check whether the unified primitives WASM module is currently loaded.
+ */
+export function isWasmLoaded(): boolean {
+	return wasmInstance !== null && wasmExports !== null;
+}
+
+/**
+ * Unload the currently instantiated WASM module and reset loader state.
+ */
+export function unloadWasm(): void {
+	resetWasmState();
+}
+
+/**
+ * Ensure the WASM module is initialized.
+ * Auto-initializes synchronously in Node/Bun; throws `WasmNotInitializedError`
+ * in browsers if `await initWasm()` has not been called.
+ */
+export function ensureWasmLoaded(): void {
+	if (wasmExports) return;
+	loadWasmSync();
 }
 
 /**
@@ -353,7 +493,9 @@ export async function loadWasm(
  */
 export function getExports(): WasmExports {
 	if (!wasmExports) {
-		throw new Error("WASM module not loaded. Call loadWasm() first.");
+		throw new WasmNotInitializedError(
+			"WASM module not loaded. Call loadWasm() or loadWasmSync() first.",
+		);
 	}
 	return wasmExports;
 }
@@ -3225,24 +3367,66 @@ export function kzgIsInitialized(): boolean {
 }
 
 /**
- * Load KZG trusted setup from embedded data
+ * Load KZG trusted setup from embedded data (native builds) or fail with
+ * guidance on WASM builds where the 788 KB setup is not embedded.
  *
  * Idempotent - safe to call multiple times (no-op if already loaded).
- * Uses the embedded trusted setup from c-kzg-4844.
  *
- * @throws {Error} If loading fails
+ * @throws {Error} If loading fails or embedded setup is omitted in WASM
  */
 export function kzgLoadTrustedSetup(): void {
-	// Already initialized - no-op
 	if (kzgInitialized) {
 		return;
 	}
 	const exports = getExports();
 	const result = exports.kzg_load_trusted_setup();
+	if (result === ErrorCode.KZG_NOT_LOADED) {
+		throw new Error(
+			"KZG trusted setup is not embedded in WASM builds. Load trusted_setup.txt bytes and call kzgLoadTrustedSetupBytes(setupBytes) instead.",
+		);
+	}
 	if (result !== 0) {
 		throw new Error("Failed to load KZG trusted setup");
 	}
 	kzgInitialized = true;
+}
+
+/**
+ * Load KZG trusted setup dynamically from raw `trusted_setup.txt` bytes.
+ *
+ * Idempotent - safe to call multiple times (no-op if already loaded).
+ * Required for WASM builds where the 788 KB trusted setup is omitted from
+ * `primitives.wasm` to keep the binary under 350 kB.
+ *
+ * @param setupBytes - Raw UTF-8 bytes of `trusted_setup.txt`
+ * @throws {Error} If setupBytes is empty or loading fails
+ */
+export function kzgLoadTrustedSetupBytes(setupBytes: Uint8Array): void {
+	if (kzgInitialized) {
+		return;
+	}
+	if (!(setupBytes instanceof Uint8Array) || setupBytes.length === 0) {
+		throw new Error("KZG trusted setup bytes must be a non-empty Uint8Array");
+	}
+
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const dataPtr = malloc(setupBytes.length);
+		writeBytes(setupBytes, dataPtr);
+		const result = exports.kzg_load_trusted_setup_bytes(
+			dataPtr,
+			setupBytes.length,
+		);
+		if (result !== 0) {
+			throw new Error(
+				`Failed to load KZG trusted setup from bytes (code: ${result})`,
+			);
+		}
+		kzgInitialized = true;
+	} finally {
+		memoryOffset = savedOffset;
+	}
 }
 
 /**
@@ -3270,7 +3454,7 @@ export function kzgFreeTrustedSetup(): void {
 export function kzgBlobToCommitment(blob: Uint8Array): Uint8Array {
 	if (!kzgInitialized) {
 		throw new Error(
-			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetupBytes(setupBytes) first.",
 		);
 	}
 	if (blob.length !== KZG_BLOB_SIZE) {
@@ -3311,7 +3495,7 @@ export function kzgComputeProof(
 ): { proof: Uint8Array; y: Uint8Array } {
 	if (!kzgInitialized) {
 		throw new Error(
-			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetupBytes(setupBytes) first.",
 		);
 	}
 	if (blob.length !== KZG_BLOB_SIZE) {
@@ -3363,7 +3547,7 @@ export function kzgComputeBlobProof(
 ): Uint8Array {
 	if (!kzgInitialized) {
 		throw new Error(
-			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetupBytes(setupBytes) first.",
 		);
 	}
 	if (blob.length !== KZG_BLOB_SIZE) {
@@ -3419,7 +3603,7 @@ export function kzgVerifyProof(
 ): boolean {
 	if (!kzgInitialized) {
 		throw new Error(
-			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetupBytes(setupBytes) first.",
 		);
 	}
 	if (commitment.length !== KZG_COMMITMENT_SIZE) {
@@ -3488,7 +3672,7 @@ export function kzgVerifyBlobProof(
 ): boolean {
 	if (!kzgInitialized) {
 		throw new Error(
-			"KZG trusted setup not initialized. Call kzgLoadTrustedSetup() first.",
+			"KZG trusted setup not initialized. Call kzgLoadTrustedSetupBytes(setupBytes) first.",
 		);
 	}
 	if (blob.length !== KZG_BLOB_SIZE) {

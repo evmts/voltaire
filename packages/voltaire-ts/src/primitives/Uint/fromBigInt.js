@@ -1,5 +1,9 @@
 import { MAX } from "./constants.js";
-import { UintNegativeError, UintOverflowError } from "./errors.js";
+import {
+	UintNegativeError,
+	UintNotIntegerError,
+	UintOverflowError,
+} from "./errors.js";
 
 /**
  * Create Uint256 from bigint
@@ -8,6 +12,7 @@ import { UintNegativeError, UintOverflowError } from "./errors.js";
  * @since 0.0.0
  * @param {bigint} value - bigint to convert
  * @returns {import('./BrandedUint.js').BrandedUint} Uint256 value
+ * @throws {UintNotIntegerError} If value is not a bigint
  * @throws {UintNegativeError} If value is negative
  * @throws {UintOverflowError} If value exceeds maximum
  * @example
@@ -17,6 +22,12 @@ import { UintNegativeError, UintOverflowError } from "./errors.js";
  * ```
  */
 export function fromBigInt(value) {
+	if (typeof value !== "bigint") {
+		throw new UintNotIntegerError(
+			`Uint256.fromBigInt requires bigint, got ${typeof value}`,
+			{ value },
+		);
+	}
 	if (value < 0n) {
 		throw new UintNegativeError(`Uint256 value cannot be negative: ${value}`, {
 			value,

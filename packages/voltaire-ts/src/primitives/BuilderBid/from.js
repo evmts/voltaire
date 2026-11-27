@@ -135,15 +135,28 @@ export function from(value) {
 	const signature = parseFixedBytes(value.signature, 96, "signature");
 
 	return {
-		slot,
-		parentHash,
-		blockHash,
+		slot: /** @type {import('../Slot/SlotType.js').SlotType} */ (slot),
+		parentHash: /** @type {import('../Hash/HashType.js').HashType} */ (
+			parentHash
+		),
+		blockHash: /** @type {import('../Hash/HashType.js').HashType} */ (
+			blockHash
+		),
 		builderPubkey,
 		proposerPubkey,
-		proposerFeeRecipient,
-		gasLimit,
-		gasUsed,
-		value: bidValue,
+		proposerFeeRecipient:
+			/** @type {import('../Address/AddressType.js').AddressType} */ (
+				proposerFeeRecipient
+			),
+		gasLimit: /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+			gasLimit
+		),
+		gasUsed: /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+			gasUsed
+		),
+		value: /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+			bidValue
+		),
 		signature,
 	};
 }

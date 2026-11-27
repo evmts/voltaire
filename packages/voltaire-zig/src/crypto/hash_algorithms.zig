@@ -53,7 +53,7 @@ pub const SHA256 = struct {
     /// Compute SHA256 hash and return as fixed-size array
     pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
         var result: [OUTPUT_SIZE]u8 = undefined;
-        hash(input, &result) catch unreachable; // Buffer size is guaranteed correct
+        std.crypto.hash.sha2.Sha256.hash(input, &result, .{});
         return result;
     }
 };

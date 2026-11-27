@@ -1,15 +1,28 @@
-// @ts-nocheck
 import { PrimitiveError } from "../errors/index.js";
+
+/**
+ * @typedef {{
+ *   code?: number | string;
+ *   context?: Record<string, unknown>;
+ *   docsPath?: string;
+ *   cause?: unknown;
+ * }} StealthAddressErrorOptions
+ */
 
 /**
  * Base error for StealthAddress operations
  */
 export class StealthAddressError extends PrimitiveError {
+	/**
+	 * @param {string} message
+	 * @param {StealthAddressErrorOptions} [options]
+	 */
 	constructor(message, options = {}) {
 		super(message, {
 			code: "STEALTH_ADDRESS_ERROR",
 			docsPath: "/primitives/stealth-address#error-handling",
 			...options,
+			cause: options.cause instanceof Error ? options.cause : undefined,
 		});
 		this.name = "StealthAddressError";
 	}
@@ -19,6 +32,10 @@ export class StealthAddressError extends PrimitiveError {
  * Invalid stealth meta-address format or length
  */
 export class InvalidStealthMetaAddressError extends StealthAddressError {
+	/**
+	 * @param {string} message
+	 * @param {StealthAddressErrorOptions} [options]
+	 */
 	constructor(message, options = {}) {
 		super(message, {
 			code: "INVALID_STEALTH_META_ADDRESS",
@@ -32,6 +49,10 @@ export class InvalidStealthMetaAddressError extends StealthAddressError {
  * Invalid public key format or length
  */
 export class InvalidPublicKeyError extends StealthAddressError {
+	/**
+	 * @param {string} message
+	 * @param {StealthAddressErrorOptions} [options]
+	 */
 	constructor(message, options = {}) {
 		super(message, {
 			code: "INVALID_PUBLIC_KEY",
@@ -45,6 +66,10 @@ export class InvalidPublicKeyError extends StealthAddressError {
  * Invalid ephemeral public key
  */
 export class InvalidEphemeralPublicKeyError extends StealthAddressError {
+	/**
+	 * @param {string} message
+	 * @param {StealthAddressErrorOptions} [options]
+	 */
 	constructor(message, options = {}) {
 		super(message, {
 			code: "INVALID_EPHEMERAL_PUBLIC_KEY",
@@ -58,6 +83,10 @@ export class InvalidEphemeralPublicKeyError extends StealthAddressError {
  * Invalid announcement format
  */
 export class InvalidAnnouncementError extends StealthAddressError {
+	/**
+	 * @param {string} message
+	 * @param {StealthAddressErrorOptions} [options]
+	 */
 	constructor(message, options = {}) {
 		super(message, {
 			code: "INVALID_ANNOUNCEMENT",
@@ -71,6 +100,10 @@ export class InvalidAnnouncementError extends StealthAddressError {
  * Stealth address generation failed
  */
 export class StealthAddressGenerationError extends StealthAddressError {
+	/**
+	 * @param {string} message
+	 * @param {StealthAddressErrorOptions} [options]
+	 */
 	constructor(message, options = {}) {
 		super(message, {
 			code: "STEALTH_ADDRESS_GENERATION_FAILED",

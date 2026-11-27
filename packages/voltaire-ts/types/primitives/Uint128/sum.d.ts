@@ -4,8 +4,8 @@
  * @see https://voltaire.tevm.sh/primitives/uint128 for Uint128 documentation
  * @since 0.0.0
  * @param {import('./Uint128Type.js').Uint128Type[]} values - Array of values
- * @returns {import('./Uint128Type.js').Uint128Type} Sum with wrapping
- * @throws {never}
+ * @returns {import('./Uint128Type.js').Uint128Type} Sum with overflow checking
+ * @throws {import('./errors.js').Uint128OverflowError} If running sum exceeds 2^128 - 1
  * @example
  * ```javascript
  * import * as Uint128 from './primitives/Uint128/index.js';

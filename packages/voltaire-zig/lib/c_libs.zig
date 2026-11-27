@@ -4,10 +4,12 @@ const std = @import("std");
 pub const BlstLib = @import("blst.zig");
 pub const CKzgLib = @import("c-kzg.zig");
 pub const Bn254Lib = @import("bn254.zig");
+pub const WallyLib = @import("wally.zig");
 
 // Re-export the main functions for convenience
 pub const createBlstLibrary = BlstLib.createBlstLibrary;
 pub const createCKzgLibrary = CKzgLib.createCKzgLibrary;
+pub const createWallyLibrary = WallyLib.createWallyLibrary;
 pub const getRustLibraryPath = Bn254Lib.getRustLibraryPath;
 
 pub fn checkCargoInstalled(b: *std.Build) void {
@@ -15,7 +17,8 @@ pub fn checkCargoInstalled(b: *std.Build) void {
         std.debug.print("\n", .{});
         std.debug.print("❌ ERROR: Cargo (Rust build tool) is not installed!\n", .{});
         std.debug.print("\n", .{});
-        std.debug.print("This project requires Rust libraries (bn254_wrapper, keccak_wrapper).\n", .{});
+        std.debug.print("This build requested -Dwith-rust=true (Rust crypto_wrappers: bn254_wrapper, keccak_wrapper).\n", .{});
+        std.debug.print("Omit -Dwith-rust=true to build pure-Zig + C crypto without Cargo.\n", .{});
         std.debug.print("\n", .{});
         std.debug.print("To install Rust and Cargo, visit:\n", .{});
         std.debug.print("  https://rustup.rs/\n", .{});

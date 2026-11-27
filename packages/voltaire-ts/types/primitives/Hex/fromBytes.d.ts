@@ -6,7 +6,7 @@ import type { HexType } from "./HexType.js";
  * @since 0.0.0
  * @param bytes - Byte array to convert
  * @returns Hex string
- * @throws {never}
+ * @throws {InvalidFormatError} If input is not a Uint8Array
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';

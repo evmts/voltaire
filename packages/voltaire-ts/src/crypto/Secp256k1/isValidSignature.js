@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CURVE_ORDER } from "./constants.js";
 import { InvalidSignatureError } from "./errors.js";
 
@@ -11,7 +10,7 @@ import { InvalidSignatureError } from "./errors.js";
 function bytes32ToBigInt(bytes) {
 	if (bytes.length !== 32) {
 		throw new InvalidSignatureError(`Expected 32 bytes, got ${bytes.length}`, {
-			code: "SECP256K1_INVALID_SIGNATURE_COMPONENT_LENGTH",
+			code: -32001,
 			context: { length: bytes.length, expected: 32 },
 			docsPath: "/crypto/secp256k1#error-handling",
 		});

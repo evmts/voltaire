@@ -28,10 +28,66 @@ export function HashNode(deps) {
 }
 
 /**
+ * Wrap pre-encoded RLP items in a canonical RLP list header.
+ *
+ * @param {ReadonlyArray<Uint8Array>} encodedItems
+ * @returns {Uint8Array}
+ */
+function wrapRlpList(encodedItems) {
+	let payloadLen = 0;
+	for (const item of encodedItems) {
+		payloadLen += item.length;
+	}
+	/** @type {Uint8Array} */
+	let header;
+	if (payloadLen <= 55) {
+		header = new Uint8Array([0xc0 + payloadLen]);
+	} else {
+		const lenBytes = [];
+		let n = payloadLen;
+		while (n > 0) {
+			lenBytes.unshift(n & 0xff);
+			n = Math.floor(n / 256);
+		}
+		header = new Uint8Array(1 + lenBytes.length);
+		header[0] = 0xf7 + lenBytes.length;
+		header.set(lenBytes, 1);
+	}
+	const out = new Uint8Array(header.length + payloadLen);
+	out.set(header, 0);
+	let offset = header.length;
+	for (const item of encodedItems) {
+		out.set(item, offset);
+		offset += item.length;
+	}
+	return out;
+}
+
+/**
+ * Encode a child node reference per Ethereum Yellow Paper Appendix D:
+ * - Empty child: RLP empty byte string (0x80)
+ * - Inline node (< 32 bytes, already an RLP list starting with >= 0xc0): embedded raw
+ * - 32-byte keccak256 hash: RLP byte string
+ *
+ * @param {Uint8Array | null | undefined} ref
+ * @param {(data: Uint8Array | Uint8Array[]) => Uint8Array} rlpEncode
+ * @returns {Uint8Array}
+ */
+function encodeChildRef(ref, rlpEncode) {
+	if (!ref || ref.length === 0) {
+		return rlpEncode(new Uint8Array([]));
+	}
+	if (ref.length < 32 && /** @type {number} */ (ref[0]) >= 0xc0) {
+		return ref;
+	}
+	return rlpEncode(ref);
+}
+
+/**
  * RLP-encode a trie node to its serialized form.
  *
  * @param {import('./TrieType.js').TrieNode} node
- * @param {(data: any) => Uint8Array} rlpEncode
+ * @param {(data: Uint8Array | Uint8Array[]) => Uint8Array} rlpEncode
  * @returns {Uint8Array}
  */
 export function encodeNode(node, rlpEncode) {
@@ -41,15 +97,18 @@ export function encodeNode(node, rlpEncode) {
 		case "leaf":
 			return rlpEncode([encodePath(node.nibbles, true), node.value]);
 		case "extension":
-			return rlpEncode([encodePath(node.nibbles, false), node.childHash]);
+			return wrapRlpList([
+				rlpEncode(encodePath(node.nibbles, false)),
+				encodeChildRef(node.childHash, rlpEncode),
+			]);
 		case "branch": {
-			/** @type {(Uint8Array | Uint8Array)[]} */
-			const items = [];
+			/** @type {Uint8Array[]} */
+			const encodedItems = [];
 			for (let i = 0; i < 16; i++) {
-				items.push(node.children[i] || new Uint8Array([]));
+				encodedItems.push(encodeChildRef(node.children[i], rlpEncode));
 			}
-			items.push(node.value || new Uint8Array([]));
-			return rlpEncode(items);
+			encodedItems.push(rlpEncode(node.value || new Uint8Array([])));
+			return wrapRlpList(encodedItems);
 		}
 	}
 }

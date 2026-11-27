@@ -4,6 +4,6 @@
  * @returns True if to field is null
  */
 export declare function isContractCreation(this: {
-    to: any;
+    to: unknown;
 }): boolean;
 //# sourceMappingURL=isContractCreation.d.ts.map

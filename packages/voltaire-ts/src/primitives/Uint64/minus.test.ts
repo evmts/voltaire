@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MAX, ZERO } from "./constants.js";
+import { Uint64NegativeError } from "./errors.js";
 import { from } from "./from.js";
 import { minus } from "./minus.js";
+import { minusWrapping } from "./minusWrapping.js";
 
 describe("Uint64.minus", () => {
 	describe("known values", () => {
@@ -47,14 +49,14 @@ describe("Uint64.minus", () => {
 			expect(result).toBe(0n);
 		});
 
-		it("wraps on underflow", () => {
-			const result = minus(ZERO, from(1n));
-			expect(result).toBe(MAX);
+		it("throws on underflow (and wraps with minusWrapping)", () => {
+			expect(() => minus(ZERO, from(1n))).toThrow(Uint64NegativeError);
+			expect(minusWrapping(ZERO, from(1n))).toBe(MAX);
 		});
 
-		it("wraps on large underflow", () => {
-			const result = minus(from(5n), from(10n));
-			expect(result).toBe(MAX - 4n);
+		it("throws on large underflow (and wraps with minusWrapping)", () => {
+			expect(() => minus(from(5n), from(10n))).toThrow(Uint64NegativeError);
+			expect(minusWrapping(from(5n), from(10n))).toBe(MAX - 4n);
 		});
 	});
 

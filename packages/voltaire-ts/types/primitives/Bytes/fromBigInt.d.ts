@@ -4,6 +4,7 @@
  * @param {bigint} value - BigInt to convert (must be non-negative)
  * @param {number} [size] - Optional byte size (pads or throws if too small)
  * @returns {import('./BytesType.js').BytesType} Bytes
+ * @throws {InvalidBytesFormatError} If value is not a bigint or size is invalid
  * @throws {NegativeBigIntError} If value is negative
  * @throws {SizeExceededError} If value doesn't fit in size
  *

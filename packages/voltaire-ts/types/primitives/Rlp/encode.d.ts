@@ -1,4 +1,7 @@
 /**
+ * @typedef {import('./RlpType.js').Encodable} Encodable
+ */
+/**
  * Encodes data to RLP format
  *
  * @see https://voltaire.tevm.sh/primitives/rlp for RLP documentation
@@ -24,5 +27,5 @@
  * ```
  */
 export function encode(data: Encodable): Uint8Array;
-export type Encodable = Uint8Array | import("./RlpType.js").BrandedRlp | Array<Uint8Array | import("./RlpType.js").BrandedRlp | any>;
+export type Encodable = import("./RlpType.js").Encodable;
 //# sourceMappingURL=encode.d.ts.map

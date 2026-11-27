@@ -1,4 +1,4 @@
-import { plus } from "./plus.js";
+import { MAX } from "./constants.js";
 
 /**
  * Add two Uint128 values with wrapping
@@ -19,5 +19,5 @@ import { plus } from "./plus.js";
  * ```
  */
 export function plusWrapping(a, b) {
-	return plus(a, b);
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ ((a + b) & MAX);
 }

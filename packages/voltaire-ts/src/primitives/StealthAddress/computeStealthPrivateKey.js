@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { PRIVATE_KEY_SIZE } from "./constants.js";
 import { StealthAddressError } from "./errors.js";
 
@@ -61,12 +60,12 @@ export function computeStealthPrivateKey(
 		// Convert bytes to bigint
 		let spendingKey = 0n;
 		for (let i = 0; i < 32; i++) {
-			spendingKey = (spendingKey << 8n) | BigInt(spendingPrivateKey[i]);
+			spendingKey = (spendingKey << 8n) | BigInt(spendingPrivateKey[i] ?? 0);
 		}
 
 		let secret = 0n;
 		for (let i = 0; i < 32; i++) {
-			secret = (secret << 8n) | BigInt(hashedSharedSecret[i]);
+			secret = (secret << 8n) | BigInt(hashedSharedSecret[i] ?? 0);
 		}
 
 		// Compute stealth private key: (spendingKey + secret) mod n
@@ -86,7 +85,7 @@ export function computeStealthPrivateKey(
 			`Stealth private key computation failed: ${error}`,
 			{
 				code: "COMPUTATION_FAILED",
-				cause: error,
+				cause: error instanceof Error ? error : undefined,
 			},
 		);
 	}

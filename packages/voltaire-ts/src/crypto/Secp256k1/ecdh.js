@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { PRIVATE_KEY_SIZE, PUBLIC_KEY_SIZE } from "./constants.js";
 import {
@@ -36,7 +35,7 @@ export function ecdh(privateKey, publicKey) {
 		throw new InvalidPrivateKeyError(
 			`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
 			{
-				code: "INVALID_PRIVATE_KEY_LENGTH",
+				code: -32003,
 				context: { actualLength: privateKey.length },
 				docsPath: "/crypto/secp256k1/ecdh#error-handling",
 			},
@@ -47,7 +46,7 @@ export function ecdh(privateKey, publicKey) {
 		throw new InvalidPublicKeyError(
 			`Public key must be ${PUBLIC_KEY_SIZE} bytes, got ${publicKey.length}`,
 			{
-				code: "INVALID_PUBLIC_KEY_LENGTH",
+				code: -32002,
 				context: { actualLength: publicKey.length },
 				docsPath: "/crypto/secp256k1/ecdh#error-handling",
 			},
@@ -65,13 +64,13 @@ export function ecdh(privateKey, publicKey) {
 		return shared.slice(1, 33);
 	} catch (error) {
 		throw new Secp256k1Error(`ECDH failed: ${error}`, {
-			code: "ECDH_FAILED",
+			code: -32000,
 			context: {
 				privateKeyLength: privateKey.length,
 				publicKeyLength: publicKey.length,
 			},
 			docsPath: "/crypto/secp256k1/ecdh#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

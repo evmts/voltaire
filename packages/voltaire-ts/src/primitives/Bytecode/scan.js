@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getGasTable } from "./getGasTable.js";
 import { getPushSize } from "./getPushSize.js";
 import { getStackEffectTable } from "./getStackEffectTable.js";
@@ -49,6 +48,7 @@ export function* scan(bytecode, options = {}) {
 
 	while (pc < endPc && pc < bytecode.length) {
 		const opcode = bytecode[pc] ?? 0;
+		/** @type {{ pc: number; opcode: number; type: 'push' | 'regular'; size: number; value?: bigint; gas?: number; stackEffect?: { pop: number; push: number } }} */
 		const instruction = { pc, opcode, type: "regular", size: 1 };
 
 		if (isPush(opcode)) {

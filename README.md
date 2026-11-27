@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@tevm/voltaire.svg)](https://www.npmjs.com/package/@tevm/voltaire) [![Zig 0.17.1](https://img.shields.io/badge/zig-0.17.1-orange.svg)](https://github.com/evmts/voltaire) [![CI status](https://img.shields.io/github/actions/workflow/status/evmts/voltaire/ci.yml?label=CI)](https://github.com/evmts/voltaire/actions/workflows/ci.yml) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/evmts/voltaire/blob/main/LICENSE)
 
-[**Docs**](https://voltaire.tevm.sh) · [**Live Playground**](https://playground.tevm.sh) · [**Smithers Factory**](https://smithers.sh/evmts/voltaire) · [**Engineering Wiki**](https://smithers.sh/evmts/voltaire/-/wiki) · [**C FFI Recipes**](https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md)
+[**Docs**](https://voltaire.tevm.sh) · [**Live Playground**](https://playground.tevm.sh) · [**Benchmarks**](https://voltaire.tevm.sh/benchmarks) · [**Spec Compliance**](https://voltaire.tevm.sh/spec-compliance) · [**Smithers Factory**](https://smithers.sh/evmts/voltaire) · [**Engineering Wiki**](https://smithers.sh/evmts/voltaire/-/wiki) · [**C FFI Recipes**](https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md)
 
 ## Architecture
 
@@ -60,16 +60,24 @@ const erc20 = Abi([
 const calldata = erc20.encode('transfer', [to.toHex(), amount]);
 ```
 
-Swap backends with a single import change:
+Swap backends with a single synchronous import change (no `await` boilerplate in Node/Bun; call `await initWasm()` once in browsers):
 
 ```typescript
-import { Keccak256, Secp256k1 } from '@tevm/voltaire/wasm';   // Browser, Node, Bun, Deno
-import { Keccak256, Secp256k1 } from '@tevm/voltaire/native'; // Bun Native FFI
+import { Keccak256, Secp256k1 } from '@tevm/voltaire/wasm';   // Zig WASM (337 kB raw / 117 kB gz; 3.1 kB keccak256.wasm)
+import { Keccak256, Secp256k1 } from '@tevm/voltaire/native'; // Sync Zig Native FFI (13 crypto modules)
 ```
+
+## Quick Start (Zig 0.17.1 — Zero Rust Required)
+
+```bash
+zig fetch --save git+https://github.com/evmts/voltaire
+```
+
+The Zig core compiles out of the box with **only Zig 0.17.1** (pure-Zig BN254 + `blst` + `c-kzg-4844` + ARMv8.2/portable Keccak). Optional Rust `arkworks` / `keccak-asm` wrappers remain available via `-Dwith-rust=true`.
 
 ## C FFI Recipes (C, C++, Rust, Go, Python, Swift)
 
-Build the native C ABI shared library and auto-generated header directly from Zig:
+Download a prebuilt release tarball (`libprimitives_c`, `primitives.h`, `voltaire.pc`) from GitHub Releases or build from source:
 
 ```bash
 git submodule update --init --recursive packages/voltaire-zig/lib/libwally-core
@@ -77,11 +85,11 @@ zig build -Dwith-c-api=true -Doptimize=ReleaseFast
 # Produces zig-out/include/primitives.h and zig-out/lib/libprimitives_c.{so,dylib,a}
 ```
 
-See [**`docs/C_FFI_RECIPES.md`**](./docs/C_FFI_RECIPES.md) for copy-paste build, linking, and binding recipes in **C/C++, Rust, Go (CGO), Python (`ctypes`), and Swift (SwiftPM)**.
+See [**`docs/C_FFI_RECIPES.md`**](./docs/C_FFI_RECIPES.md) for copy-paste build, linking, `pkg-config`, and binding recipes in **C/C++, Rust, Go (CGO), Python (`ctypes`), and Swift (SwiftPM)**.
 
 ## AI Agent Integration
 
-Connect the hosted MCP server or install Voltaire skills:
+Connect the hosted MCP server, Context7 docs index (`context7.json`), or Voltaire skills:
 
 ```bash
 # Claude Code MCP
@@ -95,8 +103,8 @@ Machine-readable indexes: [`voltaire.tevm.sh/llms.txt`](https://voltaire.tevm.sh
 
 ## Dependencies
 
-- **TypeScript:** `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, `@scure/bip32`, `@scure/bip39`, `@adraffy/ens-normalize`, `ox`, `@tevm/chains`, `abitype` (optional peer)
-- **Native / WASM:** `blst`, `c-kzg-4844`, `ark-bn254`, `ark-bls12-381`
+- **TypeScript:** `@noble/curves`, `@noble/hashes`, `@noble/ciphers`, `@scure/bip32`, `@scure/bip39`, `@adraffy/ens-normalize`, `abitype` (optional peer) — zero `ox`, zero `@tevm/chains`, zero UI deps
+- **Native / WASM (default, zero Rust):** `blst`, `c-kzg-4844` (plus optional `-Dwith-rust=true` for `ark-bn254` / `ark-bls12-381` / `keccak-asm`)
 
 ## Links
 

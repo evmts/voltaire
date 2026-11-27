@@ -10,27 +10,35 @@ import { fromP256 } from "./fromP256.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
- * Decode 64-byte EIP-2098 compact ECDSA signature
+ * Decode 64-byte compact ECDSA (EIP-2098) signature
+ *
  * @param {Uint8Array} bytes
- * @param {string} algorithm
+ * @param {import('./SignatureType.js').SignatureAlgorithm} algorithm
  * @param {number | undefined} explicitV
+ * @returns {import('./SignatureType.js').SignatureType | undefined}
  */
 function decodeCompactEcdsa(bytes, algorithm, explicitV) {
 	const r = /** @type {import('../Hash/HashType.js').HashType} */ (
 		bytes.slice(0, COMPONENT_SIZE)
 	);
 	const sBytes = bytes.slice(COMPONENT_SIZE, ECDSA_SIZE);
-	const yParity =
-		explicitV !== undefined
-			? explicitV
-			: /** @type {number} */ (/** @type {number} */ (sBytes[0]) & 0x80) >> 7;
+
+	// EIP-2098: Extract yParity from bit 255 of s
+	const sFirst = sBytes[0] ?? 0;
+	const yParity = explicitV !== undefined ? explicitV : (sFirst & 0x80) >> 7;
+
+	// Clear bit 255 from s
 	const s = /** @type {import('../Hash/HashType.js').HashType} */ (
 		new Uint8Array(sBytes)
 	);
-	s[0] = /** @type {number} */ (s[0]) & 0x7f;
+	s[0] = sFirst & 0x7f;
 
-	if (algorithm === "secp256k1") return fromSecp256k1(r, s, yParity);
-	if (algorithm === "p256") return fromP256(r, s);
+	if (algorithm === "secp256k1") {
+		return fromSecp256k1(r, s, yParity);
+	}
+	if (algorithm === "p256") {
+		return fromP256(r, s);
+	}
 	return undefined;
 }
 
@@ -58,6 +66,16 @@ function decodeCompactEcdsa(bytes, algorithm, explicitV) {
  * ```
  */
 export function fromCompact(bytes, algorithmOrV) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidSignatureLengthError(
+			"Signature bytes must be a Uint8Array",
+			{
+				value: bytes,
+				expected: `${ECDSA_SIZE} or ${ECDSA_WITH_V_SIZE} bytes`,
+				docsPath: "/primitives/signature/from-compact#error-handling",
+			},
+		);
+	}
 	const algorithm =
 		typeof algorithmOrV === "string" ? algorithmOrV : "secp256k1";
 	const explicitV = typeof algorithmOrV === "number" ? algorithmOrV : undefined;
@@ -88,7 +106,7 @@ export function fromCompact(bytes, algorithmOrV) {
 		const s = /** @type {import('../Hash/HashType.js').HashType} */ (
 			bytes.slice(COMPONENT_SIZE, ECDSA_SIZE)
 		);
-		const v = /** @type {number} */ (/** @type {Uint8Array} */ (bytes)[64]);
+		const v = /** @type {number} */ (bytes[64]);
 		return fromSecp256k1(r, s, v);
 	}
 

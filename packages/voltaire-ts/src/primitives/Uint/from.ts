@@ -1,5 +1,6 @@
 import { MAX } from "./constants.js";
 import {
+	UintInvalidHexError,
 	UintNegativeError,
 	UintNotIntegerError,
 	UintOverflowError,
@@ -11,7 +12,8 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param value - bigint or decimal/hex string
  * @returns Uint256 value
- * @throws {UintNotIntegerError} If number value is not an integer
+ * @throws {UintInvalidHexError} If string format is invalid
+ * @throws {UintNotIntegerError} If value is not an integer or unsupported type
  * @throws {UintNegativeError} If value is negative
  * @throws {UintOverflowError} If value exceeds maximum
  *
@@ -26,11 +28,12 @@ export function from(value: bigint | number | string): Uint256Type {
 	let bigintValue: bigint;
 
 	if (typeof value === "string") {
-		if (value.startsWith("0x") || value.startsWith("0X")) {
-			bigintValue = BigInt(value);
-		} else {
-			bigintValue = BigInt(value);
+		if (!/^0[xX][0-9a-fA-F]+$/.test(value) && !/^-?[0-9]+$/.test(value)) {
+			throw new UintInvalidHexError(`Invalid Uint256 string: ${value}`, {
+				value,
+			});
 		}
+		bigintValue = BigInt(value);
 	} else if (typeof value === "number") {
 		if (!Number.isInteger(value)) {
 			throw new UintNotIntegerError(
@@ -39,8 +42,13 @@ export function from(value: bigint | number | string): Uint256Type {
 			);
 		}
 		bigintValue = BigInt(value);
-	} else {
+	} else if (typeof value === "bigint") {
 		bigintValue = value;
+	} else {
+		throw new UintNotIntegerError(
+			`Invalid Uint256 value type: ${typeof value}`,
+			{ value },
+		);
 	}
 
 	if (bigintValue < 0n) {

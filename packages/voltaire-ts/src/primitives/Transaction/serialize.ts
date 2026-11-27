@@ -1,9 +1,14 @@
 import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/serialize.js";
+import type { TransactionEIP1559Type } from "./EIP1559/TransactionEIP1559Type.js";
 import * as EIP2930 from "./EIP2930/serialize.js";
+import type { TransactionEIP2930Type } from "./EIP2930/TransactionEIP2930Type.js";
 import * as EIP4844 from "./EIP4844/serialize.js";
+import type { TransactionEIP4844Type } from "./EIP4844/TransactionEIP4844Type.js";
 import * as EIP7702 from "./EIP7702/serialize.js";
+import type { TransactionEIP7702Type } from "./EIP7702/TransactionEIP7702Type.js";
 import * as Legacy from "./Legacy/serialize.js";
+import type { TransactionLegacyType } from "./Legacy/TransactionLegacyType.js";
 import { type Any, Type } from "./types.js";
 
 /**
@@ -22,30 +27,25 @@ import { type Any, Type } from "./types.js";
 export function serialize(this: Any): Uint8Array {
 	switch (this.type) {
 		case Type.Legacy:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return Legacy.serialize.call(this as any);
+			return Legacy.serialize.call(this as unknown as TransactionLegacyType);
 		case Type.EIP2930:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP2930.serialize(this as any);
+			return EIP2930.serialize(this as unknown as TransactionEIP2930Type);
 		case Type.EIP1559:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP1559.serialize(this as any);
+			return EIP1559.serialize(this as unknown as TransactionEIP1559Type);
 		case Type.EIP4844:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP4844.serialize(this as any);
+			return EIP4844.serialize(this as unknown as TransactionEIP4844Type);
 		case Type.EIP7702:
-			// biome-ignore lint/suspicious/noExplicitAny: type narrowed by case
-			return EIP7702.serialize(this as any);
-		default:
+			return EIP7702.serialize(this as unknown as TransactionEIP7702Type);
+		default: {
+			const unknownType = (this as { type?: unknown }).type;
 			throw new InvalidTransactionTypeError(
-				// biome-ignore lint/suspicious/noExplicitAny: error message for unknown type
-				`Unknown transaction type: ${(this as any).type}`,
+				`Unknown transaction type: ${String(unknownType)}`,
 				{
 					code: -32602,
-					// biome-ignore lint/suspicious/noExplicitAny: error context for unknown type
-					context: { type: (this as any).type },
+					context: { type: unknownType },
 					docsPath: "/primitives/transaction/serialize#error-handling",
 				},
 			);
+		}
 	}
 }

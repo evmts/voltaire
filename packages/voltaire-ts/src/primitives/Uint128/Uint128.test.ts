@@ -277,16 +277,18 @@ describe("Uint128 - plus", () => {
 		expect(Uint128.plus(a, b)).toBe(150n);
 	});
 
-	it("should wrap on overflow", () => {
+	it("should throw on overflow (and wrap with plusWrapping)", () => {
 		const a = Uint128.MAX;
 		const b = Uint128.from(1n);
-		expect(Uint128.plus(a, b)).toBe(0n);
+		expect(() => Uint128.plus(a, b)).toThrow();
+		expect(Uint128.plusWrapping(a, b)).toBe(0n);
 	});
 
-	it("should wrap large overflow", () => {
+	it("should throw on large overflow (and wrap with plusWrapping)", () => {
 		const a = Uint128.MAX;
 		const b = Uint128.from(10n);
-		expect(Uint128.plus(a, b)).toBe(9n);
+		expect(() => Uint128.plus(a, b)).toThrow();
+		expect(Uint128.plusWrapping(a, b)).toBe(9n);
 	});
 });
 
@@ -297,16 +299,18 @@ describe("Uint128 - minus", () => {
 		expect(Uint128.minus(a, b)).toBe(50n);
 	});
 
-	it("should wrap on underflow", () => {
+	it("should throw on underflow (and wrap with minusWrapping)", () => {
 		const a = Uint128.from(0n);
 		const b = Uint128.from(1n);
-		expect(Uint128.minus(a, b)).toBe(Uint128.MAX);
+		expect(() => Uint128.minus(a, b)).toThrow();
+		expect(Uint128.minusWrapping(a, b)).toBe(Uint128.MAX);
 	});
 
-	it("should wrap large underflow", () => {
+	it("should throw on large underflow (and wrap with minusWrapping)", () => {
 		const a = Uint128.from(5n);
 		const b = Uint128.from(10n);
-		expect(Uint128.minus(a, b)).toBe(Uint128.MAX - 4n);
+		expect(() => Uint128.minus(a, b)).toThrow();
+		expect(Uint128.minusWrapping(a, b)).toBe(Uint128.MAX - 4n);
 	});
 });
 
@@ -317,10 +321,11 @@ describe("Uint128 - times", () => {
 		expect(Uint128.times(a, b)).toBe(50n);
 	});
 
-	it("should wrap on overflow", () => {
+	it("should throw on overflow (and wrap with timesWrapping)", () => {
 		const a = Uint128.MAX;
 		const b = Uint128.from(2n);
-		expect(Uint128.times(a, b)).toBe(Uint128.MAX - 1n);
+		expect(() => Uint128.times(a, b)).toThrow();
+		expect(Uint128.timesWrapping(a, b)).toBe(Uint128.MAX - 1n);
 	});
 
 	it("should handle zero", () => {
@@ -762,9 +767,9 @@ describe("Uint128 - sum", () => {
 		expect(Uint128.sum([])).toBe(0n);
 	});
 
-	it("should wrap on overflow", () => {
+	it("should throw on overflow", () => {
 		const values = [Uint128.MAX, Uint128.from(10n)];
-		expect(Uint128.sum(values)).toBe(9n);
+		expect(() => Uint128.sum(values)).toThrow();
 	});
 });
 
@@ -782,9 +787,9 @@ describe("Uint128 - product", () => {
 		expect(Uint128.product([Uint128.from(100n)])).toBe(100n);
 	});
 
-	it("should wrap on overflow", () => {
+	it("should throw on overflow", () => {
 		const values = [Uint128.MAX, Uint128.from(2n)];
-		expect(Uint128.product(values)).toBe(Uint128.MAX - 1n);
+		expect(() => Uint128.product(values)).toThrow();
 	});
 });
 
@@ -859,8 +864,10 @@ describe("Uint128 - Boundary Tests", () => {
 	it("should handle MAX boundary", () => {
 		const max = Uint128.MAX;
 		expect(Uint128.isValid(max)).toBe(true);
-		expect(Uint128.plus(max, Uint128.from(1n))).toBe(0n);
-		expect(Uint128.minus(Uint128.from(0n), Uint128.from(1n))).toBe(max);
+		expect(() => Uint128.plus(max, Uint128.from(1n))).toThrow();
+		expect(() => Uint128.minus(Uint128.from(0n), Uint128.from(1n))).toThrow();
+		expect(Uint128.plusWrapping(max, Uint128.from(1n))).toBe(0n);
+		expect(Uint128.minusWrapping(Uint128.from(0n), Uint128.from(1n))).toBe(max);
 	});
 
 	it("should reject values beyond MAX", () => {

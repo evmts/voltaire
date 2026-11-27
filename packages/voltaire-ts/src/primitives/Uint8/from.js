@@ -6,11 +6,37 @@ import {
 import { MAX } from "./constants.js";
 
 /**
- * Create Uint8 from number or string
+ * Validate numeric value is within Uint8 bounds [0, 255]
+ *
+ * @param {number | bigint} value
+ * @returns {import('./Uint8Type.js').Uint8Type}
+ */
+function assertUint8Bounds(value) {
+	if (value < 0) {
+		throw new IntegerUnderflowError(`Uint8 cannot be negative: ${value}`, {
+			value,
+			min: 0,
+			type: "uint8",
+			docsPath: "/primitives/uint8#error-handling",
+		});
+	}
+	if (value > MAX) {
+		throw new IntegerOverflowError(`Uint8 exceeds maximum (255): ${value}`, {
+			value,
+			max: MAX,
+			type: "uint8",
+			docsPath: "/primitives/uint8#error-handling",
+		});
+	}
+	return /** @type {import('./Uint8Type.js').Uint8Type} */ (Number(value));
+}
+
+/**
+ * Create Uint8 from number, bigint, or string
  *
  * @see https://voltaire.tevm.sh/primitives/uint8 for Uint8 documentation
  * @since 0.0.0
- * @param {number | string} value - number or decimal/hex string
+ * @param {number | bigint | string} value - number, bigint, or decimal/hex string
  * @returns {import('./Uint8Type.js').Uint8Type} Uint8 value
  * @throws {InvalidFormatError} If value is not a valid integer
  * @throws {IntegerUnderflowError} If value is negative
@@ -24,8 +50,11 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function from(value) {
-	let numValue;
+	if (typeof value === "bigint") {
+		return assertUint8Bounds(value);
+	}
 
+	let numValue;
 	if (typeof value === "string") {
 		// Strict grammar: optional "-" then decimal digits, or 0x-prefixed hex.
 		// parseInt alone would accept "12.5" as 12 and "12xyz" as 12.
@@ -57,23 +86,5 @@ export function from(value) {
 		);
 	}
 
-	if (numValue < 0) {
-		throw new IntegerUnderflowError(`Uint8 cannot be negative: ${numValue}`, {
-			value: numValue,
-			min: 0,
-			type: "uint8",
-			docsPath: "/primitives/uint8#error-handling",
-		});
-	}
-
-	if (numValue > MAX) {
-		throw new IntegerOverflowError(`Uint8 exceeds maximum (255): ${numValue}`, {
-			value: numValue,
-			max: MAX,
-			type: "uint8",
-			docsPath: "/primitives/uint8#error-handling",
-		});
-	}
-
-	return /** @type {import('./Uint8Type.js').Uint8Type} */ (numValue);
+	return assertUint8Bounds(numValue);
 }

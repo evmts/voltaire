@@ -252,7 +252,7 @@ const quai = processChain(9)
 ## Notes
 
 - `from()` is an identity function - returns the same object with prototype set
-- `fromId()` delegates to `getChainById` from tevm/chains
-- All chain objects come from [tevm/chains](https://github.com/evmts/voltaire-monorepo/tree/main/packages/chains) registry
+- `fromId()` looks up canonical EVM chains in Voltaire's built-in `Chain.byId` registry
+- Built-in chain definitions live in [Chain/byId.js](https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/src/primitives/Chain/byId.js)
 - Chain IDs are unique identifiers defined by [EIP-155](https://eips.ethereum.org/EIPS/eip-155)
-- New chains are added to tevm/chains registry regularly
+- Custom chain objects can be passed directly to `Chain()` or `Chain.from()`

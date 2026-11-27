@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import {
 	CryptoError,
@@ -61,23 +60,15 @@ export function sign(messageHash, privateKey, options = {}) {
 
 	try {
 		// Build sign options
+		/** @type {{ prehash: boolean; extraEntropy?: Uint8Array | boolean }} */
 		const signOptions = { prehash: false };
 		if (options.extraEntropy !== undefined) {
 			signOptions.extraEntropy = options.extraEntropy;
 		}
 
 		// Sign with compact format (prehash:false since we already have the hash)
-		const sigResult = secp256k1.sign(messageHash, privateKey, signOptions);
-
-		// Handle both Signature object (@noble/curves 1.9.x) and Uint8Array (2.0.x)
-		const sigCompact =
-			sigResult instanceof Uint8Array
-				? sigResult
-				: sigResult.toCompactRawBytes();
-		const sig =
-			sigResult instanceof Uint8Array
-				? secp256k1.Signature.fromBytes(sigResult)
-				: sigResult;
+		const sigCompact = secp256k1.sign(messageHash, privateKey, signOptions);
+		const sig = secp256k1.Signature.fromBytes(sigCompact);
 
 		// Extract r and s
 		const r = sigCompact.slice(0, 32);
@@ -112,7 +103,7 @@ export function sign(messageHash, privateKey, options = {}) {
 			code: "SECP256K1_SIGN_FAILED",
 			context: { messageHash, privateKeyLength: privateKey.length },
 			docsPath: "/crypto/secp256k1/sign#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

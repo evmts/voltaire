@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
 import { PUBLIC_KEY_SIZE } from "./constants.js";
@@ -33,7 +31,7 @@ export function addPoints(pubKey1, pubKey2) {
 		throw new InvalidPublicKeyError(
 			`Public key 1 must be ${PUBLIC_KEY_SIZE} bytes, got ${pubKey1.length}`,
 			{
-				code: "INVALID_PUBLIC_KEY_LENGTH",
+				code: -32002,
 				context: { actualLength: pubKey1.length, keyNumber: 1 },
 				docsPath: "/crypto/secp256k1/add-points#error-handling",
 			},
@@ -44,7 +42,7 @@ export function addPoints(pubKey1, pubKey2) {
 		throw new InvalidPublicKeyError(
 			`Public key 2 must be ${PUBLIC_KEY_SIZE} bytes, got ${pubKey2.length}`,
 			{
-				code: "INVALID_PUBLIC_KEY_LENGTH",
+				code: -32002,
 				context: { actualLength: pubKey2.length, keyNumber: 2 },
 				docsPath: "/crypto/secp256k1/add-points#error-handling",
 			},
@@ -77,7 +75,7 @@ export function addPoints(pubKey1, pubKey2) {
 
 		if (resultBytes[0] !== 0x04) {
 			throw new Secp256k1Error("Invalid point format after addition", {
-				code: "INVALID_POINT_FORMAT",
+				code: -32000,
 				context: { prefix: resultBytes[0] },
 				docsPath: "/crypto/secp256k1/add-points#error-handling",
 			});
@@ -89,13 +87,13 @@ export function addPoints(pubKey1, pubKey2) {
 		);
 	} catch (error) {
 		throw new Secp256k1Error(`Point addition failed: ${error}`, {
-			code: "POINT_ADDITION_FAILED",
+			code: -32000,
 			context: {
 				pubKey1Length: pubKey1.length,
 				pubKey2Length: pubKey2.length,
 			},
 			docsPath: "/crypto/secp256k1/add-points#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

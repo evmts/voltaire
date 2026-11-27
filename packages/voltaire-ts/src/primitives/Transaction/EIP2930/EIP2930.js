@@ -1,12 +1,8 @@
-// @ts-nocheck
 export * from "./TransactionEIP2930Type.js";
 
 // Import crypto dependencies
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import {
-	recoverPublicKey as secp256k1RecoverPublicKey,
-	verify as secp256k1Verify,
-} from "../../../crypto/Secp256k1/index.js";
+import { recoverPublicKey as secp256k1RecoverPublicKey } from "../../../crypto/Secp256k1/index.js";
 import { encode as rlpEncode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
@@ -23,7 +19,6 @@ const verifySignature = VerifySignature({
 	keccak256,
 	rlpEncode,
 	secp256k1RecoverPublicKey,
-	secp256k1Verify,
 });
 
 // Re-export factories for tree-shaking
@@ -49,6 +44,7 @@ export {
  * Factory function for creating EIP-2930 Transaction instances
  *
  * @type {TransactionEIP2930Constructor}
+ * @param {Parameters<TransactionEIP2930Constructor>[0]} tx
  */
 export function TransactionEIP2930(tx) {
 	return /** @type {TransactionEIP2930Type} */ ({
@@ -67,8 +63,19 @@ export function TransactionEIP2930(tx) {
 	});
 }
 
+// Initialize prototype before referencing it
+TransactionEIP2930.prototype =
+	/** @type {TransactionEIP2930Constructor["prototype"]} */ (
+		/** @type {unknown} */ ({})
+	);
+
 // Attach static methods
-TransactionEIP2930.deserialize = (bytes) => deserialize(bytes);
+TransactionEIP2930.deserialize =
+	/** @type {TransactionEIP2930Constructor["deserialize"]} */ (
+		/** @type {unknown} */ (
+			(/** @type {Uint8Array} */ bytes) => deserialize(bytes)
+		)
+	);
 TransactionEIP2930.deserialize.prototype = TransactionEIP2930.prototype;
 
 TransactionEIP2930.serialize = serialize;
@@ -78,7 +85,6 @@ TransactionEIP2930.getSender = getSender;
 TransactionEIP2930.verifySignature = verifySignature;
 
 // Bind prototype methods using Function.prototype.call.bind
-TransactionEIP2930.prototype = {};
 TransactionEIP2930.prototype.serialize =
 	Function.prototype.call.bind(serialize);
 TransactionEIP2930.prototype.hash = Function.prototype.call.bind(hash);

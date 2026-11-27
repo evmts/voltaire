@@ -1,1 +1,1 @@
-{"version":3,"file":"serialize.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/serialize.ts"],"names":[],"mappings":"AAMA,OAAO,EAAE,KAAK,GAAG,EAAQ,MAAM,YAAY,CAAC;AAE5C;;;;;;;;;;;;GAYG;AACH,wBAAgB,SAAS,CAAC,IAAI,EAAE,GAAG,GAAG,UAAU,CA6B/C"}
+{"version":3,"file":"serialize.d.ts","sourceRoot":"","sources":["../../../src/primitives/Transaction/serialize.ts"],"names":[],"mappings":"AAWA,OAAO,EAAE,KAAK,GAAG,EAAQ,MAAM,YAAY,CAAC;AAE5C;;;;;;;;;;;;GAYG;AACH,wBAAgB,SAAS,CAAC,IAAI,EAAE,GAAG,GAAG,UAAU,CAwB/C"}

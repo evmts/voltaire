@@ -1,17 +1,17 @@
-import { MAX } from "./constants.js";
+import { UintNegativeError } from "./errors.js";
 
 /**
- * Subtract Uint256 value with wrapping
+ * Subtract two Uint256 values with underflow checking
  *
- * Overflow mode: wrapping. `minusWrapping` is the explicit name for this behavior
- * and `minusChecked` throws instead of wrapping. Both exist on every Uint size.
+ * Overflow mode: checked (uniform across all Uint sizes).
+ * `minusChecked` is an explicit alias and `minusWrapping` wraps mod 2^256.
  *
  * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
  * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - First operand
  * @param {import('./BrandedUint.js').BrandedUint} b - Second operand
- * @returns {import('./BrandedUint.js').BrandedUint} Difference (uint - b) mod 2^256
- * @throws {never}
+ * @returns {import('./BrandedUint.js').BrandedUint} Difference (uint - b)
+ * @throws {UintNegativeError} If the result is negative
  * @example
  * ```javascript
  * import * as Uint256 from './primitives/Uint/index.js';
@@ -21,9 +21,11 @@ import { MAX } from "./constants.js";
  * ```
  */
 export function minus(uint, b) {
-	const diff = uint - b;
-	if (diff < 0n) {
-		return MAX + 1n + diff;
+	if (uint < b) {
+		throw new UintNegativeError(
+			`Uint256 underflow: ${uint} - ${b} is negative`,
+			{ value: uint - b, context: { a: uint, b, operation: "subtraction" } },
+		);
 	}
-	return diff;
+	return /** @type {import('./BrandedUint.js').BrandedUint} */ (uint - b);
 }

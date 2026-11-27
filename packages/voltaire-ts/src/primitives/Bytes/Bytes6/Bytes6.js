@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
 import { equals } from "./equals.js";
@@ -19,7 +18,7 @@ import { toHex } from "./toHex.js";
  * @returns {Bytes6Type}
  */
 export function Bytes6(value) {
-	return from(value);
+	return from(Array.isArray(value) ? new Uint8Array(value) : value);
 }
 
 Bytes6.from = from;

@@ -392,6 +392,7 @@ export interface WasmExports {
 
 	// KZG functions (EIP-4844)
 	kzg_load_trusted_setup: () => number;
+	kzg_load_trusted_setup_bytes: (dataPtr: number, dataLen: number) => number;
 	kzg_free_trusted_setup: () => number;
 	kzg_blob_to_commitment: (blobPtr: number, outCommitmentPtr: number) => number;
 	kzg_compute_proof: (

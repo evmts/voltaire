@@ -514,3 +514,91 @@ test "p256 verify rejects invalid public keys and accepts SEC1 encodings" {
     defer allocator.free(zero_sig);
     try std.testing.expect(try verify(&zero_hash, zero_sig[0..32], zero_sig[32..64], public_key));
 }
+
+test "Wycheproof - P-256 ECDSA signature edge cases (scalars, R.x>=n, h=0, R=O, low-s)" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    const max_u256 = std.math.maxInt(u256);
+
+    // Reference NIST / Wycheproof valid signature vector
+    const h = toBytes32(0xa82b78501f418ef01de9d97e884bd8fe66aa6fd438d585d5cb7fa88db3f21a40);
+    const r = toBytes32(0x471c3e758c4904285bba7e53118ed0f524adeb0757d25bd2f8e7b0d76dfa714c);
+    const s = toBytes32(0x091c7ae3b0636fa73f8300d67e54865d204c5487c7fe83dd1d67b0c249c433be);
+    const q = rawKey(
+        0x60fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6,
+        0x7903fe1008b8bc99a41ae9e95628bc64f2f1b20c2d7e9f5177a3c294d4462299,
+    );
+    try testing.expect(try verify(&h, &r, &s, &q));
+
+    // Invalid boundary scalars: 0, n, n+1, maxInt(u256)
+    for ([_]u256{ 0, P256_N, P256_N + 1, max_u256 }) |bad| {
+        const bad_bytes = toBytes32(bad);
+        try testing.expect(!(try verify(&h, &bad_bytes, &s, &q)));
+        try testing.expect(!(try verify(&h, &r, &bad_bytes, &q)));
+    }
+
+    // Bit-flipped hash, r, and s fail verification
+    var bad_h = h;
+    bad_h[31] ^= 1;
+    try testing.expect(!(try verify(&bad_h, &r, &s, &q)));
+    var bad_r = r;
+    bad_r[0] ^= 0x80;
+    try testing.expect(!(try verify(&h, &bad_r, &s, &q)));
+    var bad_s = s;
+    bad_s[15] ^= 0x04;
+    try testing.expect(!(try verify(&h, &r, &bad_s, &q)));
+
+    // R.x >= n modular reduction: point Q with Q.x = n + 3 on P-256, h = 0, r = 3, s = 3 -> R = Q
+    const q_ge_n = rawKey(P256_N + 3, 0x484f0c0fda434ef0a808458914f328715d7a545e198ac7eee31dffe861b5d23f);
+    const zero_h = toBytes32(0);
+    const n_h = toBytes32(P256_N);
+    const three = toBytes32(3);
+    try testing.expect(try verify(&zero_h, &three, &three, &q_ge_n));
+    try testing.expect(try verify(&n_h, &three, &three, &q_ge_n));
+
+    // Degenerate R = O: Q = G, h = n - 1, r = 1, s = 1 -> (-1)*G + 1*G = O
+    const g_raw = rawKey(P256_GX, P256_GY);
+    const h_nm1 = toBytes32(P256_N - 1);
+    const one = toBytes32(1);
+    try testing.expect(!(try verify(&h_nm1, &one, &one, &g_raw)));
+
+    // Low-s enforcement across multiple signatures produced by sign()
+    const priv = toBytes32(0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0);
+    const pub_k = try publicKeyFromPrivate(allocator, &priv);
+    defer allocator.free(pub_k);
+    for (0..8) |i| {
+        var msg_hash = @as([32]u8, @splat(@intCast(i + 1)));
+        msg_hash[0] = @intCast(i * 29);
+        const sig = try sign(allocator, &msg_hash, &priv);
+        defer allocator.free(sig);
+        const s_val = std.mem.readInt(u256, sig[32..64], .big);
+        try testing.expect(s_val > 0 and s_val <= P256_N / 2);
+        try testing.expect(try verify(&msg_hash, sig[0..32], sig[32..64], pub_k));
+    }
+}
+
+test "Wycheproof - P-256 ECDH boundary private keys and known-answer vectors" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    const g_raw = rawKey(P256_GX, P256_GY);
+
+    // Invalid private scalars: 0, n, n+1, maxInt(u256)
+    for ([_]u256{ 0, P256_N, P256_N + 1, std.math.maxInt(u256) }) |bad_priv| {
+        const priv_bytes = toBytes32(bad_priv);
+        try testing.expectError(
+            if (bad_priv == 0) error.InvalidPrivateKey else error.NonCanonical,
+            ecdh(allocator, &priv_bytes, &g_raw),
+        );
+    }
+
+    // Known-answer: 1 * G has x == G.x, and (n - 1) * G = -G also has x == G.x.
+    const one_priv = toBytes32(1);
+    const nm1_priv = toBytes32(P256_N - 1);
+    const shared_1 = try ecdh(allocator, &one_priv, &g_raw);
+    defer allocator.free(shared_1);
+    const shared_nm1 = try ecdh(allocator, &nm1_priv, &g_raw);
+    defer allocator.free(shared_nm1);
+    const gx_bytes = toBytes32(P256_GX);
+    try testing.expectEqualSlices(u8, &gx_bytes, shared_1);
+    try testing.expectEqualSlices(u8, &gx_bytes, shared_nm1);
+}

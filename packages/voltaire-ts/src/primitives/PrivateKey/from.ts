@@ -24,6 +24,14 @@ const HEX_REGEX = /^[0-9a-fA-F]+$/;
  * ```
  */
 export function from(hex: string): PrivateKeyType {
+	if (typeof hex !== "string") {
+		throw new InvalidFormatError("Private key hex must be a string", {
+			value: hex,
+			expected: "Valid 64-char hex string",
+			code: -32602,
+			docsPath: "/primitives/private-key/from#error-handling",
+		});
+	}
 	const hexStr = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (!HEX_REGEX.test(hexStr)) {
 		throw new InvalidFormatError("Invalid hex string", {

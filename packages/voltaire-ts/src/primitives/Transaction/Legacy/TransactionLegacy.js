@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Legacy Transaction (Type 0) Factory
  *
@@ -23,10 +22,7 @@
 
 // Import crypto dependencies
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
-import {
-	recoverPublicKey as secp256k1RecoverPublicKey,
-	verify as secp256k1Verify,
-} from "../../../crypto/Secp256k1/index.js";
+import { recoverPublicKey as secp256k1RecoverPublicKey } from "../../../crypto/Secp256k1/index.js";
 import { encode as rlpEncode } from "../../Rlp/encode.js";
 // Import all method functions
 import { Type } from "../types.js";
@@ -45,7 +41,6 @@ const verifySignature = VerifySignature({
 	keccak256,
 	rlpEncode,
 	secp256k1RecoverPublicKey,
-	secp256k1Verify,
 });
 
 // Re-export types
@@ -74,6 +69,7 @@ export {
  * Factory function for creating Legacy Transaction instances
  *
  * @type {TransactionLegacyConstructor}
+ * @param {Parameters<TransactionLegacyConstructor>[0]} tx
  */
 export function TransactionLegacy(tx) {
 	return /** @type {TransactionLegacyType} */ ({
@@ -91,22 +87,31 @@ export function TransactionLegacy(tx) {
 }
 
 // Attach static methods (wrap to pass tx as `this`)
-TransactionLegacy.deserialize = deserialize;
-TransactionLegacy.serialize = (tx) => serialize.call(tx);
-TransactionLegacy.hash = (tx) => hash.call(tx);
-TransactionLegacy.getChainId = (tx) => getChainId.call(tx);
-TransactionLegacy.getSigningHash = (tx) => getSigningHash.call(tx);
-TransactionLegacy.getSender = (tx) => getSender.call(tx);
-TransactionLegacy.verifySignature = (tx) => verifySignature.call(tx);
+TransactionLegacy.deserialize =
+	/** @type {TransactionLegacyConstructor["deserialize"]} */ (
+		/** @type {unknown} */ (deserialize)
+	);
+TransactionLegacy.serialize = (/** @type {TransactionLegacyType} */ tx) =>
+	serialize.call(tx);
+TransactionLegacy.hash = (/** @type {TransactionLegacyType} */ tx) =>
+	hash.call(tx);
+TransactionLegacy.getChainId = (/** @type {TransactionLegacyType} */ tx) =>
+	getChainId.call(tx);
+TransactionLegacy.getSigningHash = (/** @type {TransactionLegacyType} */ tx) =>
+	getSigningHash.call(tx);
+TransactionLegacy.getSender = (/** @type {TransactionLegacyType} */ tx) =>
+	getSender.call(tx);
+TransactionLegacy.verifySignature = (/** @type {TransactionLegacyType} */ tx) =>
+	verifySignature.call(tx);
 
-// Bind prototype methods using Function.prototype.call.bind
-TransactionLegacy.prototype = {};
-TransactionLegacy.prototype.serialize = Function.prototype.call.bind(serialize);
-TransactionLegacy.prototype.hash = Function.prototype.call.bind(hash);
-TransactionLegacy.prototype.getChainId =
-	Function.prototype.call.bind(getChainId);
-TransactionLegacy.prototype.getSigningHash =
-	Function.prototype.call.bind(getSigningHash);
-TransactionLegacy.prototype.getSender = Function.prototype.call.bind(getSender);
-TransactionLegacy.prototype.verifySignature =
-	Function.prototype.call.bind(verifySignature);
+// Bind prototype methods directly (Legacy functions use `this` binding)
+TransactionLegacy.prototype =
+	/** @type {TransactionLegacyConstructor["prototype"]} */ (
+		/** @type {unknown} */ ({})
+	);
+TransactionLegacy.prototype.serialize = serialize;
+TransactionLegacy.prototype.hash = hash;
+TransactionLegacy.prototype.getChainId = getChainId;
+TransactionLegacy.prototype.getSigningHash = getSigningHash;
+TransactionLegacy.prototype.getSender = getSender;
+TransactionLegacy.prototype.verifySignature = verifySignature;

@@ -4,7 +4,8 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param value - bigint or decimal/hex string
  * @returns Uint256 value
- * @throws {UintNotIntegerError} If number value is not an integer
+ * @throws {UintInvalidHexError} If string format is invalid
+ * @throws {UintNotIntegerError} If value is not an integer or unsupported type
  * @throws {UintNegativeError} If value is negative
  * @throws {UintOverflowError} If value exceeds maximum
  *

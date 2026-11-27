@@ -4,6 +4,7 @@ import type { Uint256Type } from "./Uint256Type.js";
  *
  * @param value - bigint to convert
  * @returns Uint256 value
+ * @throws {UintNotIntegerError} If value is not a bigint
  * @throws {UintNegativeError} If value is negative
  * @throws {UintOverflowError} If value exceeds maximum
  *

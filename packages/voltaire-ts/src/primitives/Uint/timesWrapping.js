@@ -1,4 +1,4 @@
-import { times } from "./times.js";
+import { MAX } from "./constants.js";
 
 /**
  * Multiply two Uint256 values with wrapping
@@ -19,5 +19,5 @@ import { times } from "./times.js";
  * ```
  */
 export function timesWrapping(a, b) {
-	return times(a, b);
+	return /** @type {import('./Uint256Type.js').Uint256Type} */ ((a * b) & MAX);
 }

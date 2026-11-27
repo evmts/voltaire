@@ -1,4 +1,4 @@
-import { parseHexByte } from "../Hex/parseHexByte.js";
+import { decodeHexDigitsInto } from "../Hex/decodeHexDigitsInto.js";
 import { ECDSA_SIZE, ECDSA_WITH_V_SIZE, ED25519_SIZE } from "./constants.js";
 import {
 	InvalidSignatureFormatError,
@@ -67,16 +67,13 @@ export function fromHex(value, algorithm = "secp256k1") {
 	const byteLength = hexChars / 2;
 	const bytes = new Uint8Array(byteLength);
 
-	for (let i = 0; i < hexChars; i += 2) {
-		const byte = parseHexByte(hex, i);
-		if (Number.isNaN(byte)) {
-			throw new InvalidSignatureFormatError("Invalid hex character", {
-				value: hex.slice(i, i + 2),
-				expected: "valid hex digits (0-9, a-f, A-F)",
-				docsPath: "/primitives/signature/from-hex#error-handling",
-			});
-		}
-		bytes[i / 2] = byte;
+	const badIndex = decodeHexDigitsInto(hex, 0, bytes);
+	if (badIndex !== -1) {
+		throw new InvalidSignatureFormatError("Invalid hex character", {
+			value: hex.slice(badIndex, badIndex + 2),
+			expected: "valid hex digits (0-9, a-f, A-F)",
+			docsPath: "/primitives/signature/from-hex#error-handling",
+		});
 	}
 
 	// Use fromCompact to create signature

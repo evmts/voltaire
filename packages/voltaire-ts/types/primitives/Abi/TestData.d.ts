@@ -7,7 +7,7 @@ export interface EncodeTestVector {
     description: string;
     params: Array<{
         type: string;
-        value: any;
+        value: unknown;
     }>;
     expected: string;
     source: string;
@@ -17,7 +17,7 @@ export interface DecodeTestVector {
     description: string;
     encoded: string;
     types: string[];
-    expected: any[];
+    expected: unknown[];
     source: string;
 }
 export interface FunctionDataTestVector {
@@ -27,7 +27,7 @@ export interface FunctionDataTestVector {
     selector: string;
     params: Array<{
         type: string;
-        value: any;
+        value: unknown;
     }>;
     expectedCalldata: string;
     source: string;
@@ -53,7 +53,7 @@ export declare const roundTripVectors: Array<{
     description: string;
     params: Array<{
         type: string;
-        value: any;
+        value: unknown;
     }>;
     source: string;
 }>;
@@ -64,7 +64,7 @@ export declare const complexVectors: Array<{
     description: string;
     params: Array<{
         type: string;
-        value: any;
+        value: unknown;
     }>;
     source: string;
 }>;
@@ -75,7 +75,7 @@ export declare const arrayVectors: Array<{
     description: string;
     params: Array<{
         type: string;
-        value: any;
+        value: unknown;
     }>;
     source: string;
 }>;

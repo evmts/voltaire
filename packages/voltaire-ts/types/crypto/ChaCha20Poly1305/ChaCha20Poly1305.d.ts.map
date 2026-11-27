@@ -1,1 +1,1 @@
-{"version":3,"file":"ChaCha20Poly1305.d.ts","sourceRoot":"","sources":["../../../src/crypto/ChaCha20Poly1305/ChaCha20Poly1305.js"],"names":[],"mappings":";;;;;;;;;;;wBAMwB,cAAc;wBACd,cAAc;4BACV,kBAAkB;8BAChB,oBAAoB;yBAJH,gBAAgB;2BAAhB,gBAAgB;yBAAhB,gBAAgB"}
+{"version":3,"file":"ChaCha20Poly1305.d.ts","sourceRoot":"","sources":["../../../src/crypto/ChaCha20Poly1305/ChaCha20Poly1305.js"],"names":[],"mappings":";;;;;;;;;;;wBAIwB,cAAc;wBACd,cAAc;4BACV,kBAAkB;8BAChB,oBAAoB;yBAJH,gBAAgB;2BAAhB,gBAAgB;yBAAhB,gBAAgB"}

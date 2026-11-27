@@ -94,11 +94,53 @@ fn fakeExponentialCapped(factor: u64, numerator: u64, denominator: u64, max_resu
     return @intCast(output / denom);
 }
 
+/// Exact `(a * b) / c` returning `null` if the quotient exceeds `maxInt(u128)`.
+/// Avoids pulling a multi-kB `u512` divider into WASM builds for `u64` blob gas pricing.
+fn mulDivU128(a: u128, b: u64, c: u128) ?u128 {
+    std.debug.assert(c != 0);
+    const prod: u192 = @as(u192, a) * @as(u192, b);
+    const hi: u128 = @intCast(prod >> 128);
+    if (hi >= c) return null;
+    if (hi == 0) return @as(u128, @truncate(prod)) / c;
+
+    var lo: u128 = @truncate(prod);
+    var rem: u128 = hi;
+    var q: u128 = 0;
+    for (0..128) |_| {
+        const top_bit: u128 = lo >> 127;
+        lo <<= 1;
+        const rem_msb: u128 = rem >> 127;
+        rem = (rem << 1) | top_bit;
+        q <<= 1;
+        if (rem_msb != 0 or rem >= c) {
+            rem -%= c;
+            q |= 1;
+        }
+    }
+    return q;
+}
+
 // Fake exponential from EIP-4844, clamped to [1, maxInt(u64)] for legacy u64 callers.
 fn fakeExponential(factor: u64, numerator: u64, denominator: u64) u64 {
-    const result = fakeExponentialCapped(factor, numerator, denominator, std.math.maxInt(u64));
+    std.debug.assert(denominator != 0);
+    const denom: u128 = denominator;
+    const cap: u128 = @as(u128, std.math.maxInt(u64)) * denom;
+
+    var output: u128 = 0;
+    var numerator_accum: u128 = @as(u128, factor) * denom;
+    var i: u128 = 1;
+
+    while (numerator_accum > 0) {
+        output = std.math.add(u128, output, numerator_accum) catch return std.math.maxInt(u64);
+        if (output >= cap) return std.math.maxInt(u64);
+        const step_denom = std.math.mul(u128, denom, i) catch break;
+        numerator_accum = mulDivU128(numerator_accum, numerator, step_denom) orelse return std.math.maxInt(u64);
+        i += 1;
+    }
+
+    const result: u64 = @intCast(output / denom);
     // Per EIP-4844: minimum blob gas price is 1 (MIN_BLOB_BASE_FEE)
-    return if (result == 0) 1 else @intCast(result);
+    return if (result == 0) 1 else result;
 }
 
 // Calculate excess blob gas for next block (legacy Cancun 2-arg API, overflow-safe)
@@ -1845,4 +1887,30 @@ test "calculateExcessBlobGasEip7918 - overflow-safe u64/u256 extremes and fork/t
     try testing.expectEqual(@as(?u64, 27 * GAS_PER_BLOB), calculateExcessBlobGasForTimestamp(27 * GAS_PER_BLOB, 0, 17, BlobSchedule.BPO1_TIMESTAMP));
     try testing.expectEqual(@as(?u64, 40 * GAS_PER_BLOB), calculateExcessBlobGasForTimestamp(50 * GAS_PER_BLOB, 0, 17, BlobSchedule.BPO2_TIMESTAMP - 1));
     try testing.expectEqual(@as(?u64, 50 * GAS_PER_BLOB), calculateExcessBlobGasForTimestamp(50 * GAS_PER_BLOB, 0, 17, BlobSchedule.BPO2_TIMESTAMP));
+}
+
+test "fakeExponential u128/mulDivU128 matches fakeExponentialCapped across boundaries" {
+    const max_u64 = std.math.maxInt(u64);
+    const Case = struct { factor: u64, numerator: u64, denominator: u64 };
+    const cases = [_]Case{
+        .{ .factor = 1, .numerator = 0, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 1, .numerator = 1, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 1, .numerator = BLOB_BASE_FEE_UPDATE_FRACTION, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 1, .numerator = 10 * BLOB_BASE_FEE_UPDATE_FRACTION, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 1, .numerator = 40 * BLOB_BASE_FEE_UPDATE_FRACTION, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 1, .numerator = 50 * BLOB_BASE_FEE_UPDATE_FRACTION, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 1, .numerator = max_u64, .denominator = BLOB_BASE_FEE_UPDATE_FRACTION },
+        .{ .factor = 0, .numerator = 12345, .denominator = 1 },
+        .{ .factor = 1_000_000, .numerator = max_u64 / 2, .denominator = max_u64 },
+        .{ .factor = 1_000_000, .numerator = max_u64, .denominator = max_u64 },
+        .{ .factor = max_u64, .numerator = 0, .denominator = 1 },
+        .{ .factor = max_u64, .numerator = 1, .denominator = 1 },
+        .{ .factor = 1, .numerator = 123_456_789_012, .denominator = 5_007_716 },
+    };
+
+    for (cases) |c| {
+        const ref_u256 = fakeExponentialCapped(c.factor, c.numerator, c.denominator, max_u64);
+        const expected: u64 = if (ref_u256 == 0) 1 else @intCast(ref_u256);
+        try testing.expectEqual(expected, fakeExponential(c.factor, c.numerator, c.denominator));
+    }
 }

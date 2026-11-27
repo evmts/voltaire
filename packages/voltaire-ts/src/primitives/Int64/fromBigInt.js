@@ -1,6 +1,7 @@
 import {
 	IntegerOverflowError,
 	IntegerUnderflowError,
+	InvalidFormatError,
 } from "../errors/index.js";
 
 const INT64_MIN = -9223372036854775808n;
@@ -11,10 +12,17 @@ const INT64_MAX = 9223372036854775807n;
  *
  * @param {bigint} value - BigInt to convert
  * @returns {import('./Int64Type.js').BrandedInt64} Int64 value
+ * @throws {InvalidFormatError} If value is not a bigint
  * @throws {IntegerOverflowError} If value exceeds INT64_MAX
  * @throws {IntegerUnderflowError} If value is below INT64_MIN
  */
 export function fromBigInt(value) {
+	if (typeof value !== "bigint") {
+		throw new InvalidFormatError(
+			`Int64.fromBigInt requires bigint, got ${typeof value}`,
+			{ value, expected: "bigint", docsPath: "/primitives/int64#from-bigint" },
+		);
+	}
 	if (value > INT64_MAX) {
 		throw new IntegerOverflowError(`Int64 value exceeds maximum: ${value}`, {
 			value,

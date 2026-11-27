@@ -5,9 +5,10 @@
 /**
  * Factory function for creating Uint instances
  *
- * @type {UintConstructor}
+ * @param {bigint | number | string} value
+ * @returns {Uint256Type}
  */
-export function Uint(value: any): import("./Uint256Type.js").Uint256Type;
+export function Uint(value: bigint | number | string): Uint256Type;
 export class Uint {
     /**
      * @typedef {import('./Uint256Type.js').Uint256Type} Uint256Type
@@ -16,47 +17,60 @@ export class Uint {
     /**
      * Factory function for creating Uint instances
      *
-     * @type {UintConstructor}
+     * @param {bigint | number | string} value
+     * @returns {Uint256Type}
      */
-    constructor(value: any);
-    toHex: typeof toHex;
-    toBigInt: typeof toBigInt;
-    toNumber: typeof toNumber;
-    toBytes: typeof toBytes;
-    toAbiEncoded: typeof toAbiEncoded;
-    toString: typeof toString;
-    plus: typeof plus;
-    minus: typeof minus;
-    times: typeof times;
-    dividedBy: typeof dividedBy;
-    modulo: typeof modulo;
-    toPower: typeof toPower;
-    bitwiseAnd: typeof bitwiseAnd;
-    bitwiseOr: typeof bitwiseOr;
-    bitwiseXor: typeof bitwiseXor;
-    bitwiseNot: typeof bitwiseNot;
-    shiftLeft: typeof shiftLeft;
-    shiftRight: typeof shiftRight;
-    equals: typeof equals;
-    notEquals: typeof notEquals;
-    lessThan: typeof lessThan;
-    lessThanOrEqual: typeof lessThanOrEqual;
-    greaterThan: typeof greaterThan;
-    greaterThanOrEqual: typeof greaterThanOrEqual;
-    isZero: typeof isZero;
-    minimum: typeof minimum;
-    maximum: typeof maximum;
-    bitLength: typeof bitLength;
-    leadingZeros: typeof leadingZeros;
-    popCount: typeof popCount;
+    constructor(value: bigint | number | string);
+    toHex: (thisArg: any, ...argArray: any[]) => any;
+    toBigInt: (thisArg: any, ...argArray: any[]) => any;
+    toNumber: (thisArg: any, ...argArray: any[]) => any;
+    toBytes: (thisArg: any, ...argArray: any[]) => any;
+    toAbiEncoded: (thisArg: any, ...argArray: any[]) => any;
+    toString: (thisArg: any, ...argArray: any[]) => any;
+    plus: (thisArg: any, ...argArray: any[]) => any;
+    minus: (thisArg: any, ...argArray: any[]) => any;
+    times: (thisArg: any, ...argArray: any[]) => any;
+    plusChecked: (thisArg: any, ...argArray: any[]) => any;
+    minusChecked: (thisArg: any, ...argArray: any[]) => any;
+    timesChecked: (thisArg: any, ...argArray: any[]) => any;
+    plusWrapping: (thisArg: any, ...argArray: any[]) => any;
+    minusWrapping: (thisArg: any, ...argArray: any[]) => any;
+    timesWrapping: (thisArg: any, ...argArray: any[]) => any;
+    dividedBy: (thisArg: any, ...argArray: any[]) => any;
+    modulo: (thisArg: any, ...argArray: any[]) => any;
+    toPower: (thisArg: any, ...argArray: any[]) => any;
+    bitwiseAnd: (thisArg: any, ...argArray: any[]) => any;
+    bitwiseOr: (thisArg: any, ...argArray: any[]) => any;
+    bitwiseXor: (thisArg: any, ...argArray: any[]) => any;
+    bitwiseNot: (thisArg: any, ...argArray: any[]) => any;
+    shiftLeft: (thisArg: any, ...argArray: any[]) => any;
+    shiftRight: (thisArg: any, ...argArray: any[]) => any;
+    equals: (thisArg: any, ...argArray: any[]) => any;
+    notEquals: (thisArg: any, ...argArray: any[]) => any;
+    lessThan: (thisArg: any, ...argArray: any[]) => any;
+    lessThanOrEqual: (thisArg: any, ...argArray: any[]) => any;
+    greaterThan: (thisArg: any, ...argArray: any[]) => any;
+    greaterThanOrEqual: (thisArg: any, ...argArray: any[]) => any;
+    isZero: (thisArg: any, ...argArray: any[]) => any;
+    minimum: (thisArg: any, ...argArray: any[]) => any;
+    maximum: (thisArg: any, ...argArray: any[]) => any;
+    bitLength: (thisArg: any, ...argArray: any[]) => any;
+    leadingZeros: (thisArg: any, ...argArray: any[]) => any;
+    popCount: (thisArg: any, ...argArray: any[]) => any;
 }
 export namespace Uint {
-    export function from(value: string | number | bigint): import("./Uint256Type.js").Uint256Type;
+    /** @param {bigint | number | string} value */
+    export function from(value: bigint | number | string): import("./Uint256Type.js").Uint256Type;
+    /** @param {string} value */
     export function fromHex(value: string): import("./Uint256Type.js").Uint256Type;
+    /** @param {bigint} value */
     export function fromBigInt(value: bigint): import("./Uint256Type.js").Uint256Type;
-    export function fromNumber(value: number | bigint): import("./Uint256Type.js").Uint256Type;
-    export function fromBytes(value: Uint8Array<ArrayBufferLike>): import("./Uint256Type.js").Uint256Type;
-    export function fromAbiEncoded(value: Uint8Array<ArrayBufferLike>): import("./Uint256Type.js").Uint256Type;
+    /** @param {number} value */
+    export function fromNumber(value: number): import("./Uint256Type.js").Uint256Type;
+    /** @param {Uint8Array} value */
+    export function fromBytes(value: Uint8Array): import("./Uint256Type.js").Uint256Type;
+    /** @param {Uint8Array} value */
+    export function fromAbiEncoded(value: Uint8Array): import("./Uint256Type.js").Uint256Type;
     export { tryFrom };
     export { isValid };
     export { toHex };
@@ -105,6 +119,8 @@ export * from "./constants.js";
 export * from "./Uint256Type.js";
 export type Uint256Type = import("./Uint256Type.js").Uint256Type;
 export type UintConstructor = import("./UintConstructor.js").UintConstructor;
+import { tryFrom } from "./tryFrom.js";
+import { isValid } from "./isValid.js";
 import { toHex } from "./toHex.js";
 import { toBigInt } from "./toBigInt.js";
 import { toNumber } from "./toNumber.js";
@@ -114,6 +130,12 @@ import { toString } from "./toString.js";
 import { plus } from "./plus.js";
 import { minus } from "./minus.js";
 import { times } from "./times.js";
+import { plusChecked } from "./plusChecked.js";
+import { minusChecked } from "./minusChecked.js";
+import { timesChecked } from "./timesChecked.js";
+import { plusWrapping } from "./plusWrapping.js";
+import { minusWrapping } from "./minusWrapping.js";
+import { timesWrapping } from "./timesWrapping.js";
 import { dividedBy } from "./dividedBy.js";
 import { modulo } from "./modulo.js";
 import { toPower } from "./toPower.js";
@@ -135,14 +157,6 @@ import { maximum } from "./maximum.js";
 import { bitLength } from "./bitLength.js";
 import { leadingZeros } from "./leadingZeros.js";
 import { popCount } from "./popCount.js";
-import { tryFrom } from "./tryFrom.js";
-import { isValid } from "./isValid.js";
-import { plusChecked } from "./plusChecked.js";
-import { minusChecked } from "./minusChecked.js";
-import { timesChecked } from "./timesChecked.js";
-import { plusWrapping } from "./plusWrapping.js";
-import { minusWrapping } from "./minusWrapping.js";
-import { timesWrapping } from "./timesWrapping.js";
 import { SIZE } from "./constants.js";
 import { MAX } from "./constants.js";
 import { MIN } from "./constants.js";

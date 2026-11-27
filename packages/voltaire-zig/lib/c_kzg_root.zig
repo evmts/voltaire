@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const testing = std.testing;
 const Random = std.Random;
 
@@ -35,21 +36,49 @@ pub const KZGError = error{
     FileNotFound,
 };
 
-/// Embedded trusted setup data (~807KB). Only included when explicitly referenced.
-pub const embedded_trusted_setup = @embedFile("trusted_setup.txt");
+/// Embedded trusted setup data (~788KB). Omitted on wasm32 to keep primitives.wasm
+/// compact; WASM callers supply setup bytes dynamically via `loadTrustedSetupFromText`.
+pub const embedded_trusted_setup: []const u8 = if (builtin.target.cpu.arch != .wasm32)
+    @embedFile("trusted_setup.txt")
+else
+    "";
 
 /// Process-wide trusted setup. `lock` guards both `settings` and `loaded`:
 /// load and free take it exclusively; every C call that reads `settings`
 /// holds it shared for the whole call, so a free can never race an in-flight
 /// computation or verification. c-kzg only reads `settings` during those
 /// calls, so concurrent shared holders are safe.
+const SetupLock = struct {
+    inner: if (builtin.single_threaded) void else std.Io.RwLock = if (builtin.single_threaded) {} else .init,
+
+    fn lockExclusive(self: *SetupLock) void {
+        if (comptime !builtin.single_threaded) {
+            self.inner.lockUncancelable(std.Io.Threaded.global_single_threaded.io());
+        }
+    }
+
+    fn unlockExclusive(self: *SetupLock) void {
+        if (comptime !builtin.single_threaded) {
+            self.inner.unlock(std.Io.Threaded.global_single_threaded.io());
+        }
+    }
+
+    fn lockShared(self: *SetupLock) void {
+        if (comptime !builtin.single_threaded) {
+            self.inner.lockSharedUncancelable(std.Io.Threaded.global_single_threaded.io());
+        }
+    }
+
+    fn unlockShared(self: *SetupLock) void {
+        if (comptime !builtin.single_threaded) {
+            self.inner.unlockShared(std.Io.Threaded.global_single_threaded.io());
+        }
+    }
+};
+
 var settings: KZGSettings = undefined;
 var loaded: bool = false;
-var lock: std.Io.RwLock = .init;
-
-fn lockIo() std.Io {
-    return std.Io.Threaded.global_single_threaded.io();
-}
+var lock: SetupLock = .{};
 
 fn makeErrorFromRet(ret: c.C_KZG_RET) KZGError {
     return switch (ret) {
@@ -67,9 +96,8 @@ pub fn loadTrustedSetup(
     g2_monomial_bytes: []const u8,
     precompute: u64,
 ) KZGError!void {
-    const io = lockIo();
-    lock.lockUncancelable(io);
-    defer lock.unlock(io);
+    lock.lockExclusive();
+    defer lock.unlockExclusive();
     if (loaded) {
         return KZGError.TrustedSetupAlreadyLoaded;
     }
@@ -95,9 +123,8 @@ pub fn loadTrustedSetup(
 
 /// Loads trusted setup from text data. Pass `embedded_trusted_setup` or custom text.
 pub fn loadTrustedSetupFromText(trusted_setup_text: []const u8, precompute: u64) KZGError!void {
-    const io = lockIo();
-    lock.lockUncancelable(io);
-    defer lock.unlock(io);
+    lock.lockExclusive();
+    defer lock.unlockExclusive();
     if (loaded) {
         return KZGError.TrustedSetupAlreadyLoaded;
     }
@@ -158,9 +185,8 @@ pub fn loadTrustedSetupFromText(trusted_setup_text: []const u8, precompute: u64)
 
 /// Loads trusted setup from file path.
 pub fn loadTrustedSetupFile(file_path: []const u8, precompute: u64) KZGError!void {
-    const io = lockIo();
-    lock.lockUncancelable(io);
-    defer lock.unlock(io);
+    lock.lockExclusive();
+    defer lock.unlockExclusive();
     if (loaded) {
         return KZGError.TrustedSetupAlreadyLoaded;
     }
@@ -191,9 +217,8 @@ pub fn loadTrustedSetupFile(file_path: []const u8, precompute: u64) KZGError!voi
 
 /// Frees the loaded trusted setup.
 pub fn freeTrustedSetup() KZGError!void {
-    const io = lockIo();
-    lock.lockUncancelable(io);
-    defer lock.unlock(io);
+    lock.lockExclusive();
+    defer lock.unlockExclusive();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -203,9 +228,8 @@ pub fn freeTrustedSetup() KZGError!void {
 
 /// Converts a blob to a KZG commitment.
 pub fn blobToKZGCommitment(blob: *const Blob) KZGError!KZGCommitment {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -226,9 +250,8 @@ pub fn blobToKZGCommitment(blob: *const Blob) KZGError!KZGCommitment {
 
 /// Computes a KZG proof for a blob at the given evaluation point.
 pub fn computeKZGProof(blob: *const Blob, z_bytes: *const Bytes32) KZGError!struct { proof: KZGProof, y: Bytes32 } {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -257,9 +280,8 @@ pub fn verifyKZGProof(
     y_bytes: *const Bytes32,
     proof_bytes: *const Bytes48,
 ) KZGError!bool {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -283,9 +305,8 @@ pub fn verifyKZGProof(
 
 /// Computes a KZG proof for a blob given its commitment.
 pub fn computeBlobKZGProof(blob: *const Blob, commitment_bytes: *const Bytes48) KZGError!KZGProof {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -311,9 +332,8 @@ pub fn verifyBlobKZGProof(
     commitment_bytes: *const Bytes48,
     proof_bytes: *const Bytes48,
 ) KZGError!bool {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -336,9 +356,8 @@ pub fn verifyBlobKZGProof(
 
 /// Returns true once a trusted setup is loaded.
 pub fn isTrustedSetupLoaded() bool {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     return loaded;
 }
 
@@ -349,9 +368,8 @@ pub fn computeCellsAndKZGProofs(
     proofs: ?*[CELLS_PER_EXT_BLOB]KZGProof,
     blob: *const Blob,
 ) KZGError!void {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -376,9 +394,8 @@ pub fn recoverCellsAndKZGProofs(
     cell_indices: []const u64,
     cells: []const Cell,
 ) KZGError!void {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }
@@ -408,9 +425,8 @@ pub fn verifyCellKZGProofBatch(
     cells: []const Cell,
     proofs_bytes: []const Bytes48,
 ) KZGError!bool {
-    const io = lockIo();
-    lock.lockSharedUncancelable(io);
-    defer lock.unlockShared(io);
+    lock.lockShared();
+    defer lock.unlockShared();
     if (!loaded) {
         return KZGError.TrustedSetupNotLoaded;
     }

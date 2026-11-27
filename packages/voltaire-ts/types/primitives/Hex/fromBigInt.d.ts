@@ -7,7 +7,9 @@ import type { HexType } from "./HexType.js";
  * @param value - BigInt to convert (must be non-negative)
  * @param size - Optional byte size for padding
  * @returns Hex string
- * @throws {Error} If value is negative
+ * @throws {InvalidFormatError} If value is not a bigint
+ * @throws {NegativeNumberError} If value is negative
+ * @throws {InvalidSizeError} If size is not a non-negative integer
  * @example
  * ```typescript
  * import * as Hex from './primitives/Hex/index.js';

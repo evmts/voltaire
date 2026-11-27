@@ -5,6 +5,7 @@
  * @since 0.0.0
  * @param {bigint} value - bigint value
  * @returns {import('./Uint16Type.js').Uint16Type} Uint16 value
+ * @throws {Uint16NotIntegerError} If value is not a bigint
  * @throws {Uint16NegativeError} If value is negative
  * @throws {Uint16OverflowError} If value exceeds maximum (65535)
  * @example

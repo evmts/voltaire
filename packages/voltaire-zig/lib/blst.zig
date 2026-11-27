@@ -15,6 +15,8 @@ pub fn createBlstLibrary(
         .root_module = b.createModule(.{
             .target = target,
             .optimize = optimize,
+            .single_threaded = if (is_wasm) true else null,
+            .strip = if (is_wasm) true else null,
         }),
     });
 
@@ -43,7 +45,15 @@ pub fn createBlstLibrary(
     // For native, __BLST_PORTABLE__ provides fallback while assembly is optimized path
     // -fPIC required for shared libraries on Linux (ignored on Windows/macOS)
     const c_flags = if (is_wasm)
-        &[_][]const u8{ "-std=c99", "-D__BLST_PORTABLE__", "-D__BLST_NO_ASM__", "-fno-sanitize=undefined" }
+        &[_][]const u8{
+            "-std=c99",
+            "-Oz",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-D__BLST_PORTABLE__",
+            "-D__BLST_NO_ASM__",
+            "-fno-sanitize=undefined",
+        }
     else
         &[_][]const u8{ "-std=c99", "-fPIC", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined" };
 

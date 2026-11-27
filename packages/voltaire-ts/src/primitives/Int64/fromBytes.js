@@ -8,6 +8,13 @@ import { InvalidLengthError } from "../errors/index.js";
  * @throws {InvalidLengthError} If bytes length exceeds 8
  */
 export function fromBytes(bytes) {
+	if (!(bytes instanceof Uint8Array)) {
+		throw new InvalidLengthError("Int64 bytes must be a Uint8Array", {
+			value: bytes,
+			expected: "8 bytes or fewer",
+			docsPath: "/primitives/int64#from-bytes",
+		});
+	}
 	if (bytes.length > 8) {
 		throw new InvalidLengthError(
 			`Int64 bytes cannot exceed 8 bytes, got ${bytes.length}`,

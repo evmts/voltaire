@@ -5,8 +5,9 @@
  * a function under `name`, the default KZG API picks it up with no change
  * here. Until then every call throws KzgNotSupportedError.
  *
+ * @template {(...args: never[]) => unknown} T
  * @param {string} name - Loader export, e.g. `kzgComputeCells`
- * @returns {(...args: unknown[]) => any}
+ * @returns {T}
  */
-export function wasmPeerDas(name: string): (...args: unknown[]) => any;
+export function wasmPeerDas<T extends (...args: never[]) => unknown>(name: string): T;
 //# sourceMappingURL=peerDasBackend.d.ts.map

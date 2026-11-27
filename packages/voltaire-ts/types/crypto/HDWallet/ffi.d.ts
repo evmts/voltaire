@@ -4,5 +4,5 @@
  * @returns {Promise<Library>}
  */
 export function getLibwally(): Promise<Library>;
-export type Library = any;
+export type Library = import("ffi-napi").Library;
 //# sourceMappingURL=ffi.d.ts.map

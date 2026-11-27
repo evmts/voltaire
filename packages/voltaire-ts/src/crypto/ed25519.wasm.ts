@@ -1,11 +1,13 @@
 /**
- * Ed25519 operations implementation
+ * WASM implementation of Ed25519 digital signatures.
  *
- * Uses @noble/curves Ed25519 implementation since WASM exports
- * are not yet available in Zig 0.15.1 (API changed).
+ * Uses Zig's audited std.crypto Ed25519 implementation via WebAssembly
+ * (`ed25519Sign`, `ed25519Verify`, `ed25519DerivePublicKey`).
  */
 
 import { ed25519 } from "@noble/curves/ed25519.js";
+import * as loader from "../wasm-loader/loader.js";
+import { WasmNotInitializedError } from "../wasm-loader/loader.js";
 import { validatePublicKey as validateEd25519PublicKey } from "./Ed25519/validatePublicKey.js";
 
 // ============================================================================
@@ -89,14 +91,18 @@ export namespace Ed25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
-			const publicKey = ed25519.getPublicKey(seed);
+			const derivedPub = ed25519.getPublicKey(seed);
 			// Ed25519 secret key is 64 bytes: seed (32) + public key (32)
 			const secretKey = new Uint8Array(64);
 			secretKey.set(seed, 0);
-			secretKey.set(publicKey, 32);
+			secretKey.set(derivedPub, 32);
+			// Verify and derive final public key through Zig WASM
+			const publicKey = loader.ed25519DerivePublicKey(secretKey);
 			return { secretKey, publicKey };
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new Ed25519Error(`Keypair generation failed: ${error}`);
 		}
 	}
@@ -112,11 +118,11 @@ export namespace Ed25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
-			// Use first 32 bytes as seed for signing
-			const seed = secretKey.slice(0, 32);
-			return ed25519.sign(message, seed);
+			return loader.ed25519Sign(message, secretKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new Ed25519Error(`Signing failed: ${error}`);
 		}
 	}
@@ -142,13 +148,11 @@ export namespace Ed25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
-			// Strict RFC 8032 key decoding, then reject small-order keys
-			if (ed25519.Point.fromBytes(publicKey, false).isSmallOrder()) {
-				return false;
-			}
-			return ed25519.verify(signature, message, publicKey);
-		} catch {
+			return loader.ed25519Verify(message, signature, publicKey);
+		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			return false;
 		}
 	}
@@ -160,10 +164,19 @@ export namespace Ed25519Wasm {
 	export function derivePublicKey(secretKey: SecretKey): PublicKey {
 		// Allow both 32-byte seed and 64-byte secret key
 		if (secretKey.length === SEED_SIZE) {
-			// Treat as seed, derive public key
+			loader.ensureWasmLoaded();
 			try {
-				return ed25519.getPublicKey(secretKey);
+				const derivedPub = ed25519.getPublicKey(secretKey);
+				const expanded = new Uint8Array(64);
+				expanded.set(secretKey, 0);
+				expanded.set(derivedPub, 32);
+				try {
+					return loader.ed25519DerivePublicKey(expanded);
+				} finally {
+					expanded.fill(0);
+				}
 			} catch (error) {
+				if (error instanceof WasmNotInitializedError) throw error;
 				throw new InvalidSecretKeyError(
 					`Failed to derive public key: ${error}`,
 				);
@@ -176,10 +189,11 @@ export namespace Ed25519Wasm {
 			);
 		}
 
+		loader.ensureWasmLoaded();
 		try {
-			// Public key is stored in last 32 bytes of 64-byte secret key
-			return secretKey.slice(32, 64);
+			return loader.ed25519DerivePublicKey(secretKey);
 		} catch (error) {
+			if (error instanceof WasmNotInitializedError) throw error;
 			throw new InvalidSecretKeyError(`Failed to derive public key: ${error}`);
 		}
 	}

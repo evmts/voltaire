@@ -1,4 +1,4 @@
-import { minus } from "./minus.js";
+import { MAX } from "./constants.js";
 
 /**
  * Subtract two Uint128 values with wrapping
@@ -19,5 +19,8 @@ import { minus } from "./minus.js";
  * ```
  */
 export function minusWrapping(a, b) {
-	return minus(a, b);
+	const diff = a - b;
+	return /** @type {import('./Uint128Type.js').Uint128Type} */ (
+		diff < 0n ? (diff + MAX + 1n) & MAX : diff
+	);
 }

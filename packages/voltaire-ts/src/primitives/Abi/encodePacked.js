@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Address } from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
 import { AbiEncodingError, AbiParameterMismatchError } from "./Errors.js";
@@ -90,7 +89,7 @@ function encodePackedValue(type, value, isArrayElement = false) {
 
 	// Fixed arrays - also check early
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-	if (fixedArrayMatch) {
+	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
 		const elementType = fixedArrayMatch[1];
 		const length = Number.parseInt(fixedArrayMatch[2], 10);
 		const array = /** @type {unknown[]} */ (value);
@@ -187,7 +186,9 @@ function encodePackedValue(type, value, isArrayElement = false) {
 			bigintValue = value;
 		} else {
 			// Convert string or other types to BigInt
-			bigintValue = BigInt(value);
+			bigintValue = BigInt(
+				/** @type {string | number | bigint | boolean} */ (value),
+			);
 		}
 
 		// Convert to bytes (big-endian, right-aligned for padding)
@@ -211,7 +212,9 @@ function encodePackedValue(type, value, isArrayElement = false) {
 			bigintValue = value;
 		} else {
 			// Convert string or other types to BigInt
-			bigintValue = BigInt(value);
+			bigintValue = BigInt(
+				/** @type {string | number | bigint | boolean} */ (value),
+			);
 		}
 
 		// Convert to two's complement if negative

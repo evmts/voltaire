@@ -1,23 +1,11 @@
-import * as OxRlp from "ox/Rlp";
+import { encodeBytes } from "./encodeBytes.js";
+import { encodeList } from "./encodeList.js";
 import { isData } from "./isData.js";
 import { RlpEncodingError } from "./RlpError.js";
 
 /**
- * @typedef {Uint8Array | import('./RlpType.js').BrandedRlp | Array<Uint8Array | import('./RlpType.js').BrandedRlp | any>} Encodable
+ * @typedef {import('./RlpType.js').Encodable} Encodable
  */
-
-/**
- * Convert Data structure to ox/Rlp compatible format
- * @internal
- * @param {import('./RlpType.js').BrandedRlp} data
- * @returns {Uint8Array | any[]}
- */
-function dataToEncodable(data) {
-	if (data.type === "bytes") {
-		return data.value;
-	}
-	return data.value.map((item) => dataToEncodable(item));
-}
 
 /**
  * Encodes data to RLP format
@@ -45,15 +33,18 @@ function dataToEncodable(data) {
  * ```
  */
 export function encode(data) {
-	// Handle Data structure
-	if (isData(data)) {
-		const encodable = dataToEncodable(data);
-		return OxRlp.from(encodable, { as: "Bytes" });
+	if (data instanceof Uint8Array) {
+		return encodeBytes(data);
 	}
 
-	// Handle Uint8Array and arrays directly
-	if (data instanceof Uint8Array || Array.isArray(data)) {
-		return OxRlp.from(data, { as: "Bytes" });
+	if (Array.isArray(data)) {
+		return encodeList(data);
+	}
+
+	if (isData(data)) {
+		return data.type === "bytes"
+			? encodeBytes(data.value)
+			: encodeList(data.value);
 	}
 
 	throw new RlpEncodingError("Invalid encodable data type", {

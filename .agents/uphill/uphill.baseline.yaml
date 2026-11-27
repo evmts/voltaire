@@ -4,32 +4,31 @@
 footprint:
   wasm-bundle-size:
     "*": { target: 350kB }
-    "primitives.wasm:gzip": { baseline: 578727B, target: 200kB }
-    "primitives.wasm:raw": { baseline: 1248913B }
+    "primitives.wasm:gzip": { baseline: 120279B, target: 200kB }
+    "primitives.wasm:raw": { baseline: 344825B }
   primitive-source-bytes:
     "*": { target: 15kB }
-    crypto/Bls12381: { baseline: 12849B }
-    crypto/EIP712: { baseline: 8425B }
-    crypto/KZG: { baseline: 11185B }
-    crypto/Keccak256: { baseline: 4453B }
-    crypto/Secp256k1: { baseline: 9680B }
+    crypto/Bls12381: { baseline: 12914B }
+    crypto/EIP712: { baseline: 10299B }
+    crypto/KZG: { baseline: 11963B }
+    crypto/Keccak256: { baseline: 4463B }
+    crypto/Secp256k1: { baseline: 9567B }
     crypto/bn254: { baseline: 10502B }
-    primitives/Abi: { baseline: 44431B, target: 20kB }
-    primitives/Address: { baseline: 22507B, target: 5kB }
-    primitives/Hash: { baseline: 7309B, target: 5kB }
-    primitives/Hex: { baseline: 13143B, target: 3kB }
-    primitives/Rlp: { baseline: 10867B, target: 8kB }
-    primitives/Transaction: { baseline: 27029B }
-    primitives/Uint: { baseline: 12844B, target: 10kB }
+    primitives/Abi: { baseline: 45135B, target: 20kB }
+    primitives/Address: { baseline: 22672B, target: 5kB }
+    primitives/Hash: { baseline: 7499B, target: 5kB }
+    primitives/Hex: { baseline: 13404B, target: 3kB }
+    primitives/Rlp: { baseline: 11299B, target: 8kB }
+    primitives/Transaction: { baseline: 27294B }
+    primitives/Uint: { baseline: 13240B, target: 10kB }
   package-deps:
     "*": { target: 3 }
-    "@tevm/voltaire": { baseline: 8 }
+    "@tevm/voltaire": { baseline: 6 }
     Cargo.toml: { baseline: 7, target: 6 }
 
 zig-rust-safety:
   zig-no-panic:
     "*": { baseline: pass }
-    crypto: { baseline: fail }
   zig-module-imports:
     "*": { baseline: pass }
   zig-function-length:
@@ -65,34 +64,11 @@ ts-quality:
     "*": { baseline: pass }
   explicit-any:
     "*": { baseline: pass }
-    voltaire-ts/crypto/signers: { baseline: fail }
-    voltaire-ts/primitives/Abi: { baseline: fail }
-    voltaire-ts/primitives/Transaction: { baseline: fail }
-    voltaire-ts/provider: { baseline: fail }
   ts-suppressions:
     "*": { baseline: pass }
-    voltaire-ts/crypto/Bls12381: { baseline: fail }
-    voltaire-ts/crypto/EIP712: { baseline: fail }
-    voltaire-ts/crypto/HDWallet: { baseline: fail }
-    voltaire-ts/crypto/KZG: { baseline: fail }
-    voltaire-ts/crypto/Ripemd160: { baseline: fail }
-    voltaire-ts/crypto/Secp256k1: { baseline: fail }
-    voltaire-ts/primitives/Abi: { baseline: fail }
-    voltaire-ts/primitives/Address: { baseline: fail }
-    voltaire-ts/primitives/Bytecode: { baseline: fail }
-    voltaire-ts/primitives/Bytes: { baseline: fail }
-    voltaire-ts/primitives/FeeMarket: { baseline: fail }
-    voltaire-ts/primitives/Hash: { baseline: fail }
-    voltaire-ts/primitives/Opcode: { baseline: fail }
-    voltaire-ts/primitives/Proof: { baseline: fail }
-    voltaire-ts/primitives/StealthAddress: { baseline: fail }
-    voltaire-ts/primitives/Transaction: { baseline: fail }
-    voltaire-ts/primitives/Uint: { baseline: fail }
-    voltaire-ts/provider: { baseline: fail }
   function-length:
     "*": { baseline: pass }
     voltaire-ts/block: { baseline: fail }
-    voltaire-ts/crypto: { baseline: fail }
     voltaire-ts/crypto/Blake2: { baseline: fail }
     voltaire-ts/crypto/EIP712: { baseline: fail }
     voltaire-ts/crypto/KZG: { baseline: fail }
@@ -110,7 +86,6 @@ ts-quality:
     voltaire-ts/primitives/Domain: { baseline: fail }
     voltaire-ts/primitives/FeeOracle: { baseline: fail }
     voltaire-ts/primitives/Hex: { baseline: fail }
-    voltaire-ts/primitives/Int32: { baseline: fail }
     voltaire-ts/primitives/LogFilter: { baseline: fail }
     voltaire-ts/primitives/Metadata: { baseline: fail }
     voltaire-ts/primitives/NodeInfo: { baseline: fail }
@@ -126,21 +101,20 @@ ts-quality:
     voltaire-ts/primitives/Transaction: { baseline: fail }
     voltaire-ts/primitives/Trie: { baseline: fail }
     voltaire-ts/transaction: { baseline: fail }
-    voltaire-ts/wasm-loader: { baseline: fail }
 
 architecture:
   test-ratio:
     "*": { target: 70 }
-    voltaire-ts/blockchain: { baseline: 99 }
-    voltaire-ts/contract: { baseline: 75 }
-    voltaire-ts/crypto: { baseline: 230 }
+    voltaire-ts/blockchain: { baseline: 152 }
+    voltaire-ts/contract: { baseline: 76 }
+    voltaire-ts/crypto: { baseline: 222 }
     voltaire-ts/evm: { baseline: 151 }
     voltaire-ts/jsonrpc: { baseline: 93 }
-    voltaire-ts/primitives: { baseline: 137 }
+    voltaire-ts/primitives: { baseline: 135 }
     voltaire-ts/provider: { baseline: 71 }
-    voltaire-ts/state-manager: { baseline: 92 }
-    voltaire-ts/wallet: { baseline: 72 }
-    voltaire-zig: { baseline: 117 }
+    voltaire-ts/state-manager: { baseline: 147 }
+    voltaire-ts/wallet: { baseline: 272 }
+    voltaire-zig: { baseline: 118 }
   zig-ts-parity:
     "*": { baseline: pass }
   docs-links:

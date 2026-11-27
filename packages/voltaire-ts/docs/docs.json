@@ -1030,7 +1030,9 @@
               "getting-started",
               "playground",
               "comparisons",
-              "performance"
+              "benchmarks",
+              "performance",
+              "spec-compliance"
             ]
           },
           {

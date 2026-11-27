@@ -45,6 +45,13 @@ export function from(value) {
 		}
 		bigintVal = BigInt(Math.trunc(value));
 	} else if (typeof value === "string") {
+		if (value.trim() === "") {
+			throw new InvalidFormatError(`Cannot convert string to Int64: ${value}`, {
+				value,
+				expected: "valid numeric string",
+				docsPath: "/primitives/int64#from",
+			});
+		}
 		try {
 			bigintVal = BigInt(value);
 		} catch {

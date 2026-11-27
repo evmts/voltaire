@@ -50,6 +50,12 @@ type UintPrototype = Uint256Type & {
 	plus(other: Uint256Type): Uint256Type;
 	minus(other: Uint256Type): Uint256Type;
 	times(other: Uint256Type): Uint256Type;
+	plusChecked(other: Uint256Type): Uint256Type;
+	minusChecked(other: Uint256Type): Uint256Type;
+	timesChecked(other: Uint256Type): Uint256Type;
+	plusWrapping(other: Uint256Type): Uint256Type;
+	minusWrapping(other: Uint256Type): Uint256Type;
+	timesWrapping(other: Uint256Type): Uint256Type;
 	dividedBy(other: Uint256Type): Uint256Type;
 	modulo(other: Uint256Type): Uint256Type;
 	toPower(exponent: Uint256Type): Uint256Type;
@@ -84,7 +90,7 @@ export interface UintConstructor {
 	from(value: bigint | number | string): Uint256Type;
 	fromHex(value: string): Uint256Type;
 	fromBigInt(value: bigint): Uint256Type;
-	fromNumber(value: number | bigint): Uint256Type;
+	fromNumber(value: number): Uint256Type;
 	fromBytes(value: Uint8Array): Uint256Type;
 	fromAbiEncoded(value: Uint8Array): Uint256Type;
 	tryFrom: typeof tryFrom;

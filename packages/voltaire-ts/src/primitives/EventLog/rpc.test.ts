@@ -2,9 +2,11 @@
  * Tests for EventLog RPC conversion functions
  */
 
-import type { Rpc } from "ox/Log";
 import { describe, expect, it } from "vitest";
-import type { EventLogType as BrandedEventLog } from "./EventLogType.js";
+import type {
+	EventLogType as BrandedEventLog,
+	RpcLog as Rpc,
+} from "./EventLogType.js";
 import { fromRpc } from "./fromRpc.js";
 import { toRpc } from "./toRpc.js";
 

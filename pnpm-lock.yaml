@@ -66,15 +66,9 @@ importers:
       '@scure/bip39':
         specifier: ^2.4.0
         version: 2.4.0
-      '@tevm/chains':
-        specifier: ^0.0.1
-        version: 0.0.1(typescript@6.0.3)
       ffi-napi:
         specifier: ^4.0.3
         version: 4.0.3
-      ox:
-        specifier: ^1.9.0
-        version: 1.9.0(typescript@6.0.3)
       ref-napi:
         specifier: ^3.0.3
         version: 3.0.3
@@ -142,6 +136,9 @@ importers:
       mitata:
         specifier: ^1.0.34
         version: 1.0.34
+      ox:
+        specifier: ^1.9.0
+        version: 1.9.0(typescript@6.0.3)
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -2196,11 +2193,6 @@ packages:
 
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
-
-  '@tevm/chains@0.0.1':
-    resolution: {integrity: sha512-1/+/pasF8CZkLJkBnebmgkBHDEJ5vtpJXQ2S8B7rqM4bLQhbmOWva+J9CiKc56C2Z++Gvy07W7XQpc4dUk1X3A==}
-    peerDependencies:
-      typescript: ^5
 
   '@tevm/tsconfig@1.0.0-next.142':
     resolution: {integrity: sha512-wSs3HmnIsToNzT3j/p+AYW3KTQ3PvWhLKHvTQh1FpbWG4FiwG4dNO46BsoWAGsr59CLjn/+YUcbt5xFbaMVoUQ==}
@@ -6036,10 +6028,6 @@ snapshots:
       - webpack-cli
 
   '@stablelib/base64@1.0.1': {}
-
-  '@tevm/chains@0.0.1(typescript@6.0.3)':
-    dependencies:
-      typescript: 6.0.3
 
   '@tevm/tsconfig@1.0.0-next.142': {}
 

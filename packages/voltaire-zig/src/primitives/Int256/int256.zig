@@ -389,6 +389,12 @@ pub fn bitLength(value: Int256) u16 {
 
 const testing = std.testing;
 
+fn hexToBytes(comptime hex: []const u8) ![32]u8 {
+    var out: [32]u8 = undefined;
+    _ = try std.fmt.hexToBytes(&out, hex);
+    return out;
+}
+
 test "Int256: constants" {
     try testing.expectEqual(MIN, std.math.minInt(i256));
     try testing.expectEqual(MAX, std.math.maxInt(i256));
@@ -399,12 +405,6 @@ test "Int256: constants" {
     try testing.expectEqual(@as(u16, 256), BITS);
     // MAX = 2^255 - 1
     try testing.expectEqual(@as(u256, 1) << 255, @as(u256, @intCast(MAX)) + 1);
-}
-
-fn hexToBytes(comptime hex: []const u8) [32]u8 {
-    var out: [32]u8 = undefined;
-    _ = std.fmt.hexToBytes(&out, hex) catch unreachable;
-    return out;
 }
 
 test "Int256: widening constructors" {
@@ -438,11 +438,11 @@ test "Int256: fromWord and toWord (two's complement)" {
 
 test "Int256: fromBytes" {
     try testing.expectEqual(@as(Int256, 0), fromBytes(@as([32]u8, @splat(0))));
-    try testing.expectEqual(@as(Int256, 1), fromBytes(hexToBytes("0000000000000000000000000000000000000000000000000000000000000001")));
-    try testing.expectEqual(MAX, fromBytes(hexToBytes("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")));
-    try testing.expectEqual(MIN, fromBytes(hexToBytes("8000000000000000000000000000000000000000000000000000000000000000")));
+    try testing.expectEqual(@as(Int256, 1), fromBytes(try hexToBytes("0000000000000000000000000000000000000000000000000000000000000001")));
+    try testing.expectEqual(MAX, fromBytes(try hexToBytes("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")));
+    try testing.expectEqual(MIN, fromBytes(try hexToBytes("8000000000000000000000000000000000000000000000000000000000000000")));
     try testing.expectEqual(@as(Int256, -1), fromBytes(@as([32]u8, @splat(0xff))));
-    try testing.expectEqual(@as(Int256, -2), fromBytes(hexToBytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
+    try testing.expectEqual(@as(Int256, -2), fromBytes(try hexToBytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
 }
 
 test "Int256: fromHex" {
@@ -472,10 +472,10 @@ test "Int256: toI64 and toI128" {
 
 test "Int256: toBytes" {
     try testing.expectEqual(@as([32]u8, @splat(0)), toBytes(0));
-    try testing.expectEqual(hexToBytes("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), toBytes(MAX));
-    try testing.expectEqual(hexToBytes("8000000000000000000000000000000000000000000000000000000000000000"), toBytes(MIN));
+    try testing.expectEqual(try hexToBytes("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), toBytes(MAX));
+    try testing.expectEqual(try hexToBytes("8000000000000000000000000000000000000000000000000000000000000000"), toBytes(MIN));
     try testing.expectEqual(@as([32]u8, @splat(0xff)), toBytes(-1));
-    try testing.expectEqual(hexToBytes("0000000000000000000000000000000000000000000000000000000000000100"), toBytes(256));
+    try testing.expectEqual(try hexToBytes("0000000000000000000000000000000000000000000000000000000000000100"), toBytes(256));
 }
 
 test "Int256: toHex" {

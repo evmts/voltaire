@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import {
 	CryptoError,
@@ -117,7 +116,7 @@ export function recoverPublicKeyFromHash(signature, hash) {
 			code: "PUBLIC_KEY_RECOVERY_FROM_HASH_FAILED",
 			context: { signature, hash },
 			docsPath: "/crypto/secp256k1/recover-public-key-from-hash#error-handling",
-			cause: error,
+			cause: error instanceof Error ? error : undefined,
 		});
 	}
 }

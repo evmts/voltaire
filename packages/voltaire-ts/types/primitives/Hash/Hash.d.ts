@@ -1,10 +1,9 @@
 /**
- * @typedef {import('./HashType.js').HashType} HashType
- */
-/**
  * Creates a Hash instance from a string or Uint8Array.
  * Canonical constructor for the Hash Class API.
  *
+ * @param {string | Uint8Array} value
+ * @returns {HashType}
  * @example
  * ```typescript
  * // Using constructor (recommended)
@@ -15,15 +14,14 @@
  * const hash = Hash.from("0x1234...");
  * ```
  */
-export function Hash(value: any): any;
+export function Hash(value: string | Uint8Array): HashType;
 export class Hash {
-    /**
-     * @typedef {import('./HashType.js').HashType} HashType
-     */
     /**
      * Creates a Hash instance from a string or Uint8Array.
      * Canonical constructor for the Hash Class API.
      *
+     * @param {string | Uint8Array} value
+     * @returns {HashType}
      * @example
      * ```typescript
      * // Using constructor (recommended)
@@ -34,44 +32,95 @@ export class Hash {
      * const hash = Hash.from("0x1234...");
      * ```
      */
-    constructor(value: any);
-    toBytes(): any;
-    toString(): string;
-    equals(other: any): any;
-    isZero(): any;
-    clone(): any;
-    slice(start: any, end: any): any;
-    format(): any;
+    constructor(value: string | Uint8Array);
+    toBytes(this: import("./HashType.js").HashType): Uint8Array<ArrayBufferLike>;
+    toString(this: import("./HashType.js").HashType): import("../Hex/HexType.js").HexType;
+    equals(this: import("./HashType.js").HashType, other: HashType): boolean;
+    isZero(this: import("./HashType.js").HashType): boolean;
+    clone(this: import("./HashType.js").HashType): import("./HashType.js").HashType;
+    slice(this: import("./HashType.js").HashType, start?: number, end?: number): Uint8Array<ArrayBufferLike>;
+    format(this: import("./HashType.js").HashType): string;
 }
 export namespace Hash {
     /**
      * Alias for Hash() constructor.
      * Prefer using Hash() directly.
+     * @param {string | Uint8Array} value
+     * @returns {HashType}
      */
-    export function from(value: any): any;
-    export function fromBytes(value: any): any;
-    export function fromHex(value: any): any;
-    export let isHash: any;
-    export let isValidHex: any;
-    export let assert: any;
-    export function keccak256(value: any): any;
-    export function keccak256String(value: any): any;
-    export function keccak256Hex(value: any): any;
-    export function random(): any;
-    export let toBytes: any;
-    export let toHex: any;
-    export let toString: () => string;
-    export let equals: any;
-    export let isZero: any;
-    export function clone(value: any): any;
-    export function slice(value: any, start: any, end: any): any;
-    export let format: any;
-    export function concat(...hashes: any[]): any;
-    export function merkleRoot(hashes: any): any;
+    export function from(value: string | Uint8Array): HashType;
+    /**
+     * @param {Uint8Array} value
+     * @returns {HashType}
+     */
+    export function fromBytes(value: Uint8Array): HashType;
+    /**
+     * @param {string} value
+     * @returns {HashType}
+     */
+    export function fromHex(value: string): HashType;
+    export { isHash };
+    export { isValidHex };
+    export { assert };
+    /**
+     * @param {Uint8Array} value
+     * @returns {HashType}
+     */
+    export function keccak256(value: Uint8Array): HashType;
+    /**
+     * @param {string} value
+     * @returns {HashType}
+     */
+    export function keccak256String(value: string): HashType;
+    /**
+     * @param {string} value
+     * @returns {HashType}
+     */
+    export function keccak256Hex(value: string): HashType;
+    export function random(): import("./HashType.js").HashType;
+    export { toBytes };
+    export { toHex };
+    export { toString };
+    export { equals };
+    export { isZero };
+    /**
+     * @param {HashType} value
+     * @returns {HashType}
+     */
+    export function clone(value: HashType): HashType;
+    /**
+     * @param {HashType} value
+     * @param {number} [start]
+     * @param {number} [end]
+     * @returns {Uint8Array}
+     */
+    export function slice(value: HashType, start?: number, end?: number): Uint8Array;
+    export { format };
+    /**
+     * @param {...HashType} hashes
+     * @returns {HashType}
+     */
+    export function concat(...hashes: HashType[]): HashType;
+    /**
+     * @param {HashType[]} hashes
+     * @returns {HashType}
+     */
+    export function merkleRoot(hashes: HashType[]): HashType;
     export { _ZERO as ZERO };
-    export let SIZE: any;
+    export { SIZE };
 }
 export * from "./constants.js";
 export type HashType = import("./HashType.js").HashType;
-declare const _ZERO: any;
+export type HashLike = import("./HashType.js").HashLike;
+import { isHash } from "./isHash.js";
+import { isValidHex } from "./isValidHex.js";
+import { assert } from "./assert.js";
+import { toBytes } from "./toBytes.js";
+import { toHex } from "./toHex.js";
+import { toString } from "./toString.js";
+import { equals } from "./equals.js";
+import { isZero } from "./isZero.js";
+import { format } from "./format.js";
+declare const _ZERO: import("./HashType.js").HashType;
+import { SIZE } from "./constants.js";
 //# sourceMappingURL=Hash.d.ts.map

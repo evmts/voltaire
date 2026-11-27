@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * KZG Commitments for EIP-4844
  *
@@ -92,7 +91,10 @@ export const blobToKzgCommitment = BlobToKzgCommitment({
  * @type {(blob: Uint8Array, z: Uint8Array) => { proof: Uint8Array, y: Uint8Array }}
  */
 export const computeKzgProof = ComputeKzgProof({
-	computeKzgProof: kzgComputeProof,
+	computeKzgProof: (blob, z) => {
+		const { proof, y } = kzgComputeProof(blob, z);
+		return [proof, y];
+	},
 });
 
 /**
@@ -127,7 +129,15 @@ export const verifyBlobKzgProofBatch = VerifyBlobKzgProofBatch({
 	verifyBlobKzgProofBatch: (blobs, commitments, proofs) => {
 		// Batch verify by checking each proof
 		for (let i = 0; i < blobs.length; i++) {
-			if (!kzgVerifyBlobProof(blobs[i], commitments[i], proofs[i])) {
+			const blob = blobs[i];
+			const commitment = commitments[i];
+			const proof = proofs[i];
+			if (
+				!blob ||
+				!commitment ||
+				!proof ||
+				!kzgVerifyBlobProof(blob, commitment, proof)
+			) {
 				return false;
 			}
 		}

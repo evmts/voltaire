@@ -103,7 +103,6 @@ const testing = std.testing;
 const Hash = @import("hash.zig");
 const primitives = @import("primitives");
 const hex = primitives.Hex;
-const build_options = @import("build_options");
 
 // Import the local secp256k1 implementation
 const secp256k1 = @import("secp256k1.zig");
@@ -232,24 +231,8 @@ pub const SECP256K1_B: u256 = secp256k1.SECP256K1_B;
 pub const SECP256K1_GX: u256 = secp256k1.SECP256K1_GX;
 pub const SECP256K1_GY: u256 = secp256k1.SECP256K1_GY;
 
-// BLS12-381 FFI bindings
+// BLS12-381 EIP-2537 operations backed directly by C blst (via c_kzg)
 pub const bls12_381 = struct {
-    // FFI function declarations for G1
-    extern fn bls12_381_g1_add(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_g1_mul(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_g1_multiexp(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_g1_output_size() u32;
-
-    // FFI function declarations for G2
-    extern fn bls12_381_g2_add(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_g2_mul(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_g2_multiexp(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_g2_output_size() u32;
-
-    // FFI function declarations for pairing
-    extern fn bls12_381_pairing(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_pairing_output_size() u32;
-
     pub const Error = error{
         InvalidInput,
         InvalidPoint,
@@ -257,110 +240,171 @@ pub const bls12_381 = struct {
         ComputationFailed,
     };
 
-    /// Perform BLS12-381 G1 addition
+    fn decodeG1(comptime blst: type, bytes: *const [128]u8, check_subgroup: bool) Error!blst.blst_p1_affine {
+        var out: blst.blst_p1_affine = undefined;
+        try fpFromSlot(blst, &out.x, bytes[0..64]);
+        try fpFromSlot(blst, &out.y, bytes[64..128]);
+        if (std.mem.allEqual(u8, bytes, 0)) {
+            return std.mem.zeroes(blst.blst_p1_affine);
+        }
+        if (!blst.blst_p1_affine_on_curve(&out)) return Error.InvalidPoint;
+        if (check_subgroup and !blst.blst_p1_affine_in_g1(&out)) return Error.InvalidPoint;
+        return out;
+    }
+
+    fn encodeG1(comptime blst: type, output: *[128]u8, point: *const blst.blst_p1) void {
+        if (blst.blst_p1_is_inf(point)) {
+            @memset(output, 0);
+            return;
+        }
+        var affine: blst.blst_p1_affine = undefined;
+        blst.blst_p1_to_affine(&affine, point);
+        fpToSlot(blst, output[0..64], &affine.x);
+        fpToSlot(blst, output[64..128], &affine.y);
+    }
+
+    fn decodeG2(comptime blst: type, bytes: *const [256]u8, check_subgroup: bool) Error!blst.blst_p2_affine {
+        var out: blst.blst_p2_affine = undefined;
+        try fpFromSlot(blst, &out.x.fp[0], bytes[0..64]);
+        try fpFromSlot(blst, &out.x.fp[1], bytes[64..128]);
+        try fpFromSlot(blst, &out.y.fp[0], bytes[128..192]);
+        try fpFromSlot(blst, &out.y.fp[1], bytes[192..256]);
+        if (std.mem.allEqual(u8, bytes, 0)) {
+            return std.mem.zeroes(blst.blst_p2_affine);
+        }
+        if (!blst.blst_p2_affine_on_curve(&out)) return Error.InvalidPoint;
+        if (check_subgroup and !blst.blst_p2_affine_in_g2(&out)) return Error.InvalidPoint;
+        return out;
+    }
+
+    fn encodeG2(comptime blst: type, output: *[256]u8, point: *const blst.blst_p2) void {
+        if (blst.blst_p2_is_inf(point)) {
+            @memset(output, 0);
+            return;
+        }
+        var affine: blst.blst_p2_affine = undefined;
+        blst.blst_p2_to_affine(&affine, point);
+        fpToSlot(blst, output[0..64], &affine.x.fp[0]);
+        fpToSlot(blst, output[64..128], &affine.x.fp[1]);
+        fpToSlot(blst, output[128..192], &affine.y.fp[0]);
+        fpToSlot(blst, output[192..256], &affine.y.fp[1]);
+    }
+
+    /// Perform BLS12-381 G1 addition (EIP-2537 BLS12_G1ADD; no subgroup check)
     pub fn g1_add(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_g1_add(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
-        }
+        if (input.len != 256 or output.len < 128) return Error.InvalidInput;
+        const blst = @import("c_kzg").blst;
+
+        const a1 = try decodeG1(blst, input[0..128], false);
+        const a2 = try decodeG1(blst, input[128..256], false);
+
+        var p1: blst.blst_p1 = undefined;
+        var p2: blst.blst_p1 = undefined;
+        var sum: blst.blst_p1 = undefined;
+        blst.blst_p1_from_affine(&p1, &a1);
+        blst.blst_p1_from_affine(&p2, &a2);
+        blst.blst_p1_add_or_double(&sum, &p1, &p2);
+        encodeG1(blst, output[0..128], &sum);
     }
 
-    /// Perform BLS12-381 G1 scalar multiplication
+    /// Perform BLS12-381 G1 scalar multiplication (single-pair case of EIP-2537 G1MSM)
     pub fn g1_mul(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_g1_mul(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
-        }
+        if (input.len != 160 or output.len < 128) return Error.InvalidInput;
+        return g1_multiexp(input, output);
     }
 
-    /// Perform BLS12-381 G1 multi-scalar multiplication
+    /// Perform BLS12-381 G1 multi-scalar multiplication (EIP-2537 BLS12_G1MSM)
     pub fn g1_multiexp(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_g1_multiexp(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
+        if (input.len == 0 or input.len % 160 != 0 or output.len < 128) return Error.InvalidInput;
+        const blst = @import("c_kzg").blst;
+
+        var acc = std.mem.zeroes(blst.blst_p1);
+        var offset: usize = 0;
+        while (offset < input.len) : (offset += 160) {
+            const pt_aff = try decodeG1(blst, input[offset..][0..128], true);
+            var scalar: blst.blst_scalar = undefined;
+            const scalar_nonzero = blst.blst_scalar_from_be_bytes(&scalar, input[offset + 128 ..].ptr, 32);
+            if (!scalar_nonzero or blst.blst_p1_affine_is_inf(&pt_aff)) continue;
+
+            var pt: blst.blst_p1 = undefined;
+            var prod: blst.blst_p1 = undefined;
+            var next: blst.blst_p1 = undefined;
+            blst.blst_p1_from_affine(&pt, &pt_aff);
+            blst.blst_p1_mult(&prod, &pt, &scalar.b, 255);
+            blst.blst_p1_add_or_double(&next, &acc, &prod);
+            acc = next;
         }
+        encodeG1(blst, output[0..128], &acc);
     }
 
-    /// Perform BLS12-381 G2 addition
+    /// Perform BLS12-381 G2 addition (EIP-2537 BLS12_G2ADD; no subgroup check)
     pub fn g2Add(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_g2_add(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
-        }
+        if (input.len != 512 or output.len < 256) return Error.InvalidInput;
+        const blst = @import("c_kzg").blst;
+
+        const a1 = try decodeG2(blst, input[0..256], false);
+        const a2 = try decodeG2(blst, input[256..512], false);
+
+        var p1: blst.blst_p2 = undefined;
+        var p2: blst.blst_p2 = undefined;
+        var sum: blst.blst_p2 = undefined;
+        blst.blst_p2_from_affine(&p1, &a1);
+        blst.blst_p2_from_affine(&p2, &a2);
+        blst.blst_p2_add_or_double(&sum, &p1, &p2);
+        encodeG2(blst, output[0..256], &sum);
     }
 
-    /// Perform BLS12-381 G2 scalar multiplication
+    /// Perform BLS12-381 G2 scalar multiplication (single-pair case of EIP-2537 G2MSM)
     pub fn g2Mul(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_g2_mul(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
-        }
+        if (input.len != 288 or output.len < 256) return Error.InvalidInput;
+        return g2Msm(input, output);
     }
 
-    /// Perform BLS12-381 G2 multi-scalar multiplication
+    /// Perform BLS12-381 G2 multi-scalar multiplication (EIP-2537 BLS12_G2MSM)
     pub fn g2Msm(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_g2_multiexp(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
+        if (input.len == 0 or input.len % 288 != 0 or output.len < 256) return Error.InvalidInput;
+        const blst = @import("c_kzg").blst;
+
+        var acc = std.mem.zeroes(blst.blst_p2);
+        var offset: usize = 0;
+        while (offset < input.len) : (offset += 288) {
+            const pt_aff = try decodeG2(blst, input[offset..][0..256], true);
+            var scalar: blst.blst_scalar = undefined;
+            const scalar_nonzero = blst.blst_scalar_from_be_bytes(&scalar, input[offset + 256 ..].ptr, 32);
+            if (!scalar_nonzero or blst.blst_p2_affine_is_inf(&pt_aff)) continue;
+
+            var pt: blst.blst_p2 = undefined;
+            var prod: blst.blst_p2 = undefined;
+            var next: blst.blst_p2 = undefined;
+            blst.blst_p2_from_affine(&pt, &pt_aff);
+            blst.blst_p2_mult(&prod, &pt, &scalar.b, 255);
+            blst.blst_p2_add_or_double(&next, &acc, &prod);
+            acc = next;
         }
+        encodeG2(blst, output[0..256], &acc);
     }
 
-    /// Perform BLS12-381 pairing check
+    /// Perform BLS12-381 pairing check (writes 32-byte EIP-2537 boolean result)
     pub fn pairing(input: []const u8, output: []u8) Error!void {
-        const result = bls12_381_pairing(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
-        switch (result) {
-            0 => return,
-            1 => return Error.InvalidInput,
-            2 => return Error.InvalidPoint,
-            3 => return Error.InvalidScalar,
-            4 => return Error.ComputationFailed,
-            else => return Error.ComputationFailed,
-        }
+        if (output.len < 32) return Error.InvalidInput;
+        const ok = try pairingCheck(input);
+        @memset(output[0..32], 0);
+        if (ok) output[31] = 1;
     }
 
     /// Get the output size for G1 operations
     pub fn g1_output_size() u32 {
-        return bls12_381_g1_output_size();
+        return 128;
     }
 
     /// Get the output size for G2 operations
     pub fn g2_output_size() u32 {
-        return bls12_381_g2_output_size();
+        return 256;
     }
 
     /// Get the output size for pairing operations
     pub fn pairingOutputSize() u32 {
-        return bls12_381_pairing_output_size();
+        return 32;
     }
 
     /// BLS12-381 base field modulus p, 48 bytes big-endian.

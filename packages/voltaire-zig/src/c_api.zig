@@ -440,8 +440,8 @@ export fn secp256k1Sign(
     const msgHash = msgHash_ptr[0..32];
     const privKey = privKey_ptr[0..32];
 
-    const pub_key = crypto.secp256k1.AffinePoint.generator().scalarMul(std.mem.readInt(u256, privKey[0..32], .big));
-    if (pub_key.infinity or !pub_key.isOnCurve()) return 1;
+    const priv = std.mem.readInt(u256, privKey[0..32], .big);
+    if (priv == 0 or priv >= crypto.secp256k1.SECP256K1_N) return 1;
 
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(privKey);
@@ -449,29 +449,32 @@ export fn secp256k1Sign(
     var k_hash: [32]u8 = undefined;
     hasher.final(&k_hash);
 
+    const n = crypto.secp256k1.SECP256K1_N;
     var k = std.mem.readInt(u256, &k_hash, .big);
-    if (k == 0 or k >= crypto.secp256k1.SECP256K1_N) {
-        k = (k % (crypto.secp256k1.SECP256K1_N - 1)) + 1;
+    if (k == 0 or k >= n) {
+        // 2^256 - 1 < 2 * (n - 1), so a single subtraction computes k % (n - 1)
+        const n_minus_1 = n - 1;
+        k = (if (k >= n_minus_1) k - n_minus_1 else k) + 1;
     }
 
     const R = crypto.secp256k1.AffinePoint.generator().scalarMul(k);
     if (R.infinity or !R.isOnCurve()) return 1;
 
-    const r = R.x % crypto.secp256k1.SECP256K1_N;
+    // R.x < SECP256K1_P < 2 * n, so a single subtraction computes R.x % n
+    const r = if (R.x >= n) R.x - n else R.x;
     if (r == 0) return 1;
 
     const e = std.mem.readInt(u256, msgHash[0..32], .big);
-    const priv = std.mem.readInt(u256, privKey[0..32], .big);
 
-    const k_inv = crypto.secp256k1.unauditedInvmod(k, crypto.secp256k1.SECP256K1_N) orelse return 1;
-    const r_priv = crypto.secp256k1.unauditedMulmod(r, priv, crypto.secp256k1.SECP256K1_N);
-    const e_plus_r_priv = crypto.secp256k1.unauditedAddmod(e, r_priv, crypto.secp256k1.SECP256K1_N);
-    var s = crypto.secp256k1.unauditedMulmod(k_inv, e_plus_r_priv, crypto.secp256k1.SECP256K1_N);
+    const k_inv = crypto.secp256k1.unauditedInvmod(k, n) orelse return 1;
+    const r_priv = crypto.secp256k1.unauditedMulmod(r, priv, n);
+    const e_plus_r_priv = crypto.secp256k1.unauditedAddmod(e, r_priv, n);
+    var s = crypto.secp256k1.unauditedMulmod(k_inv, e_plus_r_priv, n);
 
-    const half_n = crypto.secp256k1.SECP256K1_N >> 1;
+    const half_n = n >> 1;
     var s_negated: bool = false;
     if (s > half_n) {
-        s = crypto.secp256k1.SECP256K1_N - s;
+        s = n - s;
         s_negated = true;
     }
 
@@ -543,19 +546,7 @@ export fn secp256k1DerivePublicKey(
     privKey_ptr: [*]const u8,
     pubKey_ptr: [*]u8,
 ) c_int {
-    const privKey = privKey_ptr[0..32];
-    const priv = std.mem.readInt(u256, privKey[0..32], .big);
-
-    if (priv == 0 or priv >= crypto.secp256k1.SECP256K1_N) return 1;
-
-    const pub_key = crypto.secp256k1.AffinePoint.generator().scalarMul(priv);
-
-    if (pub_key.infinity or !pub_key.isOnCurve()) return 1;
-
-    std.mem.writeInt(u256, pubKey_ptr[0..32], pub_key.x, .big);
-    std.mem.writeInt(u256, pubKey_ptr[32..64], pub_key.y, .big);
-
-    return 0;
+    return if (primitives_secp256k1_pubkey_from_private(privKey_ptr[0..32], pubKey_ptr[0..64]) == PRIMITIVES_SUCCESS) 0 else 1;
 }
 
 // ============================================================================
@@ -846,10 +837,16 @@ export fn primitives_signature_serialize(
 export fn primitives_generate_private_key(
     out_private_key: *[32]u8,
 ) c_int {
-    const io = std.Io.Threaded.global_single_threaded.io();
-
-    // Generate random 32 bytes
-    io.randomSecure(out_private_key) catch return PRIMITIVES_ERROR_INVALID_INPUT;
+    // Generate random 32 bytes. On WASI use random_get directly so single-threaded
+    // WASM builds don't drag in the entire std.Io.Threaded vtable (~56 kB).
+    if (builtin.target.os.tag == .wasi) {
+        if (std.os.wasi.random_get(out_private_key, out_private_key.len) != .SUCCESS) {
+            return PRIMITIVES_ERROR_INVALID_INPUT;
+        }
+    } else {
+        const io = std.Io.Threaded.global_single_threaded.io();
+        io.randomSecure(out_private_key) catch return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
 
     // Ensure the key is valid (< secp256k1 curve order)
     const key_value = std.mem.readInt(u256, out_private_key, .big);
@@ -1043,7 +1040,7 @@ export fn primitives_blake2b(
     out_hash: *[64]u8,
 ) c_int {
     const input = data[0..data_len];
-    std.crypto.hash.blake2.Blake2b512.hash(input, out_hash, .{});
+    crypto.Blake2.hashVariable(input, out_hash) catch return PRIMITIVES_ERROR_INVALID_INPUT;
     return PRIMITIVES_SUCCESS;
 }
 
@@ -1193,6 +1190,40 @@ fn parseAbiType(allocator: std.mem.Allocator, type_str: []const u8) !primitives.
 /// - bool: "true" or "false"
 /// - string: "hello world"
 /// - bytes: "0x1234"
+fn parseU256Str(s: []const u8) !u256 {
+    if (s.len == 0) return error.InvalidData;
+    const is_hex = s.len >= 2 and s[0] == '0' and (s[1] == 'x' or s[1] == 'X');
+    const digits = if (is_hex) s[2..] else s;
+    if (digits.len == 0) return error.InvalidData;
+    const base: u256 = if (is_hex) 16 else 10;
+    var acc: u256 = 0;
+    for (digits) |ch| {
+        const d: u8 = switch (ch) {
+            '0'...'9' => ch - '0',
+            'a'...'f' => if (is_hex) ch - 'a' + 10 else return error.InvalidData,
+            'A'...'F' => if (is_hex) ch - 'A' + 10 else return error.InvalidData,
+            else => return error.InvalidData,
+        };
+        acc = std.math.mul(u256, acc, base) catch return error.InvalidData;
+        acc = std.math.add(u256, acc, d) catch return error.InvalidData;
+    }
+    return acc;
+}
+
+fn parseI256Str(s: []const u8) !i256 {
+    if (s.len == 0) return error.InvalidData;
+    const neg = s[0] == '-';
+    const body = if (neg) s[1..] else s;
+    const mag = try parseU256Str(body);
+    const max_pos: u256 = @as(u256, std.math.maxInt(i256));
+    if (neg) {
+        if (mag > max_pos + 1) return error.InvalidData;
+        return @bitCast(0 -% mag);
+    }
+    if (mag > max_pos) return error.InvalidData;
+    return @intCast(mag);
+}
+
 fn parseAbiValue(allocator: std.mem.Allocator, abi_type: primitives.Abi.AbiType, value_str: []const u8) !primitives.Abi.AbiValue {
     switch (abi_type) {
         .address => {
@@ -1205,19 +1236,11 @@ fn parseAbiValue(allocator: std.mem.Allocator, abi_type: primitives.Abi.AbiType,
             return error.InvalidData;
         },
         .uint8, .uint16, .uint32, .uint64, .uint128, .uint256 => {
-            // Parse as hex or decimal
-            const val = if (std.mem.startsWith(u8, value_str, "0x"))
-                std.fmt.parseInt(u256, value_str[2..], 16) catch return error.InvalidData
-            else
-                std.fmt.parseInt(u256, value_str, 10) catch return error.InvalidData;
+            const val = try parseU256Str(value_str);
             return .{ .uint256 = val };
         },
         .int8, .int16, .int32, .int64, .int128, .int256 => {
-            // Parse as hex or decimal (supporting negative for int types)
-            const val = if (std.mem.startsWith(u8, value_str, "0x"))
-                std.fmt.parseInt(i256, value_str[2..], 16) catch return error.InvalidData
-            else
-                std.fmt.parseInt(i256, value_str, 10) catch return error.InvalidData;
+            const val = try parseI256Str(value_str);
             return .{ .int256 = val };
         },
         .string => {
@@ -1544,6 +1567,53 @@ fn parseJsonStringValueArray(
     return true;
 }
 
+fn appendHexPrefixed(result: *std.array_list.AlignedManaged(u8, null), bytes: []const u8) !void {
+    const hex_chars = "0123456789abcdef";
+    try result.appendSlice("0x");
+    try result.ensureUnusedCapacity(bytes.len * 2);
+    for (bytes) |byte| {
+        result.appendAssumeCapacity(hex_chars[byte >> 4]);
+        result.appendAssumeCapacity(hex_chars[byte & 0x0f]);
+    }
+}
+
+fn appendU256Dec(result: *std.array_list.AlignedManaged(u8, null), value: u256) !void {
+    if (value == 0) {
+        try result.append('0');
+        return;
+    }
+    // Divide 4x u64 limbs by 10 to avoid emitting a multi-kB 256-bit software divider in WASM.
+    var limbs = [4]u64{
+        @truncate(value >> 192),
+        @truncate(value >> 128),
+        @truncate(value >> 64),
+        @truncate(value),
+    };
+    var buf: [80]u8 = undefined;
+    var pos: usize = buf.len;
+    while (limbs[0] | limbs[1] | limbs[2] | limbs[3] != 0) {
+        var rem: u128 = 0;
+        for (&limbs) |*limb| {
+            const cur = (rem << 64) | limb.*;
+            limb.* = @intCast(cur / 10);
+            rem = cur % 10;
+        }
+        pos -= 1;
+        buf[pos] = @as(u8, @intCast(rem)) + '0';
+    }
+    try result.appendSlice(buf[pos..]);
+}
+
+fn appendI256Dec(result: *std.array_list.AlignedManaged(u8, null), value: i256) !void {
+    if (value < 0) {
+        try result.append('-');
+        const mag: u256 = 0 -% @as(u256, @bitCast(value));
+        try appendU256Dec(result, mag);
+    } else {
+        try appendU256Dec(result, @as(u256, @intCast(value)));
+    }
+}
+
 /// Helper: Format ABI values to JSON string array
 fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitives.Abi.AbiValue) ![]u8 {
     var result = std.array_list.AlignedManaged(u8, null).init(allocator);
@@ -1556,150 +1626,34 @@ fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitive
         try result.append('"');
 
         switch (value) {
-            .uint8 => |val| {
-                var buf: [16]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
+            inline .uint8, .uint16, .uint32, .uint64, .uint128, .uint256 => |val| {
+                try appendU256Dec(&result, @as(u256, val));
             },
-            .uint16 => |val| {
-                var buf: [16]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .uint32 => |val| {
-                var buf: [16]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .uint64 => |val| {
-                var buf: [24]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .uint128 => |val| {
-                var buf: [48]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .uint256 => |val| {
-                var buf: [80]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .int8 => |val| {
-                var buf: [16]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .int16 => |val| {
-                var buf: [16]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .int32 => |val| {
-                var buf: [16]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .int64 => |val| {
-                var buf: [24]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .int128 => |val| {
-                var buf: [48]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
-            },
-            .int256 => |val| {
-                var buf: [80]u8 = undefined;
-                const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(str);
+            inline .int8, .int16, .int32, .int64, .int128, .int256 => |val| {
+                try appendI256Dec(&result, @as(i256, val));
             },
             .address => |addr| {
                 const hex = addr.toHex();
                 try result.appendSlice(&hex);
             },
             .bool => |b| {
-                const str = if (b) "true" else "false";
-                try result.appendSlice(str);
+                try result.appendSlice(if (b) "true" else "false");
             },
             .string => |s| {
                 try result.appendSlice(s);
             },
             .bytes => |b| {
-                var temp_buf: [2048]u8 = undefined;
-                var temp_fba = std.heap.FixedBufferAllocator.init(&temp_buf);
-                const temp_allocator = temp_fba.allocator();
-
-                const hex = primitives.Hex.bytesToHex(temp_allocator, b) catch return error.OutOfMemory;
-                defer temp_allocator.free(hex);
-                try result.appendSlice(hex);
+                try appendHexPrefixed(&result, b);
             },
-            .bytes1 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
-            },
-            .bytes2 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
-            },
-            .bytes3 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
-            },
-            .bytes4 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
-            },
-            .bytes8 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
-            },
-            .bytes16 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
-            },
-            .bytes32 => |b| {
-                try result.appendSlice("0x");
-                for (b) |byte| {
-                    var hex_byte: [2]u8 = undefined;
-                    _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                    try result.appendSlice(&hex_byte);
-                }
+            inline .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => |b| {
+                try appendHexPrefixed(&result, &b);
             },
             .@"uint256[]" => |arr| {
                 result.items.len -= 1; // Remove opening quote added by outer loop
                 try result.append('[');
                 for (arr, 0..) |val, j| {
                     if (j > 0) try result.append(',');
-                    var buf: [80]u8 = undefined;
-                    const str = std.fmt.bufPrint(&buf, "{d}", .{val}) catch return error.OutOfMemory;
-                    try result.appendSlice(str);
+                    try appendU256Dec(&result, val);
                 }
                 try result.append(']');
                 continue; // Skip the closing quote
@@ -1722,8 +1676,7 @@ fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitive
                 try result.append('[');
                 for (arr, 0..) |b, j| {
                     if (j > 0) try result.append(',');
-                    const str = if (b) "true" else "false";
-                    try result.appendSlice(str);
+                    try result.appendSlice(if (b) "true" else "false");
                 }
                 try result.append(']');
                 continue;
@@ -1734,12 +1687,7 @@ fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitive
                 for (arr, 0..) |bytes, j| {
                     if (j > 0) try result.append(',');
                     try result.append('"');
-                    try result.appendSlice("0x");
-                    for (bytes) |byte| {
-                        var hex_byte: [2]u8 = undefined;
-                        _ = std.fmt.bufPrint(&hex_byte, "{x:0>2}", .{byte}) catch return error.OutOfMemory;
-                        try result.appendSlice(&hex_byte);
-                    }
+                    try appendHexPrefixed(&result, &bytes);
                     try result.append('"');
                 }
                 try result.append(']');
@@ -2958,6 +2906,9 @@ export fn hdwallet_get_address(
     hdkey_handle: usize,
     out_address: *PrimitivesAddress,
 ) c_int {
+    if (is_wasm_target) {
+        return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    }
     if (hdkey_handle == 0) {
         return PRIMITIVES_ERROR_INVALID_INPUT;
     }
@@ -3218,11 +3169,31 @@ pub const KZG_COMMITMENT_SIZE: usize = 48;
 /// KZG Proof size (48 bytes)
 pub const KZG_PROOF_SIZE: usize = 48;
 
-/// Load trusted setup from embedded data
-/// Must be called before any KZG operations
+/// Load trusted setup from embedded data (native targets only).
+/// On wasm32, returns PRIMITIVES_ERROR_KZG_NOT_LOADED because the 788 KB setup
+/// is not embedded; call kzg_load_trusted_setup_bytes() instead.
 /// Returns PRIMITIVES_SUCCESS on success
 export fn kzg_load_trusted_setup() c_int {
+    if (is_wasm_target) {
+        return PRIMITIVES_ERROR_KZG_NOT_LOADED;
+    }
     crypto.c_kzg.loadTrustedSetupFromText(crypto.c_kzg.embedded_trusted_setup, 0) catch {
+        return PRIMITIVES_ERROR_KZG_NOT_LOADED;
+    };
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Load KZG trusted setup from raw trusted_setup.txt bytes at runtime.
+/// Supported on both wasm32 and native targets.
+/// Returns PRIMITIVES_SUCCESS on success, or negative error code on failure.
+export fn kzg_load_trusted_setup_bytes(
+    data: [*]const u8,
+    len: usize,
+) c_int {
+    if (@intFromPtr(data) == 0 or len == 0) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+    crypto.c_kzg.loadTrustedSetupFromText(data[0..len], 0) catch {
         return PRIMITIVES_ERROR_KZG_NOT_LOADED;
     };
     return PRIMITIVES_SUCCESS;
@@ -3335,6 +3306,261 @@ export fn kzg_verify_blob_proof(
         return kzgErrorCode(err, PRIMITIVES_ERROR_KZG_INVALID_PROOF);
     };
     return if (valid) 1 else 0;
+}
+
+// ============================================================================
+// BN254 Elliptic Curve API (EIP-196 / EIP-197, Native Only)
+// ============================================================================
+
+/// BN254 G1 point addition (EIP-196 ECADD).
+/// input: up to 128 bytes (right-padded with zeros if shorter, truncated if longer).
+/// out_buf: output buffer of at least 64 bytes (x || y, big-endian).
+/// Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+export fn primitives_bn254_ecadd(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (out_len < 64) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (input_len > 0 and @intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+
+    var padded = @as([128]u8, @splat(0));
+    const copy_len = @min(input_len, 128);
+    if (copy_len > 0) @memcpy(padded[0..copy_len], input[0..copy_len]);
+
+    crypto.bn254.bn254Add(&padded, out_buf[0..64]) catch return PRIMITIVES_ERROR_INVALID_INPUT;
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BN254 G1 scalar multiplication (EIP-196 ECMUL).
+/// input: up to 96 bytes (x || y || scalar, right-padded with zeros if shorter).
+/// out_buf: output buffer of at least 64 bytes (x || y, big-endian).
+/// Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+export fn primitives_bn254_ecmul(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (out_len < 64) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (input_len > 0 and @intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+
+    var padded = @as([96]u8, @splat(0));
+    const copy_len = @min(input_len, 96);
+    if (copy_len > 0) @memcpy(padded[0..copy_len], input[0..copy_len]);
+
+    crypto.bn254.bn254Mul(&padded, out_buf[0..64]) catch return PRIMITIVES_ERROR_INVALID_INPUT;
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BN254 pairing check (EIP-197 ECPAIRING).
+/// input: multiple of 192 bytes (G1 || G2 pairs). Empty input yields true.
+/// out_buf: output buffer of at least 32 bytes (0x00..01 for true, 0x00..00 for false).
+/// Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+export fn primitives_bn254_ecpairing(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (out_len < 32) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (input_len % 192 != 0) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (input_len > 0 and @intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+
+    const slice = if (input_len == 0) &[_]u8{} else input[0..input_len];
+    const ok = crypto.bn254.bn254Pairing(slice) catch return PRIMITIVES_ERROR_INVALID_INPUT;
+    @memset(out_buf[0..32], 0);
+    if (ok) out_buf[31] = 1;
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// Modular Exponentiation API (EIP-198, Native Only)
+// ============================================================================
+
+/// Big-integer modular exponentiation: base^exp mod modulus (big-endian bytes).
+/// out_buf must be at least mod_len bytes. Returns PRIMITIVES_ERROR_INVALID_INPUT if modulus is zero.
+/// Returns PRIMITIVES_SUCCESS on success, PRIMITIVES_ERROR_UNSUPPORTED_TYPE on WASM.
+export fn primitives_modexp(
+    base: [*]const u8,
+    base_len: usize,
+    exp: [*]const u8,
+    exp_len: usize,
+    modulus: [*]const u8,
+    mod_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (mod_len == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    if (out_len < mod_len) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (base_len > 0 and @intFromPtr(base) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    if (exp_len > 0 and @intFromPtr(exp) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    if (@intFromPtr(modulus) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+
+    const base_slice = if (base_len == 0) &[_]u8{} else base[0..base_len];
+    const exp_slice = if (exp_len == 0) &[_]u8{} else exp[0..exp_len];
+    const mod_slice = modulus[0..mod_len];
+
+    const result = crypto.ModExp.modexp(std.heap.c_allocator, base_slice, exp_slice, mod_slice) catch |err| {
+        return switch (err) {
+            error.OutOfMemory, error.AllocationFailed => PRIMITIVES_ERROR_OUT_OF_MEMORY,
+            else => PRIMITIVES_ERROR_INVALID_INPUT,
+        };
+    };
+    defer std.heap.c_allocator.free(result);
+    @memcpy(out_buf[0..result.len], result);
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// BLS12-381 Elliptic Curve API (EIP-2537 via blst, Native Only)
+// ============================================================================
+
+fn blsErrorToCode(err: crypto.Crypto.bls12_381.Error) c_int {
+    return switch (err) {
+        error.InvalidInput => PRIMITIVES_ERROR_INVALID_LENGTH,
+        else => PRIMITIVES_ERROR_INVALID_INPUT,
+    };
+}
+
+/// BLS12-381 G1 point addition (EIP-2537 BLS12_G1ADD).
+/// input: 256 bytes (two 128-byte G1 points). out_buf: >= 128 bytes.
+export fn primitives_bls12_381_g1_add(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len != 256 or out_len < 128) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.g1Add(input[0..input_len], out_buf[0..128]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 G1 scalar multiplication (single-pair EIP-2537 G1MSM).
+/// input: 160 bytes (128-byte G1 point || 32-byte scalar). out_buf: >= 128 bytes.
+export fn primitives_bls12_381_g1_mul(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len != 160 or out_len < 128) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.g1Mul(input[0..input_len], out_buf[0..128]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 G1 multi-scalar multiplication (EIP-2537 BLS12_G1MSM).
+/// input: 160 * k bytes (k >= 1). out_buf: >= 128 bytes.
+export fn primitives_bls12_381_g1_msm(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len == 0 or input_len % 160 != 0 or out_len < 128) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.g1Msm(input[0..input_len], out_buf[0..128]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 G2 point addition (EIP-2537 BLS12_G2ADD).
+/// input: 512 bytes (two 256-byte G2 points). out_buf: >= 256 bytes.
+export fn primitives_bls12_381_g2_add(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len != 512 or out_len < 256) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.g2Add(input[0..input_len], out_buf[0..256]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 G2 scalar multiplication (single-pair EIP-2537 G2MSM).
+/// input: 288 bytes (256-byte G2 point || 32-byte scalar). out_buf: >= 256 bytes.
+export fn primitives_bls12_381_g2_mul(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len != 288 or out_len < 256) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.g2Mul(input[0..input_len], out_buf[0..256]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 G2 multi-scalar multiplication (EIP-2537 BLS12_G2MSM).
+/// input: 288 * k bytes (k >= 1). out_buf: >= 256 bytes.
+export fn primitives_bls12_381_g2_msm(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len == 0 or input_len % 288 != 0 or out_len < 256) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.g2Msm(input[0..input_len], out_buf[0..256]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 pairing check (EIP-2537 BLS12_PAIRING_CHECK).
+/// input: 384 * k bytes (k >= 1). out_buf: >= 32 bytes (0x00..01 for true, 0x00..00 for false).
+export fn primitives_bls12_381_pairing(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len == 0 or input_len % 384 != 0 or out_len < 32) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.pairing(input[0..input_len], out_buf[0..32]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 map Fp field element to G1 point (EIP-2537 BLS12_MAP_FP_TO_G1).
+/// input: 64 bytes. out_buf: >= 128 bytes.
+export fn primitives_bls12_381_map_fp_to_g1(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len != 64 or out_len < 128) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.mapFpToG1(input[0..input_len], out_buf[0..128]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// BLS12-381 map Fp2 field element to G2 point (EIP-2537 BLS12_MAP_FP2_TO_G2).
+/// input: 128 bytes. out_buf: >= 256 bytes.
+export fn primitives_bls12_381_map_fp2_to_g2(
+    input: [*]const u8,
+    input_len: usize,
+    out_buf: [*]u8,
+    out_len: usize,
+) c_int {
+    if (is_wasm_target) return PRIMITIVES_ERROR_UNSUPPORTED_TYPE;
+    if (input_len != 128 or out_len < 256) return PRIMITIVES_ERROR_INVALID_LENGTH;
+    if (@intFromPtr(input) == 0) return PRIMITIVES_ERROR_INVALID_INPUT;
+    crypto.Crypto.bls12_381.mapFp2ToG2(input[0..input_len], out_buf[0..256]) catch |err| return blsErrorToCode(err);
+    return PRIMITIVES_SUCCESS;
 }
 
 // ============================================================================
@@ -3458,6 +3684,71 @@ test "KZG C API reports a missing trusted setup as KZG_NOT_LOADED" {
     // A malformed proof is still an invalid proof, not "not loaded"
     var bad = @as([48]u8, @splat(0xff));
     try std.testing.expectEqual(PRIMITIVES_ERROR_KZG_INVALID_PROOF, kzg_verify_proof(&infinity, &zero32, &zero32, &bad));
+}
+
+test "kzg_load_trusted_setup_bytes loads setup dynamically" {
+    crypto.c_kzg.freeTrustedSetup() catch {};
+    const empty = [_]u8{};
+    try std.testing.expectEqual(PRIMITIVES_ERROR_INVALID_INPUT, kzg_load_trusted_setup_bytes(&empty, 0));
+    const setup_bytes = crypto.c_kzg.embedded_trusted_setup;
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, kzg_load_trusted_setup_bytes(setup_bytes.ptr, setup_bytes.len));
+    defer _ = kzg_free_trusted_setup();
+    const zero32 = @as([32]u8, @splat(0));
+    var infinity = @as([48]u8, @splat(0));
+    infinity[0] = 0xc0;
+    try std.testing.expectEqual(@as(c_int, 1), kzg_verify_proof(&infinity, &zero32, &zero32, &infinity));
+}
+
+test "native BN254, ModExp, and BLS12-381 C API exports" {
+    if (is_wasm_target) return error.SkipZigTest;
+
+    // BN254 ECADD: (1, 2) + (1, 2) = 2*G1
+    var add_in = @as([128]u8, @splat(0));
+    add_in[31] = 1;
+    add_in[63] = 2;
+    add_in[95] = 1;
+    add_in[127] = 2;
+    var add_out: [64]u8 = undefined;
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_bn254_ecadd(&add_in, add_in.len, &add_out, add_out.len));
+
+    // BN254 ECMUL: (1, 2) * 2 == ECADD((1, 2), (1, 2))
+    var mul_in = @as([96]u8, @splat(0));
+    mul_in[31] = 1;
+    mul_in[63] = 2;
+    mul_in[95] = 2;
+    var mul_out: [64]u8 = undefined;
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_bn254_ecmul(&mul_in, mul_in.len, &mul_out, mul_out.len));
+    try std.testing.expectEqualSlices(u8, &add_out, &mul_out);
+
+    // BN254 ECPAIRING: empty input -> 1
+    var pair_out: [32]u8 = undefined;
+    const empty = [_]u8{};
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_bn254_ecpairing(&empty, 0, &pair_out, pair_out.len));
+    try std.testing.expectEqual(@as(u8, 1), pair_out[31]);
+
+    // ModExp: 2^10 mod 1000 = 24
+    const base = [_]u8{2};
+    const exp = [_]u8{10};
+    const mod_bytes = [_]u8{ 0x03, 0xe8 };
+    var modexp_out: [2]u8 = undefined;
+    try std.testing.expectEqual(
+        PRIMITIVES_SUCCESS,
+        primitives_modexp(&base, base.len, &exp, exp.len, &mod_bytes, mod_bytes.len, &modexp_out, modexp_out.len),
+    );
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x00, 0x18 }, &modexp_out);
+
+    // BLS12-381 G1ADD(O, O) = O, PAIRING(O, O) = 1, MAP_FP_TO_G1(0) != O
+    const zeros512 = @as([512]u8, @splat(0));
+    var g1_out: [128]u8 = undefined;
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_bls12_381_g1_add(&zeros512, 256, &g1_out, g1_out.len));
+    try std.testing.expect(std.mem.allEqual(u8, &g1_out, 0));
+
+    var bls_pair_out: [32]u8 = undefined;
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_bls12_381_pairing(&zeros512, 384, &bls_pair_out, bls_pair_out.len));
+    try std.testing.expectEqual(@as(u8, 1), bls_pair_out[31]);
+
+    try std.testing.expectEqual(PRIMITIVES_SUCCESS, primitives_bls12_381_map_fp_to_g1(&zeros512, 64, &g1_out, g1_out.len));
+    try std.testing.expect(!std.mem.allEqual(u8, &g1_out, 0));
 }
 
 // WASM reactor pattern - main() is required for executable builds but not called
