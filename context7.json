@@ -1,0 +1,27 @@
+{
+	"$schema": "https://context7.com/schema/context7.json",
+	"projectTitle": "Voltaire",
+	"description": "High-performance Ethereum primitives, cryptography, and EVM execution library for TypeScript (@tevm/voltaire) and Zig (@tevm/zig) with WASM, Native FFI, and C99 ABI support.",
+	"folders": ["packages/voltaire-ts/docs", "docs"],
+	"excludeFolders": [
+		"node_modules",
+		"dist",
+		"zig-out",
+		".zig-cache",
+		".git",
+		".jj",
+		".smithers",
+		"target",
+		"packages/voltaire-ts/docs/generated-api",
+		"packages/voltaire-ts/docs/ghosts",
+		"packages/voltaire-ts/docs/public",
+		"packages/voltaire-ts/docs/swift"
+	],
+	"rules": [
+		"Use `@tevm/voltaire` for TypeScript/JavaScript imports (e.g., `import { Address } from '@tevm/voltaire/Address'` or `@tevm/voltaire`) and `@tevm/zig` for Zig.",
+		"Prefer primary constructor functions like `Address(...)`, `Hash(...)`, `Hex(...)`, and `Bytes32(...)` over `.from(...)` aliases.",
+		"Voltaire primitives are branded `Uint8Array` and `bigint` types validated at construction time with tree-shakeable namespace functions.",
+		"Use `Hardfork.DEFAULT` (`OSAKA`) and explicit hardfork parameters when working with EIP-7951 (P256VERIFY), EIP-7918/EIP-7892 blob schedules, or EIP-7934 RLP block limits.",
+		"For non-JS/Zig languages (C, Rust, Go, Python, Swift), reference the C99 ABI recipes in `docs/C_FFI_RECIPES.md`."
+	]
+}
