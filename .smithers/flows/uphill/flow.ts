@@ -13,7 +13,7 @@ const uphillAudit = CiJob.make("uphill-audit", {
   steps: [
     {
       name: "install-uphill",
-      run: "command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh"
+      run: "command -v uphill >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/wevm/uphill/main/install.sh | sh"
     },
     {
       name: "uphill-check-and-score",

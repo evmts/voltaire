@@ -21,7 +21,7 @@ const releaseRehearsal = CiJob.make("release-rehearsal", {
     },
     {
       name: "strict-lighthouse-audit",
-      run: "command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh; PATH=\"$HOME/.uphill/bin:$HOME/.bun/bin:$PATH\" node scripts/audit-report.mjs --upload-artifacts --strict"
+      run: "command -v uphill >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/wevm/uphill/main/install.sh | sh; PATH=\"$HOME/.uphill/bin:$HOME/.bun/bin:$PATH\" node scripts/audit-report.mjs --upload-artifacts --strict"
     }
   ]
 })

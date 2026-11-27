@@ -23,7 +23,7 @@ jobs:
       - uses: wevm/uphill@main
       - name: Generate Voltaire Lighthouse Backpressure Report
         run: |
-          command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh
+          command -v uphill >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/wevm/uphill/main/install.sh | sh
           PATH="$HOME/.uphill/bin:$HOME/.bun/bin:$PATH" node scripts/audit-report.mjs --strict
       - name: Upload Lighthouse Audit Report
         if: always()

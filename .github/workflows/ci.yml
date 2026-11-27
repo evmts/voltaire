@@ -152,7 +152,7 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Install Uphill
         run: |
-          command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh
+          command -v uphill >/dev/null 2>&1 || curl -fsSL https://raw.githubusercontent.com/wevm/uphill/main/install.sh | sh
           echo "$HOME/.uphill/bin" >> "$GITHUB_PATH"
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
       - name: Verify Smithers factory, home, wiki, mythical history, audit, and trust tests

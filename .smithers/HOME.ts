@@ -248,8 +248,8 @@ export const home = {
           title: "Public Coding Factory",
           cards: [
             {
-              label: "Knowledge Base",
-              title: "Engineering Wiki and Mythical History",
+              label: "Wiki & Mythical",
+              title: "Engineering Wiki",
               text: "Obsidian-compatible architecture wiki and clean from-scratch epic history verified on every change.",
               url: "https://smithers.sh/evmts/voltaire/-/wiki"
             },
