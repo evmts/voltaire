@@ -27,7 +27,7 @@ Each tarball bundles:
 ### Download, Verify, and Configure `pkg-config`
 
 ```bash
-VERSION="0.6.0"
+VERSION="0.6.1"
 PLATFORM="darwin-arm64" # or darwin-x64, linux-x64, linux-arm64, win32-x64
 BASE_URL="https://github.com/evmts/voltaire/releases/download/@tevm/voltaire@${VERSION}"
 TARBALL="voltaire-c-abi-${VERSION}-${PLATFORM}.tar.gz"

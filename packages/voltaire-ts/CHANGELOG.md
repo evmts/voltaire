@@ -1,5 +1,12 @@
 # @tevm/voltaire
 
+## 0.6.1
+
+### Patch Changes
+
+- Wire prebuilt native platform packages (`@tevm/voltaire-{darwin-arm64,darwin-x64,linux-arm64,linux-x64,win32-x64}@0.6.1`) into `optionalDependencies` on npm publication so `npm install @tevm/voltaire` installs prebuilt native Zig shared libraries automatically without racing npm's async registry propagation queue.
+- Publish all `@tevm/voltaire` and `@tevm/voltaire-<platform>` packages via npm OIDC Trusted Publishing and automatically attach verified C99 ABI release tarballs + `SHA256SUMS.txt` to GitHub Releases.
+
 ## 0.6.0
 
 ### Minor Changes
