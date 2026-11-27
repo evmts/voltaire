@@ -17,7 +17,8 @@
  * published), `name`, `version` and `published_packages` (JSON array).
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, readFileSync } from "node:fs";
+import { appendFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { findPublishablePackages, main as verify } from "./verify-packaging.mjs";
@@ -111,7 +112,7 @@ const packages = findPublishablePackages(rootDir).map((relDir) => {
 		...manifest.peerDependencies,
 		...manifest.optionalDependencies,
 	});
-	return { name: manifest.name, version: manifest.version, dependencies };
+	return { name: manifest.name, version: manifest.version, dir: path.join(rootDir, relDir), dependencies };
 });
 const names = new Set(packages.map((p) => p.name));
 // A package publishes after the workspace packages it depends on.
@@ -122,8 +123,20 @@ packages.sort(
 		a.name.localeCompare(b.name),
 );
 
+const npmAuthToken = (process.env.NODE_AUTH_TOKEN || process.env.NPM_TOKEN || "").trim();
+const publishEnv = { ...process.env };
+delete publishEnv.NODE_AUTH_TOKEN;
+delete publishEnv.NPM_TOKEN;
+if (npmAuthToken) {
+	publishEnv["npm_config_//registry.npmjs.org/:_authToken"] = npmAuthToken;
+} else {
+	// Pure npm OIDC Trusted Publishing: ensure no stale or blank _authToken in
+	// any user .npmrc overrides GitHub Actions OIDC token exchange.
+	publishEnv.NPM_CONFIG_USERCONFIG = process.platform === "win32" ? "NUL" : "/dev/null";
+}
+
 const published = [];
-for (const { name, version } of packages) {
+for (const { name, version, dir } of packages) {
 	if (publishedVersions(name).includes(version)) {
 		say(`${name}@${version} is already published; skipping.`);
 		continue;
@@ -132,21 +145,32 @@ for (const { name, version } of packages) {
 		say(`${name}@${version} would be published.`);
 		continue;
 	}
-	execFileSync(
-		"pnpm",
-		[
-			"--filter",
-			name,
-			"publish",
-			"--access",
-			"public",
-			"--provenance",
-			"--no-git-checks",
-			// Verified artifacts ship as built; hooks would rebuild them.
-			"--ignore-scripts",
-		],
-		{ cwd: rootDir, stdio: "inherit" },
-	);
+	const packDir = mkdtempSync(path.join(os.tmpdir(), "voltaire-publish-"));
+	try {
+		// Pack with --ignore-scripts so the exact verified artifacts ship unchanged,
+		// then publish via npm CLI (>= 11.5.1) for full OIDC Trusted Publishing support.
+		const packJson = execFileSync(
+			"npm",
+			["pack", "--json", "--ignore-scripts", "--pack-destination", packDir],
+			{ cwd: dir, encoding: "utf8" },
+		);
+		const [{ filename }] = JSON.parse(packJson);
+		const tarball = path.join(packDir, filename);
+		execFileSync(
+			"npm",
+			[
+				"publish",
+				tarball,
+				"--registry=https://registry.npmjs.org",
+				"--access",
+				"public",
+				"--provenance",
+			],
+			{ cwd: rootDir, stdio: "inherit", env: publishEnv },
+		);
+	} finally {
+		rmSync(packDir, { recursive: true, force: true });
+	}
 	published.push({ name, version });
 	// changesets/action uses this line to identify packages to tag.
 	say(`🦋  New tag: ${name}@${version}`);
