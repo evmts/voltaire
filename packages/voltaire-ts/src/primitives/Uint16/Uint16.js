@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { bitLength } from "./bitLength.js";
 import { bitwiseAnd } from "./bitwiseAnd.js";
 import { bitwiseNot } from "./bitwiseNot.js";
@@ -58,7 +57,7 @@ import { toString } from "./toString.js";
  * ```
  */
 export function Uint16(value) {
-	return from(value);
+	return typeof value === "bigint" ? fromBigint(value) : from(value);
 }
 
 // Static constructors

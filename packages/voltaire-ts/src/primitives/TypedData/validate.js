@@ -1,61 +1,10 @@
 import { InvalidTypedDataError } from "./errors.js";
 
 /**
- * Validate EIP-712 typed data structure
- *
- * @param {import('./TypedDataType.js').TypedDataType} typedData - TypedData
- * @throws {InvalidTypedDataError} If validation fails
- * @example
- * ```javascript
- * TypedData.validate(typedData); // throws if invalid
- * ```
+ * Validate every type entry and field definition
+ * @param {import('./TypedDataType.js').TypedDataType} typedData
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: typed data validation requires many checks
-export function validate(typedData) {
-	// Validate types object
-	if (!typedData.types || typeof typedData.types !== "object") {
-		throw new InvalidTypedDataError("types must be an object", {
-			value: typedData,
-		});
-	}
-
-	// Validate EIP712Domain exists
-	if (!typedData.types.EIP712Domain) {
-		throw new InvalidTypedDataError("types must include EIP712Domain", {
-			value: typedData,
-		});
-	}
-
-	// Validate primaryType
-	if (!typedData.primaryType || typeof typedData.primaryType !== "string") {
-		throw new InvalidTypedDataError("primaryType must be a string", {
-			value: typedData,
-		});
-	}
-
-	// Validate primaryType exists in types
-	if (!typedData.types[typedData.primaryType]) {
-		throw new InvalidTypedDataError(
-			`primaryType '${typedData.primaryType}' not found in types`,
-			{ value: typedData },
-		);
-	}
-
-	// Validate domain
-	if (!typedData.domain || typeof typedData.domain !== "object") {
-		throw new InvalidTypedDataError("domain must be an object", {
-			value: typedData,
-		});
-	}
-
-	// Validate message exists
-	if (typedData.message === undefined) {
-		throw new InvalidTypedDataError("message is required", {
-			value: typedData,
-		});
-	}
-
-	// Validate all type definitions
+function validateTypeDefinitions(typedData) {
 	for (const [typeName, fields] of Object.entries(typedData.types)) {
 		if (!Array.isArray(fields)) {
 			throw new InvalidTypedDataError(
@@ -63,7 +12,6 @@ export function validate(typedData) {
 				{ value: typedData },
 			);
 		}
-
 		for (const field of fields) {
 			if (!field.name || typeof field.name !== "string") {
 				throw new InvalidTypedDataError(
@@ -79,8 +27,51 @@ export function validate(typedData) {
 			}
 		}
 	}
+}
 
-	// Validate type dependencies exist
+/**
+ * Validate EIP-712 typed data structure
+ *
+ * @param {import('./TypedDataType.js').TypedDataType} typedData - TypedData
+ * @throws {InvalidTypedDataError} If validation fails
+ * @example
+ * ```javascript
+ * TypedData.validate(typedData); // throws if invalid
+ * ```
+ */
+export function validate(typedData) {
+	if (!typedData.types || typeof typedData.types !== "object") {
+		throw new InvalidTypedDataError("types must be an object", {
+			value: typedData,
+		});
+	}
+	if (!typedData.types.EIP712Domain) {
+		throw new InvalidTypedDataError("types must include EIP712Domain", {
+			value: typedData,
+		});
+	}
+	if (!typedData.primaryType || typeof typedData.primaryType !== "string") {
+		throw new InvalidTypedDataError("primaryType must be a string", {
+			value: typedData,
+		});
+	}
+	if (!typedData.types[typedData.primaryType]) {
+		throw new InvalidTypedDataError(
+			`primaryType '${typedData.primaryType}' not found in types`,
+			{ value: typedData },
+		);
+	}
+	if (!typedData.domain || typeof typedData.domain !== "object") {
+		throw new InvalidTypedDataError("domain must be an object", {
+			value: typedData,
+		});
+	}
+	if (typedData.message === undefined) {
+		throw new InvalidTypedDataError("message is required", {
+			value: typedData,
+		});
+	}
+	validateTypeDefinitions(typedData);
 	validateTypeDependencies(typedData.primaryType, typedData.types, new Set());
 }
 

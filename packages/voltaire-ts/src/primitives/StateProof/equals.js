@@ -1,9 +1,7 @@
-// @ts-nocheck
 import { equals as addressEquals } from "../Address/equals.js";
 import { Hash } from "../Hash/index.js";
 import * as StateRoot from "../StateRoot/index.js";
 import * as StorageProof from "../StorageProof/index.js";
-import { equals as uintEquals } from "../Uint/equals.js";
 
 /**
  * @typedef {import('./StateProofType.js').StateProofType} StateProofType
@@ -30,7 +28,7 @@ export function equals(a, b) {
 	}
 
 	// Check balance
-	if (!uintEquals(a.balance, b.balance)) {
+	if (a.balance !== b.balance) {
 		return false;
 	}
 
@@ -40,7 +38,7 @@ export function equals(a, b) {
 	}
 
 	// Check nonce
-	if (!uintEquals(a.nonce, b.nonce)) {
+	if (a.nonce !== b.nonce) {
 		return false;
 	}
 
@@ -59,7 +57,7 @@ export function equals(a, b) {
 		const proofA = a.accountProof[i];
 		const proofB = b.accountProof[i];
 
-		if (proofA.length !== proofB.length) {
+		if (!proofA || !proofB || proofA.length !== proofB.length) {
 			return false;
 		}
 
@@ -77,7 +75,9 @@ export function equals(a, b) {
 
 	// Check each storageProof
 	for (let i = 0; i < a.storageProof.length; i++) {
-		if (!StorageProof.equals(a.storageProof[i], b.storageProof[i])) {
+		const spA = a.storageProof[i];
+		const spB = b.storageProof[i];
+		if (!spA || !spB || !StorageProof.equals(spA, spB)) {
 			return false;
 		}
 	}

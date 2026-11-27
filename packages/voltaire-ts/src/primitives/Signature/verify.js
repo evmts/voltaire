@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { verify as p256Verify } from "../../crypto/P256/verify.js";
 import { verify as secp256k1Verify } from "../../crypto/Secp256k1/verify.js";
 import { Hash } from "../Hash/index.js";
@@ -28,7 +26,13 @@ export function verify(signature, messageHash, publicKey) {
 		// Extract r and s from the signature bytes (first 32 bytes = r, next 32 = s)
 		const r = Hash.from(signature.slice(0, 32));
 		const s = Hash.from(signature.slice(32, 64));
-		return secp256k1Verify({ r, s, v: v ?? 27 }, messageHash, publicKey);
+		return secp256k1Verify(
+			{ r, s, v: v ?? 27 },
+			Hash.from(messageHash),
+			/** @type {import('../../crypto/Secp256k1/Secp256k1PublicKeyType.js').Secp256k1PublicKeyType} */ (
+				publicKey
+			),
+		);
 	}
 
 	if (algorithm === "p256") {

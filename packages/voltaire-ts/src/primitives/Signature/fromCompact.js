@@ -10,6 +10,31 @@ import { fromP256 } from "./fromP256.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
+ * Decode 64-byte EIP-2098 compact ECDSA signature
+ * @param {Uint8Array} bytes
+ * @param {string} algorithm
+ * @param {number | undefined} explicitV
+ */
+function decodeCompactEcdsa(bytes, algorithm, explicitV) {
+	const r = /** @type {import('../Hash/HashType.js').HashType} */ (
+		bytes.slice(0, COMPONENT_SIZE)
+	);
+	const sBytes = bytes.slice(COMPONENT_SIZE, ECDSA_SIZE);
+	const yParity =
+		explicitV !== undefined
+			? explicitV
+			: /** @type {number} */ (/** @type {number} */ (sBytes[0]) & 0x80) >> 7;
+	const s = /** @type {import('../Hash/HashType.js').HashType} */ (
+		new Uint8Array(sBytes)
+	);
+	s[0] = /** @type {number} */ (s[0]) & 0x7f;
+
+	if (algorithm === "secp256k1") return fromSecp256k1(r, s, yParity);
+	if (algorithm === "p256") return fromP256(r, s);
+	return undefined;
+}
+
+/**
  * Create Signature from compact format (EIP-2098: supports yParity in bit 255 of s)
  *
  * @param {Uint8Array} bytes - Compact signature bytes (64 or 65 bytes)
@@ -51,32 +76,9 @@ export function fromCompact(bytes, algorithmOrV) {
 		return fromEd25519(bytes);
 	}
 
-	// ECDSA algorithms (secp256k1, p256)
 	if (bytes.length === ECDSA_SIZE) {
-		const r = /** @type {import('../Hash/HashType.js').HashType} */ (
-			bytes.slice(0, COMPONENT_SIZE)
-		);
-		const sBytes = bytes.slice(COMPONENT_SIZE, ECDSA_SIZE);
-
-		// EIP-2098: Extract yParity from bit 255 of s
-		const yParity =
-			explicitV !== undefined
-				? explicitV
-				: /** @type {number} */ (/** @type {number} */ (sBytes[0]) & 0x80) >> 7;
-
-		// Clear bit 255 from s
-		const s = /** @type {import('../Hash/HashType.js').HashType} */ (
-			new Uint8Array(sBytes)
-		);
-		/** @type {number} */ (s[0]);
-		s[0] = /** @type {number} */ (s[0]) & 0x7f;
-
-		if (algorithm === "secp256k1") {
-			return fromSecp256k1(r, s, yParity);
-		}
-		if (algorithm === "p256") {
-			return fromP256(r, s);
-		}
+		const decoded = decodeCompactEcdsa(bytes, algorithm, explicitV);
+		if (decoded) return decoded;
 	}
 
 	if (bytes.length === ECDSA_WITH_V_SIZE && algorithm === "secp256k1") {

@@ -91,21 +91,15 @@ ts-quality:
     voltaire-ts/primitives/Bundle: { baseline: fail }
     voltaire-ts/primitives/Bytecode: { baseline: fail }
     voltaire-ts/primitives/Bytes: { baseline: fail }
-    voltaire-ts/primitives/Chain: { baseline: fail }
     voltaire-ts/primitives/FeeMarket: { baseline: fail }
     voltaire-ts/primitives/Hash: { baseline: fail }
     voltaire-ts/primitives/Opcode: { baseline: fail }
     voltaire-ts/primitives/Permit: { baseline: fail }
     voltaire-ts/primitives/Proof: { baseline: fail }
     voltaire-ts/primitives/RelayData: { baseline: fail }
-    voltaire-ts/primitives/Signature: { baseline: fail }
-    voltaire-ts/primitives/StateProof: { baseline: fail }
     voltaire-ts/primitives/StealthAddress: { baseline: fail }
-    voltaire-ts/primitives/StorageProof: { baseline: fail }
     voltaire-ts/primitives/Transaction: { baseline: fail }
     voltaire-ts/primitives/Uint: { baseline: fail }
-    voltaire-ts/primitives/Uint16: { baseline: fail }
-    voltaire-ts/primitives/Uint8: { baseline: fail }
     voltaire-ts/provider: { baseline: fail }
   function-length:
     "*": { baseline: pass }
@@ -123,7 +117,6 @@ ts-quality:
     voltaire-ts/primitives/Abi: { baseline: fail }
     voltaire-ts/primitives/AccessList: { baseline: fail }
     voltaire-ts/primitives/Address: { baseline: fail }
-    voltaire-ts/primitives/Blob: { baseline: fail }
     voltaire-ts/primitives/BlockAccessList: { baseline: fail }
     voltaire-ts/primitives/BloomFilter: { baseline: fail }
     voltaire-ts/primitives/BuilderBid: { baseline: fail }
@@ -148,13 +141,11 @@ ts-quality:
     voltaire-ts/primitives/Rlp: { baseline: fail }
     voltaire-ts/primitives/Signature: { baseline: fail }
     voltaire-ts/primitives/Siwe: { baseline: fail }
-    voltaire-ts/primitives/SourceMap: { baseline: fail }
     voltaire-ts/primitives/StateProof: { baseline: fail }
     voltaire-ts/primitives/StealthAddress: { baseline: fail }
     voltaire-ts/primitives/Transaction: { baseline: fail }
     voltaire-ts/primitives/TransactionUrl: { baseline: fail }
     voltaire-ts/primitives/Trie: { baseline: fail }
-    voltaire-ts/primitives/TypedData: { baseline: fail }
     voltaire-ts/transaction: { baseline: fail }
     voltaire-ts/wasm-loader: { baseline: fail }
 

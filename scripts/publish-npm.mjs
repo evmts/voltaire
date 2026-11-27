@@ -124,15 +124,77 @@ packages.sort(
 );
 
 const npmAuthToken = (process.env.NODE_AUTH_TOKEN || process.env.NPM_TOKEN || "").trim();
-const publishEnv = { ...process.env };
-delete publishEnv.NODE_AUTH_TOKEN;
-delete publishEnv.NPM_TOKEN;
-if (npmAuthToken) {
-	publishEnv["npm_config_//registry.npmjs.org/:_authToken"] = npmAuthToken;
-} else {
-	// Pure npm OIDC Trusted Publishing: ensure no stale or blank _authToken in
-	// any user .npmrc overrides GitHub Actions OIDC token exchange.
-	publishEnv.NPM_CONFIG_USERCONFIG = process.platform === "win32" ? "NUL" : "/dev/null";
+const hasOidc = Boolean(
+	process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
+		process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN,
+);
+
+/**
+ * Build an isolated npm publish environment.
+ * @param {string} [token]
+ */
+function buildPublishEnv(token) {
+	const env = { ...process.env };
+	delete env.NODE_AUTH_TOKEN;
+	delete env.NPM_TOKEN;
+	delete env["npm_config_//registry.npmjs.org/:_authToken"];
+	// Prevent any stale or blank _authToken in user .npmrc from shadowing
+	// GitHub Actions OIDC Trusted Publishing or explicit token auth.
+	env.NPM_CONFIG_USERCONFIG = process.platform === "win32" ? "NUL" : "/dev/null";
+	if (token) {
+		env["npm_config_//registry.npmjs.org/:_authToken"] = token;
+	}
+	return env;
+}
+
+/**
+ * Publish a packed tarball using OIDC Trusted Publishing first (when running
+ * in GitHub Actions with `id-token: write`), falling back to NPM_TOKEN if set.
+ * @param {string} name
+ * @param {string} version
+ * @param {string} tarball
+ */
+function publishTarball(name, version, tarball) {
+	const args = [
+		"publish",
+		tarball,
+		"--registry=https://registry.npmjs.org",
+		"--access",
+		"public",
+		"--provenance",
+	];
+	/** @type {Array<{ label: string, env: NodeJS.ProcessEnv }>} */
+	const attempts = [];
+	if (hasOidc) {
+		attempts.push({ label: "OIDC Trusted Publishing", env: buildPublishEnv() });
+	}
+	if (npmAuthToken) {
+		attempts.push({ label: "NPM_TOKEN", env: buildPublishEnv(npmAuthToken) });
+	}
+	if (attempts.length === 0) {
+		attempts.push({ label: "default npm auth", env: buildPublishEnv() });
+	}
+
+	for (let i = 0; i < attempts.length; i++) {
+		const attempt = attempts[i];
+		say(`Publishing ${name}@${version} via ${attempt.label}...`);
+		const result = spawnSync("npm", args, {
+			cwd: rootDir,
+			stdio: "inherit",
+			env: attempt.env,
+		});
+		if (result.status === 0) return;
+		if (i + 1 < attempts.length) {
+			say(
+				`${attempt.label} failed for ${name}@${version} (exit ${result.status}); retrying with ${attempts[i + 1].label}...`,
+			);
+		} else {
+			throw new Error(
+				`Failed to publish ${name}@${version} via ${attempts.map((a) => a.label).join(" and ")}. ` +
+					"Verify npm Trusted Publishing is linked to evmts/voltaire (.github/workflows/release.yml) or rotate NPM_TOKEN.",
+			);
+		}
+	}
 }
 
 const published = [];
@@ -156,18 +218,7 @@ for (const { name, version, dir } of packages) {
 		);
 		const [{ filename }] = JSON.parse(packJson);
 		const tarball = path.join(packDir, filename);
-		execFileSync(
-			"npm",
-			[
-				"publish",
-				tarball,
-				"--registry=https://registry.npmjs.org",
-				"--access",
-				"public",
-				"--provenance",
-			],
-			{ cwd: rootDir, stdio: "inherit", env: publishEnv },
-		);
+		publishTarball(name, version, tarball);
 	} finally {
 		rmSync(packDir, { recursive: true, force: true });
 	}

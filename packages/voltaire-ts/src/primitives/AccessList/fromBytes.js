@@ -15,7 +15,66 @@ import { decode } from "../Rlp/decode.js";
  * const list = AccessList.fromBytes(bytes);
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex parsing logic
+/**
+ * Parse a single RLP-decoded [address, storageKeys] entry
+ * @param {import('../Rlp/RlpType.js').RlpData} itemData
+ */
+function parseAccessListItem(itemData) {
+	if (itemData.type !== "list" || itemData.value.length !== 2) {
+		throw new InvalidFormatError(
+			"Invalid access list item: expected [address, keys]",
+			{
+				code: "ACCESS_LIST_INVALID_ITEM_FORMAT",
+				value: itemData,
+				expected: "[address, storageKeys]",
+				docsPath: "/primitives/access-list",
+			},
+		);
+	}
+
+	const [addressData, keysData] = itemData.value;
+	if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
+		throw new InvalidLengthError("Invalid access list address", {
+			code: "ACCESS_LIST_INVALID_ADDRESS_LENGTH",
+			value: addressData?.value,
+			expected: "20 bytes",
+			context: {
+				actualLength: addressData?.value?.length,
+				type: addressData?.type,
+			},
+			docsPath: "/primitives/access-list",
+		});
+	}
+
+	if (keysData?.type !== "list") {
+		throw new InvalidFormatError("Invalid access list storage keys", {
+			code: "ACCESS_LIST_KEYS_NOT_LIST",
+			value: keysData?.type,
+			expected: "list",
+			docsPath: "/primitives/access-list",
+		});
+	}
+
+	const storageKeys = [];
+	for (const keyData of keysData.value) {
+		if (keyData.type !== "bytes" || keyData.value.length !== 32) {
+			throw new InvalidLengthError("Invalid storage key", {
+				code: "ACCESS_LIST_INVALID_STORAGE_KEY_LENGTH",
+				value: keyData.value,
+				expected: "32 bytes",
+				context: {
+					actualLength: keyData.value?.length,
+					type: keyData.type,
+				},
+				docsPath: "/primitives/access-list",
+			});
+		}
+		storageKeys.push(keyData.value);
+	}
+
+	return { address: addressData.value, storageKeys };
+}
+
 export function fromBytes(bytes) {
 	const decoded = decode(bytes);
 
@@ -30,66 +89,9 @@ export function fromBytes(bytes) {
 
 	/** @type {import('../BrandedAccessList.js').BrandedAccessList} */
 	const result = [];
-
+	/** @type {any} */ const typedResult = result;
 	for (const itemData of decoded.data.value) {
-		if (itemData.type !== "list" || itemData.value.length !== 2) {
-			throw new InvalidFormatError(
-				"Invalid access list item: expected [address, keys]",
-				{
-					code: "ACCESS_LIST_INVALID_ITEM_FORMAT",
-					value: itemData,
-					expected: "[address, storageKeys]",
-					docsPath: "/primitives/access-list",
-				},
-			);
-		}
-
-		const addressData = itemData.value[0];
-		const keysData = itemData.value[1];
-
-		if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
-			throw new InvalidLengthError("Invalid access list address", {
-				code: "ACCESS_LIST_INVALID_ADDRESS_LENGTH",
-				value: addressData?.value,
-				expected: "20 bytes",
-				context: {
-					actualLength: addressData?.value?.length,
-					type: addressData?.type,
-				},
-				docsPath: "/primitives/access-list",
-			});
-		}
-
-		if (keysData?.type !== "list") {
-			throw new InvalidFormatError("Invalid access list storage keys", {
-				code: "ACCESS_LIST_KEYS_NOT_LIST",
-				value: keysData?.type,
-				expected: "list",
-				docsPath: "/primitives/access-list",
-			});
-		}
-
-		const address = addressData.value;
-		const storageKeys = [];
-
-		for (const keyData of keysData.value) {
-			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
-				throw new InvalidLengthError("Invalid storage key", {
-					code: "ACCESS_LIST_INVALID_STORAGE_KEY_LENGTH",
-					value: keyData.value,
-					expected: "32 bytes",
-					context: {
-						actualLength: keyData.value?.length,
-						type: keyData.type,
-					},
-					docsPath: "/primitives/access-list",
-				});
-			}
-			storageKeys.push(keyData.value);
-		}
-
-		/** @type {any} */ const typedResult = result;
-		typedResult.push({ address, storageKeys });
+		typedResult.push(parseAccessListItem(itemData));
 	}
 
 	return result;

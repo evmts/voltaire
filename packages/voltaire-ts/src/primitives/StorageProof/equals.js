@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { equals as storageKeyEquals } from "../State/equals.js";
 import * as StorageValue from "../StorageValue/index.js";
 
@@ -40,7 +39,7 @@ export function equals(a, b) {
 		const proofA = a.proof[i];
 		const proofB = b.proof[i];
 
-		if (proofA.length !== proofB.length) {
+		if (!proofA || !proofB || proofA.length !== proofB.length) {
 			return false;
 		}
 

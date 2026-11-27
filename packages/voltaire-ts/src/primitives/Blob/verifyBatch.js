@@ -2,6 +2,29 @@ import { InvalidLengthError } from "../errors/index.js";
 import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
 
 /**
+ * Validate each item in a batch has the expected byte length
+ * @param {readonly Uint8Array[]} items
+ * @param {number} expectedSize
+ * @param {string} label
+ */
+function assertBatchSizes(items, expectedSize, label) {
+	for (let i = 0; i < items.length; i++) {
+		const item = /** @type {Uint8Array} */ (items[i]);
+		if (item.length !== expectedSize) {
+			throw new InvalidLengthError(
+				`Invalid ${label} size at index ${i}: ${item.length}`,
+				{
+					value: item.length,
+					expected: `${expectedSize} bytes`,
+					code: -32602,
+					docsPath: "/primitives/blob/verify-batch#error-handling",
+				},
+			);
+		}
+	}
+}
+
+/**
  * Factory: Verify multiple blob KZG proofs in batch
  *
  * @param {Object} deps - Crypto dependencies
@@ -21,7 +44,6 @@ import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
  * ```
  */
 export function VerifyBatch({ verifyBlobKzgProofBatch }) {
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex batch verification logic
 	return function verifyBatch(blobs, commitments, proofs) {
 		if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
 			throw new InvalidLengthError("Arrays must have same length", {
@@ -42,51 +64,9 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 				},
 			);
 		}
-		// Validate blob sizes
-		for (let i = 0; i < blobs.length; i++) {
-			const blob = /** @type {Uint8Array} */ (blobs[i]);
-			if (blob.length !== SIZE) {
-				throw new InvalidLengthError(
-					`Invalid blob size at index ${i}: ${blob.length}`,
-					{
-						value: blob.length,
-						expected: `${SIZE} bytes`,
-						code: -32602,
-						docsPath: "/primitives/blob/verify-batch#error-handling",
-					},
-				);
-			}
-		}
-		// Validate commitment sizes
-		for (let i = 0; i < commitments.length; i++) {
-			const commitment = /** @type {Uint8Array} */ (commitments[i]);
-			if (commitment.length !== 48) {
-				throw new InvalidLengthError(
-					`Invalid commitment size at index ${i}: ${commitment.length}`,
-					{
-						value: commitment.length,
-						expected: "48 bytes",
-						code: -32602,
-						docsPath: "/primitives/blob/verify-batch#error-handling",
-					},
-				);
-			}
-		}
-		// Validate proof sizes
-		for (let i = 0; i < proofs.length; i++) {
-			const proof = /** @type {Uint8Array} */ (proofs[i]);
-			if (proof.length !== 48) {
-				throw new InvalidLengthError(
-					`Invalid proof size at index ${i}: ${proof.length}`,
-					{
-						value: proof.length,
-						expected: "48 bytes",
-						code: -32602,
-						docsPath: "/primitives/blob/verify-batch#error-handling",
-					},
-				);
-			}
-		}
+		assertBatchSizes(blobs, SIZE, "blob");
+		assertBatchSizes(commitments, 48, "commitment");
+		assertBatchSizes(proofs, 48, "proof");
 		try {
 			return verifyBlobKzgProofBatch(
 				/** @type {Uint8Array[]} */ ([...blobs]),
@@ -95,7 +75,6 @@ export function VerifyBatch({ verifyBlobKzgProofBatch }) {
 			);
 		} catch (_error) {
 			// c-kzg throws on invalid proofs rather than returning false
-			// Return false for verification failures to match boolean return type
 			return false;
 		}
 	};

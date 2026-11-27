@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { byId } from "./byId.js";
 import { from } from "./from.js";
 import { fromId } from "./fromId.js";
@@ -27,7 +26,8 @@ import { supportsHardfork } from "./supportsHardfork.js";
  *
  * @see https://voltaire.tevm.sh/primitives/chain for Chain documentation
  * @since 0.0.0
- * @type {ChainConstructor}
+ * @param {Parameters<typeof from>[0]} chain
+ * @returns {Chain}
  * @throws {never}
  * @example
  * ```javascript
@@ -43,12 +43,14 @@ export function Chain(chain) {
 }
 
 // Static constructors
+/** @param {Parameters<typeof from>[0]} chain */
 Chain.from = (chain) => {
 	const result = from(chain);
 	Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 };
 
+/** @param {Parameters<typeof fromId>[0]} id */
 Chain.fromId = (id) => {
 	const result = fromId(id);
 	if (result) Object.setPrototypeOf(result, Chain.prototype);
