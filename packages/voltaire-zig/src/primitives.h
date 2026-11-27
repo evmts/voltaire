@@ -87,6 +87,13 @@ typedef struct {
     uint8_t v;
 } PrimitivesSignature;
 
+/** Access List Entry structure (EIP-2930) */
+typedef struct {
+    PrimitivesAddress address;
+    const PrimitivesHash * storage_keys_ptr;
+    size_t storage_keys_len;
+} PrimitivesAccessListEntry;
+
 /** Authorization structure (EIP-7702) */
 typedef struct {
     uint64_t chain_id;
@@ -492,7 +499,7 @@ int primitives_abi_encode_packed(const char * types_json, const char * values_js
  * data_len: length of calldata
  * Returns: estimated gas cost (u64), or negative error code
  */
-c_longlong primitives_abi_estimate_gas(const uint8_t * data, size_t data_len);
+long long primitives_abi_estimate_gas(const uint8_t * data, size_t data_len);
 
 // ============================================================================
 // Blob Operations (EIP-4844)
@@ -585,7 +592,7 @@ const char * primitives_version_string(void);
  * entries_len: number of entries
  * out_cost: output for total gas cost
  */
-int primitives_access_list_gas_cost([*]const PrimitivesAccessListEntry entries, size_t entries_len, uint64_t * out_cost);
+int primitives_access_list_gas_cost(const PrimitivesAccessListEntry * entries, size_t entries_len, uint64_t * out_cost);
 
 // ============================================================================
 // Access List API (EIP-2930) - Structures
@@ -745,7 +752,7 @@ int hdwallet_generate_mnemonic(const uint8_t * entropy, size_t entropy_len, uint
  * Convert BIP-39 mnemonic to seed (512 bits)
  * passphrase: optional, pass NULL if not needed
  */
-int hdwallet_mnemonic_to_seed(const char * mnemonic, ?[*:0]const u8 passphrase, uint8_t * out_seed);
+int hdwallet_mnemonic_to_seed(const char * mnemonic, const char * passphrase, uint8_t * out_seed);
 
 /**
  * Validate BIP-39 mnemonic checksum
@@ -764,7 +771,7 @@ size_t hdwallet_from_seed(const uint8_t * seed, size_t seed_len);
  * path: array of u32 child indices (use 0x80000000 + index for hardened)
  * Returns opaque handle to derived HD key or 0 on error
  */
-size_t hdwallet_derive(size_t hdkey_handle, [*]const u32 path, size_t path_len);
+size_t hdwallet_derive(size_t hdkey_handle, const uint32_t * path, size_t path_len);
 
 /**
  * Get private key from HD key
@@ -798,7 +805,7 @@ int hdwallet_free(size_t hdkey_handle);
  * Get next PC after current instruction
  * Returns next PC position or -1 if at end of bytecode
  */
-i64 primitives_bytecode_get_next_pc(const uint8_t * code, size_t code_len, uint32_t current_pc);
+int64_t primitives_bytecode_get_next_pc(const uint8_t * code, size_t code_len, uint32_t current_pc);
 
 /**
  * Scan bytecode and collect all instructions in a range

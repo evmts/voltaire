@@ -137,6 +137,7 @@ fn writeTypes(writer: anytype, source: []const u8) !void {
 
     // Look for additional extern structs
     var found_signature = false;
+    var found_access_list = false;
     var found_authorization = false;
 
     var lines = std.mem.splitScalar(u8, source, '\n');
@@ -157,6 +158,20 @@ fn writeTypes(writer: anytype, source: []const u8) !void {
             found_signature = true;
         }
 
+        if (!found_access_list and std.mem.startsWith(u8, trimmed, "pub const PrimitivesAccessListEntry")) {
+            try writer.writeAll(
+                \\/** Access List Entry structure (EIP-2930) */
+                \\typedef struct {
+                \\    PrimitivesAddress address;
+                \\    const PrimitivesHash * storage_keys_ptr;
+                \\    size_t storage_keys_len;
+                \\} PrimitivesAccessListEntry;
+                \\
+                \\
+            );
+            found_access_list = true;
+        }
+
         if (!found_authorization and std.mem.startsWith(u8, trimmed, "pub const PrimitivesAuthorization")) {
             try writer.writeAll(
                 \\/** Authorization structure (EIP-7702) */
@@ -174,7 +189,7 @@ fn writeTypes(writer: anytype, source: []const u8) !void {
             found_authorization = true;
         }
 
-        if (found_signature and found_authorization) break;
+        if (found_signature and found_access_list and found_authorization) break;
     }
 
     try writer.writeAll("\n");
@@ -305,16 +320,21 @@ fn writeFunctionSignature(writer: anytype, source: []const u8) !void {
 
 fn zigTypeToCType(zig_type: []const u8) ![]const u8 {
     if (std.mem.eql(u8, zig_type, "c_int")) return "int";
+    if (std.mem.eql(u8, zig_type, "c_longlong")) return "long long";
     if (std.mem.eql(u8, zig_type, "bool")) return "bool";
     if (std.mem.eql(u8, zig_type, "u8")) return "uint8_t";
     if (std.mem.eql(u8, zig_type, "u32")) return "uint32_t";
     if (std.mem.eql(u8, zig_type, "u64")) return "uint64_t";
+    if (std.mem.eql(u8, zig_type, "i32")) return "int32_t";
+    if (std.mem.eql(u8, zig_type, "i64")) return "int64_t";
     if (std.mem.eql(u8, zig_type, "usize")) return "size_t";
     if (std.mem.eql(u8, zig_type, "*usize")) return "size_t *";
     if (std.mem.eql(u8, zig_type, "*u64")) return "uint64_t *";
     if (std.mem.eql(u8, zig_type, "[*:0]const u8")) return "const char *";
+    if (std.mem.eql(u8, zig_type, "?[*:0]const u8")) return "const char *";
     if (std.mem.eql(u8, zig_type, "[*]const u8")) return "const uint8_t *";
     if (std.mem.eql(u8, zig_type, "[*]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "[*]const u32")) return "const uint32_t *";
     if (std.mem.eql(u8, zig_type, "[*]u32")) return "uint32_t *";
     if (std.mem.eql(u8, zig_type, "[*]const c_int")) return "const int *";
     if (std.mem.eql(u8, zig_type, "*PrimitivesAddress")) return "PrimitivesAddress *";
@@ -323,6 +343,8 @@ fn zigTypeToCType(zig_type: []const u8) ![]const u8 {
     if (std.mem.eql(u8, zig_type, "*const PrimitivesHash")) return "const PrimitivesHash *";
     if (std.mem.eql(u8, zig_type, "*PrimitivesU256")) return "PrimitivesU256 *";
     if (std.mem.eql(u8, zig_type, "*const PrimitivesU256")) return "const PrimitivesU256 *";
+    if (std.mem.eql(u8, zig_type, "[*]const PrimitivesAccessListEntry")) return "const PrimitivesAccessListEntry *";
+    if (std.mem.eql(u8, zig_type, "*PrimitivesAccessListEntry")) return "PrimitivesAccessListEntry *";
     if (std.mem.eql(u8, zig_type, "*PrimitivesAuthorization")) return "PrimitivesAuthorization *";
     if (std.mem.eql(u8, zig_type, "*const PrimitivesAuthorization")) return "const PrimitivesAuthorization *";
     // For pointer-to-array types, use simpler pointer syntax that's more C-compatible

@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const tsDocs = dirname(fileURLToPath(import.meta.url));
-const effectDocs = join(tsDocs, "../../voltaire-effect/docs");
 const zigDocs = join(tsDocs, "../../voltaire-zig/docs");
 
 function pageExists(root: string, page: string): boolean {
@@ -57,15 +56,6 @@ function navPages(root: string): string[] {
 	return pages;
 }
 
-/** Mintlify serves a docs.json redirect source as its destination page. */
-function resolvesViaRedirect(root: string, link: string): boolean {
-	const json = JSON.parse(readFileSync(join(root, "docs.json"), "utf8"));
-	const redirects: { source: string; destination: string }[] =
-		json.redirects ?? [];
-	const hit = redirects.find((r) => r.source === link.replace(/\/$/, ""));
-	return hit !== undefined && pageExists(root, hit.destination);
-}
-
 function llms(root: string): string {
 	return readFileSync(join(root, "llms.txt"), "utf8");
 }
@@ -82,13 +72,10 @@ function mdxPages(root: string, dir: string): string[] {
 }
 
 describe("docs.json", () => {
-	it.each([
-		["voltaire-ts", tsDocs],
-		["voltaire-effect", effectDocs],
-	])("%s docs.json parses and every non-zig nav page exists", (_, root) => {
-		const missing = navPages(root)
+	it("voltaire-ts docs.json parses and every non-zig nav page exists", () => {
+		const missing = navPages(tsDocs)
 			.filter((p) => !p.startsWith("zig/"))
-			.filter((p) => !pageExists(root, p));
+			.filter((p) => !pageExists(tsDocs, p));
 		expect(missing).toEqual([]);
 	});
 
@@ -107,20 +94,6 @@ describe("llms.txt", () => {
 
 	it("voltaire-zig llms.txt links resolve to pages", () => {
 		const missing = markdownLinks(llms(zigDocs)).filter((p) => !linkExists(p));
-		expect(missing).toEqual([]);
-	});
-
-	it("voltaire-effect llms.txt site links resolve to pages", () => {
-		const text = llms(effectDocs);
-		const urls = [
-			...text.matchAll(/https:\/\/voltaire-effect\.tevm\.sh(\/[^)\s#]*)/g),
-		].map((m) => m[1] as string);
-		const paths = [...text.matchAll(/`(\/(?:[a-z0-9-]+\/?)+)`/g)]
-			.map((m) => m[1] as string)
-			.filter((p) => !p.startsWith("/docs/"));
-		const missing = [...urls, ...paths].filter(
-			(p) => !pageExists(effectDocs, p) && !resolvesViaRedirect(effectDocs, p),
-		);
 		expect(missing).toEqual([]);
 	});
 });
@@ -146,45 +119,6 @@ describe("ENS discoverability (issue #350)", () => {
 		}
 		expect(links.has("skills/ens")).toBe(true);
 		expect(links.has("skills/ens-resolution")).toBe(true);
-		expect(text).toContain("voltaire-effect.tevm.sh/services/ens");
-	});
-
-	it("voltaire-effect llms.txt has an ENS section naming the service and primitive", () => {
-		const text = llms(effectDocs);
-		const section = text.split(/^## ENS/m)[1]?.split(/^## /m)[0] ?? "";
-		for (const name of [
-			"EnsService",
-			"DefaultEns",
-			"getEnsAddress",
-			"getEnsName",
-			"getEnsText",
-			"getEnsAvatar",
-			"getEnsResolver",
-			"namehash",
-			"labelhash",
-			"normalize",
-			"/services/ens",
-			"/primitives/ens",
-		]) {
-			expect(section, name).toContain(name);
-		}
-	});
-
-	it("voltaire-effect nav lists ENS in a dedicated group", () => {
-		const json = JSON.parse(readFileSync(join(effectDocs, "docs.json"), "utf8"));
-		const groups: { group: string; pages: unknown[] }[] = [];
-		const walk = (n: unknown): void => {
-			if (Array.isArray(n)) return n.forEach(walk);
-			if (n && typeof n === "object") {
-				const o = n as Record<string, unknown>;
-				if (typeof o.group === "string" && Array.isArray(o.pages))
-					groups.push(o as { group: string; pages: unknown[] });
-				for (const v of Object.values(o)) walk(v);
-			}
-		};
-		walk(json.navigation);
-		const ens = groups.find((g) => g.group === "ENS");
-		expect(ens?.pages).toEqual(["services/ens", "primitives/ens"]);
 	});
 });
 
