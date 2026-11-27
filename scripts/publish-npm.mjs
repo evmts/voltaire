@@ -216,6 +216,19 @@ function publishTarball(name, version, tarball) {
 function resolvePublishedNativeOptionalDeps(targetVersion) {
 	const nativeNpmDir = path.join(rootDir, "dist-native", "npm");
 	if (!existsSync(nativeNpmDir)) return {};
+	const markerPath = path.join(
+		rootDir,
+		"dist-native",
+		"published-native-packages.txt",
+	);
+	const confirmedInRun = new Set(
+		existsSync(markerPath)
+			? readFileSync(markerPath, "utf8")
+					.split(/\r?\n/)
+					.map((line) => line.trim())
+					.filter(Boolean)
+			: [],
+	);
 	/** @type {Record<string, string>} */
 	const optionalDeps = {};
 	for (const entry of readdirSync(nativeNpmDir, { withFileTypes: true })) {
@@ -226,7 +239,9 @@ function resolvePublishedNativeOptionalDeps(targetVersion) {
 		if (
 			typeof pkg.name === "string" &&
 			pkg.version === targetVersion &&
-			(dryRun || publishedVersions(pkg.name).includes(targetVersion))
+			(dryRun ||
+				confirmedInRun.has(`${pkg.name}@${targetVersion}`) ||
+				publishedVersions(pkg.name).includes(targetVersion))
 		) {
 			optionalDeps[pkg.name] = targetVersion;
 		}
@@ -289,8 +304,11 @@ for (const { name, version, dir } of packages) {
 		rmSync(packDir, { recursive: true, force: true });
 	}
 	published.push({ name, version });
-	// changesets/action uses this line to identify packages to tag.
-	say(`🦋  New tag: ${name}@${version}`);
+	const tag = `${name}@${version}`;
+	// changesets/action pushes every `New tag:` line with `git push origin <tag>`,
+	// so create the local tag before emitting it.
+	execFileSync("git", ["tag", "-f", tag], { cwd: rootDir, stdio: "inherit" });
+	say(`🦋  New tag: ${tag}`);
 }
 
 const primary = packages.find((p) => p.name === PRIMARY);

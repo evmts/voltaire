@@ -144,19 +144,26 @@ jobs:
             echo "::error::CI_VERIFIED_SHA ($CI_VERIFIED_SHA) does not match HEAD ($head_sha); refusing to publish native platform packages."
             exit 1
           fi
+          : > dist-native/published-native-packages.txt
           for pkg_dir in dist-native/npm/voltaire-*; do
             [ -d "$pkg_dir" ] || continue
             name=$(node -p "JSON.parse(require('node:fs').readFileSync('$pkg_dir/package.json', 'utf8')).name")
             version=$(node -p "JSON.parse(require('node:fs').readFileSync('$pkg_dir/package.json', 'utf8')).version")
             if npm view "${name}@${version}" version >/dev/null 2>&1; then
               echo "${name}@${version} is already published; skipping."
+              echo "${name}@${version}" >> dist-native/published-native-packages.txt
               continue
             fi
             if env -u NPM_TOKEN -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/dev/null npm publish "$pkg_dir" --registry=https://registry.npmjs.org --access public --provenance --ignore-scripts; then
+              echo "${name}@${version}" >> dist-native/published-native-packages.txt
               continue
             fi
             if [ -n "${NPM_TOKEN:-}" ]; then
-              env NPM_CONFIG_USERCONFIG=/dev/null "npm_config_//registry.npmjs.org/:_authToken=${NPM_TOKEN}" npm publish "$pkg_dir" --registry=https://registry.npmjs.org --access public --provenance --ignore-scripts || echo "::warning::Skipping ${name}@${version}; configure npm Trusted Publishing or rotate NPM_TOKEN."
+              if env NPM_CONFIG_USERCONFIG=/dev/null "npm_config_//registry.npmjs.org/:_authToken=${NPM_TOKEN}" npm publish "$pkg_dir" --registry=https://registry.npmjs.org --access public --provenance --ignore-scripts; then
+                echo "${name}@${version}" >> dist-native/published-native-packages.txt
+              else
+                echo "::warning::Skipping ${name}@${version}; configure npm Trusted Publishing or rotate NPM_TOKEN."
+              fi
             else
               echo "::warning::Skipping ${name}@${version}; configure npm Trusted Publishing for ${name}."
             fi
