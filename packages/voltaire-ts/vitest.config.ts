@@ -20,8 +20,6 @@ export default defineConfig({
 		exclude: [
 			"node_modules/**",
 			"**/node_modules/**",
-			// vol-effect tests run with its own vitest version (@effect/vitest)
-			"voltaire-effect/**",
 			"src/mcp-evals/**",
 			"tests/mcp-evals/**",
 			// Hardware wallet tests require optional peer dependencies (@ledgerhq/*, @trezor/*)

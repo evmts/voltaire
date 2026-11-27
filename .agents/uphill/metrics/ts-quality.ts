@@ -119,12 +119,11 @@ function checkLongFunctions(code: string): { name: string; line: number; length:
   return worst;
 }
 
-// Group files into user-facing domain surfaces across voltaire-ts and voltaire-effect
+// Group files into user-facing domain surfaces across voltaire-ts
 const groups = new Map<string, string[]>();
 
 for (const [pkgLabel, baseDir] of [
   ["voltaire-ts", join(root, "packages/voltaire-ts/src")],
-  ["voltaire-effect", join(root, "packages/voltaire-effect/src")],
 ] as const) {
   const files = walk(baseDir).filter(
     (f) =>

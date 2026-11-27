@@ -1,2 +1,0 @@
-export { Contract, makeContractRegistry } from "./Contract.vibe"
-export type * from "./types.vibe"

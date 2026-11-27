@@ -12,7 +12,6 @@ import { type FileNode, FileTree } from "./components/FileTree.js";
 import { contractExamples } from "./examples/contract.js";
 import { cryptoExamples } from "./examples/crypto.js";
 import { evmExamples } from "./examples/evm.js";
-import { effectExamples } from "./examples/effect.js";
 import { primitiveExamples } from "./examples/primitives.js";
 import { recipesExamples } from "./examples/recipes.js";
 import { standardsExamples } from "./examples/standards.js";
@@ -65,15 +64,6 @@ const fileTree: FileNode[] = [
 		children: Object.entries(standardsExamples).map(([name, content]) => ({
 			name,
 			path: `standards/${name}`,
-			content,
-		})),
-	},
-	{
-		name: "Effect",
-		path: "effect",
-		children: Object.entries(effectExamples).map(([name, content]) => ({
-			name,
-			path: `effect/${name}`,
 			content,
 		})),
 	},

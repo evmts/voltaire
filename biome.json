@@ -32,16 +32,13 @@
 			"!**/benchmark",
 			"!**/docs",
 			"!**/vendor",
-			"!**/voltaire-effect",
 			"!**/worktrees",
 			"!**/tests/mcp-evals",
 			"!**/demo",
 			"!calculate_burned_eth.ts",
 			"!find_deployment_block.ts",
 			"!query_owner.ts",
-			"!encode_transfer.ts",
-			"!voltaire-effect/test-simple.ts",
-			"!voltaire-effect/test-cleanup.mjs"
+			"!encode_transfer.ts"
 		]
 	},
 	"formatter": {

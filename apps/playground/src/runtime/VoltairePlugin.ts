@@ -10,8 +10,7 @@ import {
 } from "./ModuleRegistry.js";
 
 const VOLTAIRE_NAMESPACE = "voltaire-virtual";
-const MODULE_FILTER =
-	/^(?:@tevm\/)?voltaire(\/|$)|^voltaire-effect(\/|$)|^effect(\/|$)/;
+const MODULE_FILTER = /^(?:@tevm\/)?voltaire(\/|$)/;
 
 /**
  * Create the voltaire resolver plugin for esbuild
@@ -20,7 +19,7 @@ export function voltairePlugin(): Plugin {
 	return {
 		name: "voltaire-resolver",
 		setup(build) {
-			// Resolve runtime modules (voltaire, voltaire-effect, effect) to virtual namespace
+			// Resolve runtime modules (@tevm/voltaire, voltaire) to virtual namespace
 			build.onResolve({ filter: MODULE_FILTER }, (args) => {
 				// Normalize @tevm/voltaire to voltaire for registry lookup
 				const specifier = args.path.replace(/^@tevm\//, "");

@@ -52,19 +52,6 @@ for (const area of tsAreas) {
   outLines.push(`test-ratio ${quote(`voltaire-ts/${area}`)} ${ratio}`);
 }
 
-// voltaire-effect overall ratio
-{
-  const files = walk(join(root, "packages/voltaire-effect/src")).filter(
-    (f) => /\.(vibe|ts|js)$/.test(f) && !f.endsWith(".d.ts"),
-  );
-  const prod = files.filter((f) => !/\.(test|spec)\./.test(f));
-  const tests = files.filter((f) => /\.(test|spec)\./.test(f));
-  const prodLines = prod.reduce((s, f) => s + readFileSync(f, "utf8").split("\n").length, 0);
-  const testLines = tests.reduce((s, f) => s + readFileSync(f, "utf8").split("\n").length, 0);
-  const ratio = prodLines > 0 ? Math.round((testLines / prodLines) * 100) : 100;
-  outLines.push(`test-ratio "voltaire-effect" ${ratio}`);
-}
-
 // voltaire-zig inline + dedicated test line ratio
 {
   const files = walk(join(root, "packages/voltaire-zig/src")).filter((f) => f.endsWith(".zig") && !f.includes("bench"));
@@ -86,26 +73,6 @@ for (const area of tsAreas) {
   }
   const ratio = prodLines > 0 ? Math.round((testLines / prodLines) * 100) : 100;
   outLines.push(`test-ratio "voltaire-zig" ${ratio}`);
-}
-
-// voltaire-rs test line ratio (inline #[cfg(test)] + tests/)
-{
-  const srcFiles = walk(join(root, "packages/voltaire-rs/src")).filter((f) => f.endsWith(".rs"));
-  const extTests = walk(join(root, "packages/voltaire-rs/tests")).filter((f) => f.endsWith(".rs"));
-  let prodLines = 0;
-  let testLines = extTests.reduce((s, f) => s + readFileSync(f, "utf8").split("\n").length, 0);
-  for (const f of srcFiles) {
-    const txt = readFileSync(f, "utf8");
-    const idx = txt.search(/#\[cfg\(test\)\]/);
-    if (idx === -1) {
-      prodLines += txt.split("\n").length;
-    } else {
-      prodLines += txt.slice(0, idx).split("\n").length;
-      testLines += txt.slice(idx).split("\n").length;
-    }
-  }
-  const ratio = prodLines > 0 ? Math.round((testLines / prodLines) * 100) : 100;
-  outLines.push(`test-ratio "voltaire-rs" ${ratio}`);
 }
 
 // 2. Zig/TS module directory parity (CLAUDE.md Architecture)

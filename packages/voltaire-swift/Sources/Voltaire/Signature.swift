@@ -1,1 +1,0 @@
-../../../voltaire-ts/src/primitives/Signature/Signature.swift

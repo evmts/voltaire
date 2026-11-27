@@ -86,12 +86,10 @@ if (!dryRun) {
 	}
 }
 
-// Order matters: @tevm/voltaire copies the fresh WASM into its dist, and
-// voltaire-effect builds against @tevm/voltaire's dist.
+// Order matters: @tevm/voltaire copies the fresh WASM into its dist.
 for (const [name, script] of [
 	["@tevm/zig", "build:wasm"],
 	["@tevm/voltaire", "build"],
-	["voltaire-effect", "build"],
 ]) {
 	execFileSync("pnpm", ["--filter", name, "run", script], {
 		cwd: rootDir,

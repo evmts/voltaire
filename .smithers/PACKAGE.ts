@@ -3,9 +3,8 @@ import { fileURLToPath } from "node:url"
 
 // Voltaire's incremental build graph. Each target's key is the digest of the
 // files and targets it names, so the input closures below are kept tight:
-// editing Zig never reruns TypeScript, editing voltaire-effect never reruns
-// Zig or @tevm/voltaire, and editing docs or flows reruns neither. Globs are
-// package scoped even with a // prefix, so every root closure sets cwd: "//".
+// editing Zig never reruns TypeScript, and editing docs or flows reruns neither.
+// Globs are package scoped even with a // prefix, so every root closure sets cwd: "//".
 
 const generated = ["**/node_modules/**", "**/.zig-cache/**", "**/zig-out/**", "**/target/**"]
 
@@ -31,13 +30,11 @@ const zig = S.Filegroup({
     S.file("//build.zig.zon"),
     S.file("//Cargo.toml"),
     S.file("//Cargo.lock"),
-    S.glob("//packages/voltaire-zig/**", { exclude: [...generated, "//packages/voltaire-zig/wasm/**"] }),
-    S.glob("//packages/voltaire-c/**", { exclude: generated })
+    S.glob("//packages/voltaire-zig/**", { exclude: [...generated, "//packages/voltaire-zig/wasm/**"] })
   ]
 })
 
-// @tevm/voltaire sources and its tests. Tracked declarations in types/ are
-// build:types output and only feed voltaire-effect.
+// @tevm/voltaire sources and its tests.
 const ts = S.Filegroup({
   cwd: "//",
   srcs: [
@@ -52,21 +49,6 @@ const ts = S.Filegroup({
 })
 
 const tsTypes = S.Filegroup({ cwd: "//", srcs: [S.glob("//packages/voltaire-ts/types/**")] })
-
-const effect = S.Filegroup({
-  cwd: "//",
-  srcs: [
-    install,
-    S.glob("//packages/voltaire-effect/**", {
-      exclude: [...generated, "//packages/voltaire-effect/dist/**", "//packages/voltaire-effect/.vibe/**"]
-    })
-  ]
-})
-
-const rust = S.Filegroup({
-  cwd: "//",
-  srcs: [S.glob("//packages/voltaire-rs/**", { exclude: generated })]
-})
 
 const packaging = S.Filegroup({ cwd: "//", srcs: [S.file("//scripts/verify-packaging.mjs")] })
 
@@ -149,40 +131,12 @@ const tsTest = S.Shell.Test({
   data: [ts, wasmBuild, zigTest, tsBuild, pnpmRunner]
 })
 
-// voltaire-effect resolves @tevm/voltaire through its built dist/ and the
-// tracked types/, so it depends on ts-build, never on @tevm/voltaire's sources.
-const effectInputs = [effect, tsTypes, tsBuild, pnpmRunner]
-const effectTypecheck = S.Shell.Test({
-  ...pnpmCommon, args: pnpm("--filter", "voltaire-effect", "run", "typecheck"), data: effectInputs
-})
-const effectFormat = S.Shell.Test({
-  ...pnpmCommon, args: pnpm("--filter", "voltaire-effect", "run", "format:check"), data: [effect, pnpmRunner]
-})
-const effectTest = S.Shell.Test({
-  ...pnpmCommon, args: pnpm("--filter", "voltaire-effect", "run", "test:run"), data: effectInputs
-})
-const effectBuild = S.Shell.Build({
-  ...pnpmCommon,
-  args: pnpm("--filter", "voltaire-effect", "run", "build"),
-  data: effectInputs,
-  outDirs: ["//packages/voltaire-effect/dist"]
-})
-
 // Publishability of every workspace package, loading each export subpath.
 const verifyPackaging = S.Shell.Test({
   ...pnpmCommon,
   args: ["-eu", "-c", ".smithers/run-pnpm.sh --version >/dev/null && node scripts/verify-packaging.mjs --load"],
-  data: [install, packaging, tsTypes, tsBuild, effectBuild, pnpmRunner, S.glob("//packages/*/README.md"),
+  data: [install, packaging, tsTypes, tsBuild, pnpmRunner, S.glob("//packages/*/README.md"),
     S.glob("//packages/*/LICENSE")]
-})
-
-const rustTest = S.Shell.Test({
-  bin: S.Host.bin("cargo"),
-  tools: [S.Host.bin("rustc"), S.Host.bin("cc")],
-  args: ["test", "--manifest-path", "packages/voltaire-rs/Cargo.toml"],
-  sandbox: "none",
-  timeout: "1h",
-  data: [rust]
 })
 
 export const Package = S.Package({
@@ -191,8 +145,6 @@ export const Package = S.Package({
     "zig-sources": zig,
     "ts-sources": ts,
     "ts-types": tsTypes,
-    "effect-sources": effect,
-    "rust-sources": rust,
     "factory-sources": factorySources,
     "factory-write": S.FactoryProjection({ mode: "write" }),
     "factory-check": S.FactoryProjection({ mode: "check" }),
@@ -205,11 +157,6 @@ export const Package = S.Package({
     "ts-test": tsTest,
     "ts-test-wasm": tsTestWasm,
     "ts-build": tsBuild,
-    "effect-typecheck": effectTypecheck,
-    "effect-format": effectFormat,
-    "effect-test": effectTest,
-    "effect-build": effectBuild,
-    "verify-packaging": verifyPackaging,
-    "rust-test": rustTest
+    "verify-packaging": verifyPackaging
   }
 })

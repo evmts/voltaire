@@ -1,8 +1,8 @@
 # Voltaire (Zig)
 
-Core Ethereum primitives, cryptography, precompiles, and execution components written in Zig 0.15.
+Core Ethereum primitives, cryptography, precompiles, and execution components written in Zig 0.17.
 
-Voltaire's Zig core (published to npm as `@tevm/zig`) serves both as a standalone Zig package and as the native/WASM foundation for the TypeScript, Rust, Go, Python, Swift, and C bindings in the Voltaire monorepo. Every type has an explicit byte layout, explicit allocator ownership, and compile-time validation where inputs are static.
+Voltaire's Zig core (published to npm as `@tevm/zig`) serves both as a standalone Zig package and as the native/WASM/C ABI foundation for `@tevm/voltaire` and external C FFI consumers (see [C FFI Recipes](../../docs/C_FFI_RECIPES.md)). Every type has an explicit byte layout, explicit allocator ownership, and compile-time validation where inputs are static.
 
 ## Architecture
 
@@ -19,16 +19,13 @@ flowchart LR
 
     NativeLib --> CApi["C FFI Boundary\n(src/c_api.zig -> primitives.h)"]
     CApi --> TS["TypeScript / Bun\n(@tevm/voltaire/native)"]
-    CApi --> Rust["Rust\n(voltaire-rs)"]
-    CApi --> Go["Go\n(voltaire-go)"]
-    CApi --> Py["Python\n(voltaire-py)"]
-    CApi --> Swift["Swift\n(voltaire-swift)"]
+    CApi --> FFI["C / Rust / Go / Python / Swift\n(docs/C_FFI_RECIPES.md)"]
     Wasm --> TSWasm["TypeScript / Browser\n(@tevm/voltaire/wasm)"]
 ```
 
 ## Exported Zig Modules
 
-`build.zig` exports seven modules (plus `*_wasm` variants for WASM builds) from the repository root (`build.zig.zon` package `.primitives`, `minimum_zig_version = "0.15.1"`):
+`build.zig` exports seven modules (plus `*_wasm` variants for WASM builds) from the repository root (`build.zig.zon` package `.primitives`, `minimum_zig_version = "0.17.1"`):
 
 | Module | Root Source | Contents |
 | :--- | :--- | :--- |
@@ -42,7 +39,7 @@ flowchart LR
 
 ## Prerequisites
 
-- Zig `0.15.1` or newer (tested on `0.15.2`)
+- Zig `0.17.1` or newer
 - Rust / `cargo` (compiles `crypto_wrappers`: `bn254` arkworks + `keccak` FFI)
 - C compiler toolchain (for vendored `blst` and `c-kzg-4844`)
 
@@ -177,7 +174,7 @@ zig build bench -Dwith-benches=true
 
 1. **Zero-allocation fixed types**: `Address` (`struct { bytes: [20]u8 }`), `Hash` (`[32]u8`), `Selector` (`[4]u8`), `Address.toHex`/`toChecksummed` (`[42]u8`), `crypto.Hash.toHex` (`[66]u8`), `Hex.hexToBytesFixed`, `Hex.bytesToHexFixed`, and `Address.getCreate2Address` operate entirely on the stack.
 2. **Explicit ownership**: Any function returning a slice (`[]u8`, `[]AbiValue`, `Rlp.Decoded`) takes an explicit `std.mem.Allocator` and transfers ownership to the caller.
-3. **Zig 0.15 unmanaged collections**: Internal code uses unmanaged `std.ArrayList(T){}` and passes `allocator` to `append`/`deinit`/`toOwnedSlice`.
+3. **Zig 0.17 unmanaged collections & explicit `std.Io`**: Internal code uses unmanaged `std.ArrayList(T){}` and passes `allocator` to `append`/`deinit`/`toOwnedSlice`; clock, randomness, and file APIs accept an explicit `io: std.Io`.
 4. **Audit boundaries**: Functions prefixed with `unaudited_` in `crypto.Crypto` and `crypto.secp256k1` are custom recovery/signing implementations that have not undergone an independent security audit. Production systems requiring audited native curves should use `blst` (BLS12-381), `c-kzg-4844` (KZG), `bn254_arkworks` (BN254), or `libsecp256k1`.
 
 ## Documentation

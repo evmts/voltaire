@@ -79,7 +79,7 @@
         {
           "type": "prompt",
           "title": "Ask about Voltaire",
-          "placeholder": "Ask about Voltaire primitives, crypto, or voltaire-effect…"
+          "placeholder": "Ask about Voltaire primitives, cryptography, Zig, or TypeScript…"
         }
       ]
     },
@@ -89,9 +89,9 @@
         {
           "type": "hero",
           "title": "Voltaire",
-          "tagline": "High-performance Ethereum primitives and cryptography built in Zig, TypeScript, Effect, Rust, Go, Python, and Swift.",
-          "text": "Core Ethereum primitives, audited native cryptography (blst, c-kzg-4844, arkworks), WASM and Native-Bun bindings, and voltaire-effect for typed Effect.ts applications.",
-          "install": "npm install @tevm/voltaire voltaire-effect",
+          "tagline": "High-performance Ethereum primitives and cryptography built in Zig and TypeScript, with a C ABI for any language.",
+          "text": "Core Ethereum primitives, audited native cryptography (blst, c-kzg-4844, arkworks), Pure TS, WASM, Native-Bun bindings, and C FFI recipes for C, Rust, Go, Python, and Swift.",
+          "install": "npm install @tevm/voltaire",
           "actions": [
             {
               "label": "Docs",
@@ -102,20 +102,16 @@
               "url": "https://playground.tevm.sh"
             },
             {
-              "label": "Voltaire Effect",
-              "url": "https://voltaire-effect.tevm.sh"
+              "label": "C FFI Recipes",
+              "url": "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
             }
-          ],
-          "announcement": {
-            "label": "For application development, try voltaire-effect for typed Effect.ts Ethereum apps",
-            "url": "https://voltaire-effect.tevm.sh"
-          }
+          ]
         },
         {
           "type": "code",
-          "file": "balances.ts",
+          "file": "primitives.ts",
           "language": "ts",
-          "code": "import { Effect, Layer } from \"effect\";\nimport {\n  ERC20_ABI,\n  HttpProvider,\n  makeContractRegistry,\n} from \"voltaire-effect\";\n\nconst userAddress = \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\";\n\nconst Contracts = makeContractRegistry({\n  USDC: {\n    abi: ERC20_ABI,\n    address: \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\",\n  },\n  WETH: {\n    abi: ERC20_ABI,\n    address: \"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\",\n  },\n});\n\nconst AppLayer = Contracts.layer.pipe(\n  Layer.provide(HttpProvider(\"https://eth.llamarpc.com\"))\n);\n\nconst program = Effect.gen(function* () {\n  const { USDC, WETH } = yield* Contracts.Service;\n  const usdcBalance = yield* USDC.read.balanceOf(userAddress);\n  const wethBalance = yield* WETH.read.balanceOf(userAddress);\n  return { usdcBalance, wethBalance };\n}).pipe(\n  Effect.retry({ times: 3 }),\n  Effect.timeout(\"10 seconds\"),\n  Effect.provide(AppLayer)\n);"
+          "code": "import { Address, Wei } from \"@tevm/voltaire\";\nimport { Abi } from \"@tevm/voltaire/Abi\";\nimport { Keccak256 } from \"@tevm/voltaire/Keccak256\";\n\nconst to = Address(\"0xd8da6bf26964af9d7eed9e03e53415d37aa96045\");\nAddress.toChecksummed(to); // \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\"\n\nconst amount = Wei(1_000_000_000_000_000_000n);\nWei.toEther(amount); // \"1\"\n\nconst selector = Keccak256.selector(\"transfer(address,uint256)\");"
         },
         {
           "type": "stats",
@@ -125,16 +121,16 @@
               "label": "License"
             },
             {
-              "value": "Zig + TS",
-              "label": "Production ready"
-            },
-            {
-              "value": "Effect.ts",
-              "label": "Typed errors and services"
+              "value": "Zig 0.17 + TS",
+              "label": "Published packages"
             },
             {
               "value": "Native + WASM",
               "label": "FFI and tree-shakeable crypto"
+            },
+            {
+              "value": "C ABI",
+              "label": "FFI recipes for C, Rust, Go, Python & Swift"
             }
           ]
         },
@@ -149,22 +145,16 @@
               "url": "https://www.npmjs.com/package/@tevm/voltaire"
             },
             {
-              "title": "voltaire-effect",
-              "text": "Typed errors, dependency injection, contract registries, and composable RPC operations.",
-              "label": "Effect.ts",
-              "url": "https://voltaire-effect.tevm.sh"
-            },
-            {
-              "title": "voltaire-zig",
-              "text": "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, and EVM precompiles.",
+              "title": "@tevm/zig",
+              "text": "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, EVM precompiles, and C ABI.",
               "label": "Zig",
-              "url": "https://smithers.sh/evmts/voltaire/tree/main/packages/voltaire-zig"
+              "url": "https://www.npmjs.com/package/@tevm/zig"
             },
             {
-              "title": "Multi-language bindings",
-              "text": "Shared FFI and native bindings across Rust, C, Go, Python, and Swift.",
-              "label": "Rust · C · Go · Py · Swift",
-              "url": "https://smithers.sh/evmts/voltaire/tree/main/packages"
+              "title": "C FFI Recipes",
+              "text": "Build libprimitives_c / libprimitives_ts_native from Zig and call it from any language with a C FFI.",
+              "label": "C · Rust · Go · Py · Swift",
+              "url": "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
             }
           ],
           "more": {

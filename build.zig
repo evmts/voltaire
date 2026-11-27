@@ -668,24 +668,6 @@ pub fn build(b: *std.Build) void {
 
         const c_example_step = b.step("example-c", "Run the C API example");
         c_example_step.dependOn(&run_c_example.step);
-
-        const c_api_test = b.addExecutable(.{
-            .name = "c_api_test",
-            .root_module = b.createModule(.{
-                .target = target,
-                .optimize = optimize,
-            }),
-        });
-        c_api_test.root_module.addCSourceFile(.{
-            .file = b.path("packages/voltaire-c/tests/c_api_test.c"),
-        });
-        c_api_test.root_module.addIncludePath(b.path("packages/voltaire-c/include"));
-        c_api_test.root_module.linkLibrary(c_api_lib);
-        c_api_test.root_module.link_libc = true;
-
-        const run_c_api_test = b.addRunArtifact(c_api_test);
-        const c_api_test_step = b.step("test-c-api", "Build and run C API tests");
-        c_api_test_step.dependOn(&run_c_api_test.step);
     }
 
     // State Manager FFI library (shared library for TypeScript/Bun native-loader)
@@ -746,14 +728,14 @@ pub fn build(b: *std.Build) void {
     // For JavaScript/TypeScript: use native libprimitives_c with FFI, or compile to WASM for browser
 
     // TypeScript/JavaScript FFI builds with optimized configurations
-    const build_ts_native_step = if (!is_wasm and with_c_api) blk: {
+    if (!is_wasm and with_c_api) {
         // Native TypeScript bindings - ReleaseFast for maximum performance
         const ts_native_target = b.resolveTargetQuery(.{});
 
         // Cross-platform native builds for distribution
         addCrossPlatformNativeBuilds(b, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
-        break :blk addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
-    } else null;
+        _ = addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, state_manager_mod, blockchain_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+    }
 
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
     // Note: Must use wasi (not freestanding) when linking with C libraries that require libc
@@ -816,11 +798,6 @@ pub fn build(b: *std.Build) void {
 
     // Individual crypto WASM modules for treeshaking
     addCryptoWasmBuilds(b, wasm_target, wasm_primitives_mod, wasm_crypto_mod, wasm_c_kzg_lib, wasm_blst_lib, wasm_rust_crypto_lib_path, wasm_cargo_build_step);
-
-    // Go build and test steps (optional, requires Go toolchain)
-    if (!is_wasm) {
-        addGoBuildSteps(b, build_ts_native_step);
-    }
 
     // Benchmark executables for WASM size and performance measurement (optional)
     if (with_benches) {
@@ -1195,56 +1172,6 @@ fn addTypeScriptWasmBuild(
     });
     copy_wasm_fast.step.dependOn(&install_wasm_fast.step);
     build_ts_wasm_fast_step.dependOn(&copy_wasm_fast.step);
-}
-
-fn addGoBuildSteps(b: *std.Build, build_ts_native_step: ?*std.Build.Step) void {
-    const go_dir = b.path("packages/voltaire-go");
-    const go_mod_download = b.addSystemCommand(&[_][]const u8{ "go", "mod", "download" });
-    go_mod_download.setCwd(go_dir);
-
-    const go_step = b.step("go", "Download Go dependencies");
-    go_step.dependOn(&go_mod_download.step);
-
-    const test_go_step = b.step("test-go", "Run Go tests (-Dwith-c-api=true)");
-    const build_go_step = b.step("build-go", "Build Go packages (-Dwith-c-api=true)");
-    const native_step = build_ts_native_step orelse {
-        const missing = b.addFail("Go bindings require the native FFI library. Use -Dwith-c-api=true.");
-        test_go_step.dependOn(&missing.step);
-        build_go_step.dependOn(&missing.step);
-        return;
-    };
-
-    const go_test = b.addSystemCommand(&[_][]const u8{ "go", "test", "-v", "./..." });
-    go_test.setCwd(go_dir);
-    go_test.step.dependOn(native_step);
-    test_go_step.dependOn(&go_test.step);
-
-    const go_build = b.addSystemCommand(&[_][]const u8{ "go", "build", "./..." });
-    go_build.setCwd(go_dir);
-    go_build.step.dependOn(native_step);
-    build_go_step.dependOn(&go_build.step);
-
-    const cwd_path = std.Io.Dir.cwd().realPathFileAlloc(b.graph.io, ".", b.allocator) catch null;
-    const native_dir = if (cwd_path) |cwd|
-        b.pathJoin(&.{ cwd, "zig-out", "native" })
-    else
-        "../../zig-out/native";
-    const host_os = b.graph.host.result.os.tag;
-    const existing_flags = b.graph.environ_map.get("CGO_LDFLAGS") orelse "-O2 -g";
-    const link_flags = if (host_os == .windows)
-        b.fmt("{s} '-L{s}'", .{ existing_flags, native_dir })
-    else
-        b.fmt("{s} '-L{s}' '-Wl,-rpath,{s}'", .{ existing_flags, native_dir, native_dir });
-    go_test.setEnvironmentVariable("CGO_LDFLAGS", link_flags);
-    go_build.setEnvironmentVariable("CGO_LDFLAGS", link_flags);
-    if (host_os == .windows) {
-        const existing_path = b.graph.environ_map.get("PATH") orelse "";
-        const updated_path = if (existing_path.len > 0)
-            b.fmt("{s};{s}", .{ native_dir, existing_path })
-        else
-            native_dir;
-        go_test.setEnvironmentVariable("PATH", updated_path);
-    }
 }
 
 /// Add TypeScript-related build steps

@@ -68,7 +68,7 @@ for (const surface of surfaces) {
 }
 
 // 3. Direct runtime dependency counts
-for (const pkgPath of ["packages/voltaire-ts/package.json", "packages/voltaire-effect/package.json"]) {
+for (const pkgPath of ["packages/voltaire-ts/package.json"]) {
   const full = join(root, pkgPath);
   if (!existsSync(full)) continue;
   const pkg = JSON.parse(readFileSync(full, "utf8")) as {

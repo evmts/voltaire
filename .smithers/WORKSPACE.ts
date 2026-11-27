@@ -30,7 +30,6 @@ export const Workspace = S.Workspace("evmts-voltaire", {
       ".smithers/reports",
       "packages/voltaire-ts/dist",
       "packages/voltaire-ts/types",
-      "packages/voltaire-effect/dist",
       "vendor",
       "skills"
     ]

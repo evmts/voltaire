@@ -111,9 +111,6 @@ pnpm --filter @tevm/voltaire test:run src/primitives/Address
 pnpm --filter @tevm/voltaire test:coverage
 pnpm --filter @tevm/voltaire test:wasm
 
-# voltaire-effect tests
-pnpm --filter voltaire-effect test:run
-
 # Every TypeScript package at once
 pnpm test:run
 pnpm typecheck
@@ -313,7 +310,6 @@ zig build crypto-wasm                      # Individual crypto WASM modules (tre
 zig build -Dwith-c-api=true                # Also build libprimitives_c (static + shared) for C and Rust consumers
 pnpm --filter @tevm/zig build:wasm         # Build all WASM and stage it in packages/voltaire-zig/wasm
 pnpm --filter @tevm/voltaire build         # @tevm/voltaire dist/ + types/
-pnpm --filter voltaire-effect build        # voltaire-effect dist/ (VibeLang compiler)
 ```
 
 ### Testing
@@ -322,9 +318,6 @@ pnpm --filter voltaire-effect build        # voltaire-effect dist/ (VibeLang com
 zig build test                                         # All Zig tests
 pnpm --filter @tevm/voltaire test:run                  # @tevm/voltaire tests (vitest)
 pnpm --filter @tevm/voltaire test:wasm                 # WASM tests
-pnpm --filter voltaire-effect test:run                 # voltaire-effect tests
-cargo test --manifest-path packages/voltaire-rs/Cargo.toml   # Rust crate
-zig build test-go -Dwith-c-api=true                    # Go bindings
 ```
 
 ### Quality
@@ -332,7 +325,6 @@ zig build test-go -Dwith-c-api=true                    # Go bindings
 ```bash
 zig fmt build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples  # Format Zig
 pnpm --filter @tevm/voltaire format       # Format @tevm/voltaire (biome)
-pnpm --filter voltaire-effect format       # Format voltaire-effect (VibeLang)
 pnpm -r run format:check                   # Check formatting (CI)
 pnpm -r run lint:check                     # Check linting (CI)
 pnpm --filter @tevm/voltaire lint          # Lint @tevm/voltaire with auto-fix
@@ -364,7 +356,7 @@ zig build example-transaction
 
 ### Documentation
 
-The `@tevm/voltaire` docs are a Mintlify site in `packages/voltaire-ts/docs` (`docs.json`); `voltaire-effect` and `voltaire-c` have their own in `packages/*/docs`.
+The `@tevm/voltaire` docs are a Mintlify site in `packages/voltaire-ts/docs` (`docs.json`), and C FFI recipes for other languages live in `docs/C_FFI_RECIPES.md`.
 
 ```bash
 cd packages/voltaire-ts/docs && npx mint dev   # Mintlify dev server (localhost:3000)

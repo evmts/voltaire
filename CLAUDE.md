@@ -68,13 +68,13 @@ Never make time or work estimates of how long work will take it is not useful co
 
 ## Architecture
 
-Ethereum primitives + crypto. Multi-language: TS + Zig + Rust + C.
+Ethereum primitives + crypto. Multi-language: Zig + TypeScript (+ C ABI for external FFI).
 
-**Packages**: `packages/voltaire-zig` (Zig core + C ABI, package `@tevm/zig`), `packages/voltaire-ts` (`@tevm/voltaire`), `packages/voltaire-effect` (`voltaire-effect`, VibeLang + Effect 4), `packages/voltaire-{c,rs,go,py,swift}` (bindings), `apps/playground`.
+**Packages**: `packages/voltaire-zig` (Zig core + C ABI, package `@tevm/zig`), `packages/voltaire-ts` (`@tevm/voltaire`), `apps/playground`. Other languages bind via C FFI recipes in `docs/C_FFI_RECIPES.md`.
 
 **Modules** (`packages/voltaire-zig/src/`, mirrored by name in `packages/voltaire-ts/src/`): primitives/ (Address, Hex, Uint, Hash, RLP, ABI, Transaction, Log), crypto/ (Keccak, secp256k1, BLS12-381, BN254, KZG, SHA256, RIPEMD160, Blake2), precompiles/ (EVM precompile impls), evm/, state-manager/, blockchain/, jsonrpc/. TS-only: wasm-loader/ (WASM infra), native-loader/ (Bun FFI / Node-API).
 
-**Docs**: Mintlify sites in `packages/voltaire-ts/docs`, `packages/voltaire-effect/docs`, `packages/voltaire-c/docs`.
+**Docs**: Mintlify site in `packages/voltaire-ts/docs` and C FFI recipes in `docs/C_FFI_RECIPES.md`.
 
 **Imports**: ✅ `@import("primitives")` `@import("crypto")` `@import("precompiles")` ❌ `@import("../primitives/address.zig")`
 
@@ -111,9 +111,8 @@ zig build example-keccak256
 zig build example-address
 zig build example-secp256k1
 
-# Bindings
-zig build test-go -Dwith-c-api=true   # Go tests
-zig build test-c-api -Dwith-c-api=true # C API tests
+# C API (see docs/C_FFI_RECIPES.md)
+zig build -Dwith-c-api=true -Doptimize=ReleaseFast  # libprimitives_c + zig-out/include/primitives.h
 
 # Utils
 zig build clean               # Clean zig-out, .zig-cache, target (keep node_modules)
@@ -130,14 +129,12 @@ Root scripts fan out with `pnpm -r`; target one package with `--filter`.
 # Build
 pnpm --filter @tevm/voltaire build       # tsup dist/ + types/
 pnpm --filter @tevm/zig build:wasm       # Build all WASM + stage in packages/voltaire-zig/wasm
-pnpm --filter voltaire-effect build      # VibeLang compile to dist/
 
 # Test
 pnpm --filter @tevm/voltaire test        # Vitest watch
 pnpm --filter @tevm/voltaire test:run    # Vitest single run
 pnpm --filter @tevm/voltaire test:coverage # Coverage report
 pnpm --filter @tevm/voltaire test:wasm   # WASM tests
-pnpm --filter voltaire-effect test:run   # voltaire-effect tests
 pnpm test:run                            # Every package
 
 # Docs
@@ -293,7 +290,7 @@ Self-contained, fix failures immediately, evidence-based debug. **No output = pa
 
 ### Mintlify Site
 
-- **Location**: `packages/voltaire-ts/docs/` (also `packages/voltaire-effect/docs/`, `packages/voltaire-c/docs/`)
+- **Location**: `packages/voltaire-ts/docs/` and `docs/C_FFI_RECIPES.md`
 - **Config**: `docs.json` (Mintlify v4 navigation)
 - **Format**: MDX (Markdown + JSX) with YAML frontmatter
 - **Guidelines**: `packages/voltaire-ts/docs/CLAUDE.md`

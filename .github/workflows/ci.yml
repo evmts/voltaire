@@ -1,4 +1,4 @@
-# Zig 0.15.x requires the macOS 15 SDK; revisit when upgrading Zig.
+# Zig 0.17.1 CI matrix
 name: CI
 
 on:
@@ -92,7 +92,7 @@ jobs:
       - name: Build for WASM
         run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
 
-  rust:
+  c-api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -104,22 +104,17 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.17.1
-      - name: Test Rust crate (default features)
-        run: cargo test --manifest-path packages/voltaire-rs/Cargo.toml
-      # `cargo check` never links, so it cannot catch a missing or renamed
-      # libprimitives_c symbol. Build the C API and link and run the tests.
-      - name: Build libprimitives_c
+      - name: Build libprimitives_c and generate primitives.h
         run: zig build -Dwith-c-api=true -Doptimize=ReleaseFast
-      # voltaire-rs links the shared library: the static archive does not
-      # bundle blst, c-kzg-4844, libwally-core or crypto_wrappers. build.rs
-      # embeds an rpath, so no LD_LIBRARY_PATH is needed.
-      - name: Test Rust crate (native FFI bindings, links libprimitives_c.so)
-        env:
-          VOLTAIRE_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+      - name: Verify C API artifacts and smoke-test C FFI link
         run: |
-          test -f "$VOLTAIRE_LIB_DIR/libprimitives_c.a"
-          test -f "$VOLTAIRE_LIB_DIR/libprimitives_c.so"
-          cargo test --manifest-path packages/voltaire-rs/Cargo.toml --features native
+          test -f zig-out/include/primitives.h
+          test -f zig-out/lib/libprimitives_c.a
+          test -f zig-out/lib/libprimitives_c.so
+          cc -Izig-out/include packages/voltaire-zig/examples/c/basic_usage.c \
+            -Lzig-out/lib -Wl,-rpath,"$PWD/zig-out/lib" -lprimitives_c \
+            -o /tmp/voltaire_c_smoke
+          /tmp/voltaire_c_smoke
 
   lint:
     runs-on: ubuntu-latest
@@ -175,16 +170,8 @@ jobs:
         run: pnpm --filter @tevm/voltaire run build:dist
       - name: Build types
         run: pnpm --filter @tevm/voltaire run build:types
-      # Release waits on this workflow only, so voltaire-effect must be
-      # gated here, not just in voltaire-effect-ci.yml.
-      - name: Typecheck voltaire-effect
-        run: pnpm --filter voltaire-effect typecheck
-      - name: Test voltaire-effect
-        run: pnpm --filter voltaire-effect test:run
       - name: Run package validation
         run: pnpm --filter @tevm/voltaire run lint:package
-      - name: Build Effect distribution
-        run: pnpm --filter voltaire-effect build
       - name: Verify workspace packaging
         run: node scripts/verify-packaging.mjs --load
       - name: Run TypeScript tests with coverage

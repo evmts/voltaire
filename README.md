@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Voltaire</h1>
-  <p><strong>Type-safe Ethereum primitives, cryptography, and EVM execution — written in Zig, bound everywhere.</strong></p>
+  <p><strong>Type-safe Ethereum primitives, cryptography, and EVM execution — written in Zig and TypeScript, with a C ABI for any language.</strong></p>
   <a href="https://voltaire.tevm.sh">
     <img width="384" height="384" alt="Voltaire logo" src="https://github.com/user-attachments/assets/409b49cb-113b-4b76-989d-762f6294e26a" />
   </a>
@@ -9,7 +9,7 @@
       <img src="https://img.shields.io/npm/v/@tevm/voltaire.svg" alt="npm version" />
     </a>
     <a href="https://github.com/evmts/voltaire">
-      <img src="https://img.shields.io/badge/zig-0.15.x-orange.svg" alt="Zig 0.15.x" />
+      <img src="https://img.shields.io/badge/zig-0.17.1-orange.svg" alt="Zig 0.17.1" />
     </a>
     <a href="https://github.com/evmts/voltaire/actions/workflows/ci.yml">
       <img src="https://img.shields.io/github/actions/workflow/status/evmts/voltaire/ci.yml?label=CI" alt="CI status" />
@@ -21,39 +21,29 @@
   <p>
     <a href="https://voltaire.tevm.sh"><strong>Docs</strong></a> ·
     <a href="https://playground.tevm.sh"><strong>Live Playground</strong></a> ·
-    <a href="https://voltaire-effect.tevm.sh"><strong>voltaire-effect</strong></a>
+    <a href="./docs/C_FFI_RECIPES.md"><strong>C FFI Recipes</strong></a>
   </p>
 </div>
 
 ## Architecture
 
-Voltaire implements Ethereum primitives, cryptography, and EVM execution once in **Zig**, then compiles to **WebAssembly** and exports a stable **C ABI** shared across TypeScript, Effect.ts, Rust, Go, Python, and Swift.
+Voltaire implements Ethereum primitives, cryptography, and EVM execution once in **Zig 0.17**, then compiles to **WebAssembly** and exports a stable **C ABI** (`primitives.h` / `libprimitives_c`) consumed by TypeScript/Bun and any language with a C FFI.
 
 ```mermaid
 flowchart TD
-  Zig["packages/voltaire-zig\n(Zig 0.15 Core + blst / c-kzg / arkworks)"] --> Wasm["WebAssembly (.wasm)"]
-  Zig --> CABI["C ABI (packages/voltaire-c)"]
+  Zig["packages/voltaire-zig\n(Zig 0.17 Core + blst / c-kzg / arkworks)"] --> Wasm["WebAssembly (.wasm)"]
+  Zig --> CABI["C ABI (primitives.h / libprimitives_c)"]
   Wasm --> TS["@tevm/voltaire/wasm"]
   CABI --> Bun["@tevm/voltaire/native (Bun FFI)"]
-  CABI --> RS["voltaire-rs (Rust)"]
-  CABI --> GO["voltaire-go (Go / CGO)"]
-  CABI --> PY["voltaire-py (Python / ctypes)"]
-  CABI --> SW["voltaire-swift (Swift)"]
-  TS --> Effect["voltaire-effect (Effect.ts Services & Streams)"]
+  CABI --> FFI["C / C++ / Rust / Go / Python / Swift\n(docs/C_FFI_RECIPES.md)"]
 ```
 
-## Packages
+## Published Packages
 
-| Package | Directory | Status | Description |
-| --- | --- | --- | --- |
-| `@tevm/voltaire` | [`packages/voltaire-ts`](./packages/voltaire-ts) | Production | Branded TypeScript primitives, crypto, EVM; Pure TS, WASM, and Bun FFI entrypoints |
-| `voltaire-effect` | [`packages/voltaire-effect`](./packages/voltaire-effect) | Production | Effect.ts integration with typed errors, composable layers, contract registries, and streams |
-| `voltaire-zig` | [`packages/voltaire-zig`](./packages/voltaire-zig) | Production | Core Zig 0.15 primitives, cryptography, EVM, and C ABI |
-| `voltaire-c` | [`packages/voltaire-c`](./packages/voltaire-c) | Beta | C header (`voltaire.h`) and FFI tests |
-| `voltaire-rs` | [`packages/voltaire-rs`](./packages/voltaire-rs) | Beta | Idiomatic Rust (`no_std` + optional `native` FFI) |
-| `voltaire-go` | [`packages/voltaire-go`](./packages/voltaire-go) | Beta | Go primitives & crypto with CGO bindings |
-| `voltaire-py` | [`packages/voltaire-py`](./packages/voltaire-py) | Beta | Typed Python bindings via `ctypes` |
-| `voltaire-swift` | [`packages/voltaire-swift`](./packages/voltaire-swift) | Beta | Swift Package Manager bindings via C FFI |
+| Package | Directory | Description |
+| --- | --- | --- |
+| `@tevm/voltaire` | [`packages/voltaire-ts`](./packages/voltaire-ts) | Branded TypeScript primitives, cryptography, and EVM; Pure TS, WASM, and Bun Native FFI entrypoints |
+| `@tevm/zig` | [`packages/voltaire-zig`](./packages/voltaire-zig) | Core Zig 0.17 primitives, cryptography, precompiles, WASM reactor binaries, and C ABI |
 
 ## Quick Start (TypeScript)
 
@@ -99,36 +89,17 @@ import { Keccak256, Secp256k1 } from '@tevm/voltaire/wasm';   // Browser, Node, 
 import { Keccak256, Secp256k1 } from '@tevm/voltaire/native'; // Bun Native FFI
 ```
 
-## Application Layer: `voltaire-effect`
+## C FFI Recipes (C, C++, Rust, Go, Python, Swift)
 
-For providers, signers, contract registries, explicit retries/timeouts, and reorg-aware streams built on top of Voltaire primitives, use [`voltaire-effect`](./packages/voltaire-effect):
+Build the native C ABI shared library and auto-generated header directly from Zig:
 
-```typescript
-import { Effect, Layer } from 'effect';
-import { ERC20_ABI, HttpProvider, makeContractRegistry } from 'voltaire-effect';
-
-const userAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
-
-const Contracts = makeContractRegistry({
-  USDC: { abi: ERC20_ABI, address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
-  WETH: { abi: ERC20_ABI, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-});
-
-const AppLayer = Contracts.layer.pipe(
-  Layer.provide(HttpProvider('https://eth.llamarpc.com')),
-);
-
-const program = Effect.gen(function* () {
-  const { USDC, WETH } = yield* Contracts.Service;
-  const usdcBalance = yield* USDC.read.balanceOf(userAddress);
-  const wethBalance = yield* WETH.read.balanceOf(userAddress);
-  return { usdcBalance, wethBalance };
-}).pipe(
-  Effect.retry({ times: 3 }),
-  Effect.timeout('10 seconds'),
-  Effect.provide(AppLayer),
-);
+```bash
+git submodule update --init --recursive packages/voltaire-zig/lib/libwally-core
+zig build -Dwith-c-api=true -Doptimize=ReleaseFast
+# Produces zig-out/include/primitives.h and zig-out/lib/libprimitives_c.{so,dylib,a}
 ```
+
+See [**`docs/C_FFI_RECIPES.md`**](./docs/C_FFI_RECIPES.md) for copy-paste build, linking, and binding recipes in **C/C++, Rust, Go (CGO), Python (`ctypes`), and Swift (SwiftPM)**.
 
 ## AI Agent Integration
 
@@ -151,7 +122,7 @@ Machine-readable indexes: [`voltaire.tevm.sh/llms.txt`](https://voltaire.tevm.sh
 
 ## Links
 
-- [Documentation](https://voltaire.tevm.sh/) · [Playground](https://playground.tevm.sh/) · [NPM](https://www.npmjs.com/package/@tevm/voltaire)
+- [Documentation](https://voltaire.tevm.sh/) · [Playground](https://playground.tevm.sh/) · [NPM (`@tevm/voltaire`)](https://www.npmjs.com/package/@tevm/voltaire) · [NPM (`@tevm/zig`)](https://www.npmjs.com/package/@tevm/zig)
 - [Telegram](https://t.me/+ANThR9bHDLAwMjUx) · [Twitter](https://twitter.com/tevmtools)
 - Related: [evmts/guillotine](https://github.com/evmts/guillotine) (EVM execution) · [evmts/compiler](https://github.com/evmts/compiler) (Solidity compilation)
 

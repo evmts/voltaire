@@ -155,10 +155,9 @@ for (const [group, files] of [...zigGroups.entries()].sort((a, b) => a[0].locale
   );
 }
 
-// Rust crypto wrappers & bindings (per file — 31 files)
+// Internal Rust crypto wrappers in voltaire-zig
 const rsFiles = [
   ...walk(join(root, "packages/voltaire-zig/src")).filter((f) => f.endsWith(".rs")),
-  ...walk(join(root, "packages/voltaire-rs/src")).filter((f) => f.endsWith(".rs")),
 ].sort();
 
 for (const file of rsFiles) {

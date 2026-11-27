@@ -25,7 +25,6 @@ footprint:
     "*": { target: 3 }
     "@tevm/voltaire": { baseline: 8 }
     Cargo.toml: { baseline: 7, target: 6 }
-    voltaire-effect: { baseline: 1 }
 
 zig-rust-safety:
   zig-no-panic:
@@ -69,43 +68,7 @@ zig-rust-safety:
     state-manager: { baseline: fail }
   rust-no-unwrap-panic:
     "*": { baseline: pass }
-    packages/voltaire-rs/src/crypto/blake2.rs: { baseline: fail }
-    packages/voltaire-rs/src/crypto/hmac.rs: { baseline: fail }
-    packages/voltaire-rs/src/crypto/keccak.rs: { baseline: fail }
-    packages/voltaire-rs/src/crypto/ripemd160.rs: { baseline: fail }
-    packages/voltaire-rs/src/crypto/secp256k1.rs: { baseline: fail }
-    packages/voltaire-rs/src/crypto/sha256.rs: { baseline: fail }
-    packages/voltaire-rs/src/primitives/abi.rs: { baseline: fail }
-    packages/voltaire-rs/src/primitives/u256.rs: { baseline: fail }
   rust-unsafe-blocks:
-    packages/voltaire-rs/src/crypto/aes_gcm.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/blake2.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/bls12_381.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/bn254.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/eip191.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/eip712.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/hmac.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/keccak.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/mod.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/p256.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/ripemd160.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/secp256k1.rs: { baseline: 0 }
-    packages/voltaire-rs/src/crypto/sha256.rs: { baseline: 0 }
-    packages/voltaire-rs/src/error.rs: { baseline: 0 }
-    packages/voltaire-rs/src/ffi.rs: { baseline: 8 }
-    packages/voltaire-rs/src/lib.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/abi.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/access_list.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/address.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/authorization.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/blob.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/bytecode.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/hash.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/hex.rs: { baseline: 2 }
-    packages/voltaire-rs/src/primitives/mod.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/rlp.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/transaction.rs: { baseline: 0 }
-    packages/voltaire-rs/src/primitives/u256.rs: { baseline: 0 }
     packages/voltaire-zig/src/crypto/bn254_wrapper.rs: { baseline: 10 }
     packages/voltaire-zig/src/crypto/keccak_wrapper.rs: { baseline: 3 }
     packages/voltaire-zig/src/crypto/lib.rs: { baseline: 0 }
@@ -116,9 +79,6 @@ ts-quality:
     voltaire-ts/wasm: { baseline: fail }
   explicit-any:
     "*": { baseline: pass }
-    voltaire-effect/crypto: { baseline: fail }
-    voltaire-effect/primitives: { baseline: fail }
-    voltaire-effect/signer: { baseline: fail }
     voltaire-ts/crypto: { baseline: fail }
     voltaire-ts/crypto/signers: { baseline: fail }
     voltaire-ts/jsonrpc: { baseline: fail }
@@ -189,9 +149,6 @@ ts-quality:
     voltaire-ts/provider: { baseline: fail }
   function-length:
     "*": { baseline: pass }
-    voltaire-effect/contract: { baseline: fail }
-    voltaire-effect/signer: { baseline: fail }
-    voltaire-effect/transport: { baseline: fail }
     voltaire-ts/block: { baseline: fail }
     voltaire-ts/contract: { baseline: fail }
     voltaire-ts/crypto: { baseline: fail }
@@ -245,8 +202,6 @@ ts-quality:
 architecture:
   test-ratio:
     "*": { target: 70 }
-    voltaire-effect: { baseline: 16 }
-    voltaire-rs: { baseline: 56 }
     voltaire-ts/blockchain: { baseline: 0 }
     voltaire-ts/contract: { baseline: 55 }
     voltaire-ts/crypto: { baseline: 229 }
