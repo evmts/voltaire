@@ -284,9 +284,19 @@ describe("Obsidian Wiki, Mythical History, and Lighthouse Backpressure Report", 
       assert.equal(json.categories.length, 5);
       const factoryCat = json.categories.find((c) => c.id === "factory-and-ci");
       assert.equal(factoryCat?.score, 100);
+      assert.equal(
+        factoryCat.audits.every((a) => a.failedCount === 0),
+        true,
+        "all factory-and-ci audits must report zero flagged items",
+      );
+      for (const opp of json.opportunities) {
+        assert.ok(opp.current && opp.target, `opportunity ${opp.metric} must include formatted current and target`);
+      }
       assert.ok(html.includes("Voltaire Backpressure Audit Report"));
       assert.ok(html.includes("gauge-score"));
       assert.ok(html.includes("Execution Trust"));
+      assert.ok(html.includes('id="audit-search"'));
+      assert.ok(html.includes('id="copy-md"'));
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }

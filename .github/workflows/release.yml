@@ -33,8 +33,25 @@ jobs:
     env:
       RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
+      - name: Skip stale release run if main has moved forward
+        id: head_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          main_sha=$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha')
+          echo "main_sha=$main_sha"
+          echo "release_sha=$RELEASE_SHA"
+          if [ "$main_sha" != "$RELEASE_SHA" ]; then
+            echo "::notice::Skipping stale Release run for $RELEASE_SHA because main is already at $main_sha (the newer commit's CI/Release run will ship)."
+            echo "is_head=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_head=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Require CI success for this commit
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.head_check.outputs.is_head == 'true' && github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -50,6 +67,7 @@ jobs:
           echo "CI succeeded for $RELEASE_SHA."
 
       - uses: actions/checkout@v4
+        if: steps.head_check.outputs.is_head == 'true'
         with:
           submodules: recursive
           fetch-depth: 0
@@ -58,20 +76,25 @@ jobs:
       # Prevent `git fetch` inside changesets/action from trying to recurse into
       # historical submodule commits that no longer exist upstream.
       - name: Disable recursive submodule fetch
+        if: steps.head_check.outputs.is_head == 'true'
         run: git config fetch.recurseSubmodules false
 
       - name: Install Zig 0.17.1
+        if: steps.head_check.outputs.is_head == 'true'
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.17.1
 
       - name: Install Rust wasm32 target
+        if: steps.head_check.outputs.is_head == 'true'
         run: rustup target add wasm32-unknown-unknown
 
       - name: Install pnpm
+        if: steps.head_check.outputs.is_head == 'true'
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
+        if: steps.head_check.outputs.is_head == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -79,11 +102,13 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
+        if: steps.head_check.outputs.is_head == 'true'
         run: pnpm install --frozen-lockfile
 
       # `pnpm release` builds WASM and every package, verifies them with
       # --load, then publishes those exact files with --ignore-scripts.
       - name: Create Release Pull Request or Publish
+        if: steps.head_check.outputs.is_head == 'true'
         uses: changesets/action@v1
         with:
           publish: pnpm release

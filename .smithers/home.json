@@ -298,10 +298,16 @@
           "title": "Releases",
           "releases": [
             {
+              "name": "@tevm/voltaire@0.5.1 · @tevm/zig@0.4.0",
+              "url": "https://github.com/evmts/voltaire/blob/main/packages/voltaire-ts/CHANGELOG.md",
+              "date": "2026-11-27",
+              "summary": "Zig 0.17.1 core, C99 primitives.h ABI, Osaka hardfork defaults, and Smithers Cloud public coding factory."
+            },
+            {
               "name": "v0.2.27",
               "url": "https://github.com/evmts/voltaire/releases/tag/v0.2.27",
               "date": "2026-01-28",
-              "summary": "Latest published GitHub release. v0.5.0 Zig 0.17.1 release queued via Changesets."
+              "summary": "Previous tagged GitHub release."
             },
             {
               "name": "v0.2.25",

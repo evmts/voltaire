@@ -161,12 +161,24 @@ function gaugeSvg(score, label, size = 104, href = "") {
   </${tag}>`;
 }
 
+function formatMetricValue(value, kind, unit) {
+  if (value === true) return "pass";
+  if (value === false) return "fail";
+  if (typeof value === "number") {
+    if (kind === "size" || unit === "B") return fmtBytes(value);
+    return String(value);
+  }
+  return String(value ?? "");
+}
+
 function normalizeUphillReport(raw) {
   const categories = [];
   const rawCats = raw?.categories ?? raw?.groups ?? {};
   const list = Array.isArray(rawCats)
     ? rawCats
     : Object.entries(rawCats).map(([id, val]) => ({ id, ...(val && typeof val === "object" ? val : {}) }));
+
+  const metricMetaByKey = new Map();
 
   for (const cat of list) {
     const id = String(cat.id ?? cat.name ?? "category");
@@ -181,30 +193,49 @@ function normalizeUphillReport(raw) {
           ? Object.entries(cat.metrics).map(([mid, mv]) => ({ id: mid, ...(mv && typeof mv === "object" ? mv : {}) }))
           : [];
     const audits = rawAudits.map((m) => {
+      const metricId = String(m.id ?? m.name ?? "metric");
+      const kind = String(m.kind ?? "");
+      const unit = m.unit ?? null;
+      const better = String(m.better ?? "lower");
+      const defaultTarget = typeof m.default === "number" ? m.default : typeof m.target === "number" ? m.target : null;
+      metricMetaByKey.set(`${id}:${metricId}`, { kind, unit, better });
+
       const items = Array.isArray(m.items)
         ? m.items
         : m.items && typeof m.items === "object"
           ? Object.entries(m.items).map(([k, v]) => ({ item: k, ...(v && typeof v === "object" ? v : {}) }))
           : [];
+
       const failedItems = items.filter((it) => {
-        if (it.pass === false || it.status === "fail" || it.value === "fail") return true;
+        if (it.value === false || it.pass === false || it.status === "fail" || it.value === "fail") return true;
+        const itemTarget = typeof it.target === "number" ? it.target : defaultTarget;
+        if (typeof it.value === "number" && itemTarget !== null) {
+          return better === "higher" ? it.value < itemTarget : it.value > itemTarget;
+        }
         if (typeof it.score === "number" && it.score < 90) return true;
         return false;
       });
+
       return {
-        id: String(m.id ?? m.name ?? "metric"),
+        id: metricId,
+        title: String(m.title ?? metricId),
+        kind,
+        unit,
+        better,
         description: String(m.description ?? ""),
         score: typeof m.score === "number" ? Math.round(m.score) : null,
         weight: typeof m.weight === "number" ? m.weight : 1,
         totalItems: items.length,
         failedCount: failedItems.length,
-        sampleFailures: failedItems.slice(0, 12).map((it) => ({
-          item: String(it.item ?? it.name ?? it.label ?? ""),
-          value: it.display ?? it.formatted ?? it.value ?? "",
-          target: it.targetDisplay ?? it.target ?? "",
-          note: String(it.note ?? ""),
-          score: typeof it.score === "number" ? Math.round(m.score ?? it.score) : null,
-        })),
+        sampleFailures: failedItems.slice(0, 20).map((it) => {
+          const itemTarget = typeof it.target === "number" ? it.target : defaultTarget;
+          return {
+            item: String(it.item ?? it.name ?? it.label ?? ""),
+            value: formatMetricValue(it.display ?? it.formatted ?? it.value, kind, unit),
+            target: itemTarget !== null ? formatMetricValue(itemTarget, kind, unit) : "",
+            note: String(it.note ?? ""),
+          };
+        }),
       };
     });
     categories.push({ id, title, description, score, audits });
@@ -212,9 +243,27 @@ function normalizeUphillReport(raw) {
 
   const scored = categories.filter((c) => typeof c.score === "number");
   const overall = scored.length > 0 ? Math.round(scored.reduce((s, c) => s + c.score, 0) / scored.length) : null;
-  const opportunities = Array.isArray(raw?.opportunities) ? raw.opportunities : [];
 
-  return { overall, categories, opportunities };
+  const opportunities = (Array.isArray(raw?.opportunities) ? raw.opportunities : []).map((o) => {
+    const cat = String(o.category ?? o.group ?? "");
+    const metric = String(o.metric ?? o.name ?? "");
+    const meta = metricMetaByKey.get(`${cat}:${metric}`) ?? { kind: "", unit: null };
+    const currentRaw = o.current ?? o.from ?? o.value;
+    const targetRaw = o.target ?? o.to;
+    return {
+      gain: Number(o.gain ?? o.delta ?? o.points ?? 0),
+      category: cat,
+      metric,
+      item: o.item ? String(o.item) : o.items > 1 ? `${o.items} items` : "",
+      itemsCount: typeof o.items === "number" ? o.items : 1,
+      current: formatMetricValue(currentRaw, meta.kind, meta.unit),
+      target: formatMetricValue(targetRaw, meta.kind, meta.unit),
+    };
+  });
+
+  const changes = Array.isArray(raw?.changes) ? raw.changes : [];
+
+  return { overall, categories, opportunities, changes };
 }
 
 function renderHtml(report) {
@@ -237,7 +286,7 @@ function renderHtml(report) {
                       } ${f.note ? `<div class="note-line">${esc(f.note)}</div>` : ""}</li>`,
                   )
                   .join("")}</ul>`;
-          return `<details class="audit-row" ${a.failedCount > 0 ? "" : ""}>
+          return `<details class="audit-row" data-status="${a.failedCount > 0 ? "flagged" : "pass"}" data-search="${esc(`${cat.id} ${a.id} ${a.description} ${a.sampleFailures.map((f) => `${f.item} ${f.note}`).join(" ")}`.toLowerCase())}">
             <summary>
               <span class="shape ${band}" aria-hidden="true"></span>
               <span class="audit-name"><strong>${esc(a.id)}</strong><span class="muted small"> ${esc(a.description)}</span></span>
@@ -270,14 +319,27 @@ function renderHtml(report) {
             .slice(0, 15)
             .map(
               (o) => `<tr>
-                <td><span class="chip good">+${esc(o.gain ?? o.delta ?? o.points ?? "")}</span></td>
-                <td>${esc(o.category ?? o.group ?? "")}</td>
-                <td><code>${esc(o.metric ?? o.name ?? "")}</code> ${o.item ? `<span class="muted">${esc(o.item)}</span>` : ""}</td>
-                <td class="mono">${esc(o.current ?? o.from ?? "")} → ${esc(o.target ?? o.to ?? "")}</td>
+                <td><span class="chip good">+${esc(o.gain)}</span></td>
+                <td><a class="cat-link" href="#cat-${esc(o.category)}">${esc(o.category)}</a></td>
+                <td><code>${esc(o.metric)}</code> ${o.item ? `<span class="muted">${esc(o.item)}</span>` : ""}</td>
+                <td class="mono">${esc(o.current)} → ${esc(o.target)}</td>
               </tr>`,
             )
             .join("")}</tbody>
         </table>`;
+
+  const markdownSummary = [
+    `### Voltaire Backpressure Audit Report (\`${revision.commit}\`)`,
+    ``,
+    `- **Overall:** **${overall ?? "—"}/100** | **Execution Trust:** ${trust.label} | **Cache:** \`${trust.cacheEndpoint}\` (${trust.cacheAccess})`,
+    ``,
+    `| Category | Score | Flagged Audits |`,
+    `| --- | ---: | ---: |`,
+    ...categories.map((c) => {
+      const flagged = c.audits.filter((a) => a.failedCount > 0).length;
+      return `| ${c.title} | **${c.score ?? "—"}** | ${flagged}/${c.audits.length} |`;
+    }),
+  ].join("\n");
 
   const wasmHtml =
     wasm.length === 0
@@ -338,9 +400,15 @@ main{max-width:1040px;margin:0 auto;padding:24px 20px 64px}
 .scale span{display:inline-flex;align-items:center;gap:6px}
 .shape{display:inline-block;flex:none;width:11px;height:11px;background:var(--none);border-radius:50%}
 .shape.good{background:var(--good)}.shape.average{background:var(--average);border-radius:2px}.shape.poor{width:0;height:0;background:none;border-radius:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid var(--poor)}
-.filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px}
+.filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+.search-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 24px}
+.search-input{flex:1;min-width:220px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:7px 12px;border-radius:8px;font:13px/1.3 inherit}
+.search-input:focus{outline:2px solid var(--focus);outline-offset:-1px}
+.cat-link{color:var(--focus);text-decoration:none;font-weight:600}
+.cat-link:hover{text-decoration:underline}
 .pill{border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 12px;border-radius:999px;font:12px/1 inherit;font-weight:600;cursor:pointer}
 .pill[aria-pressed="true"]{background:var(--focus);border-color:var(--focus);color:#fff}
+@media print{header.topbar .top-actions,.filter-bar,.search-bar{display:none!important}main{max-width:none;padding:12px}.category,.panel,.gauges-hero,.trust-banner{break-inside:avoid}}
 .panel{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:24px;background:var(--surface)}
 .panel h2{margin:0 0 12px;font-size:15px;font-weight:700}
 .data-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -376,6 +444,7 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-si
   <div class="top-actions">
     <a class="btn" href="${esc(trust.cloudUiUrl)}" target="_blank" rel="noreferrer">Smithers Cloud</a>
     <a class="btn" href="${esc(trust.cloudUiUrl)}/-/wiki" target="_blank" rel="noreferrer">Wiki</a>
+    <button class="btn" id="copy-md" type="button">Copy PR Summary</button>
     <button class="btn" id="theme-toggle" type="button">Toggle Theme</button>
   </div>
 </header>
@@ -403,6 +472,13 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-si
     ${categories.map((c) => `<button class="pill" data-filter="${esc(c.id)}" aria-pressed="false" type="button">${esc(c.title)} (${c.score ?? "—"})</button>`).join("")}
   </div>
 
+  <div class="search-bar" role="search" aria-label="Filter audits">
+    <input class="search-input" id="audit-search" type="search" placeholder="Search audits, files, or modules (e.g. zig-no-panic, Address, Abi)..." aria-label="Search audits">
+    <button class="pill" data-status-filter="all" aria-pressed="true" type="button">All Audits</button>
+    <button class="pill" data-status-filter="flagged" aria-pressed="false" type="button">Flagged Only</button>
+    <button class="pill" data-status-filter="pass" aria-pressed="false" type="button">Passing Only</button>
+  </div>
+
   <section class="panel">
     <h2>Top Backpressure Opportunities</h2>
     ${opportunitiesHtml}
@@ -422,20 +498,56 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-si
 </main>
 <script>
 const rootEl = document.documentElement;
+const mdSummary = ${JSON.stringify(markdownSummary)};
 document.getElementById("theme-toggle").addEventListener("click", () => {
   const cur = rootEl.getAttribute("data-theme");
   const dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme:dark)").matches;
   rootEl.setAttribute("data-theme", dark ? "light" : "dark");
 });
-const pills = [...document.querySelectorAll(".pill[data-filter]")];
+const copyBtn = document.getElementById("copy-md");
+copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(mdSummary);
+    copyBtn.textContent = "Copied Markdown!";
+    setTimeout(() => { copyBtn.textContent = "Copy PR Summary"; }, 1800);
+  } catch {
+    copyBtn.textContent = "Copy Unavailable";
+  }
+});
+const catPills = [...document.querySelectorAll(".pill[data-filter]")];
+const statusPills = [...document.querySelectorAll(".pill[data-status-filter]")];
 const sections = [...document.querySelectorAll("section.category[data-category]")];
-for (const pill of pills) {
+const auditRows = [...document.querySelectorAll("details.audit-row")];
+const searchInput = document.getElementById("audit-search");
+let activeCat = "all";
+let activeStatus = "all";
+function applyFilters() {
+  const q = (searchInput.value || "").trim().toLowerCase();
+  for (const s of sections) {
+    const catOk = activeCat === "all" || s.dataset.category === activeCat;
+    s.style.display = catOk ? "" : "none";
+  }
+  for (const row of auditRows) {
+    const statusOk = activeStatus === "all" || row.dataset.status === activeStatus;
+    const textOk = !q || (row.dataset.search || "").includes(q);
+    row.style.display = statusOk && textOk ? "" : "none";
+  }
+}
+for (const pill of catPills) {
   pill.addEventListener("click", () => {
-    const f = pill.dataset.filter;
-    for (const p of pills) p.setAttribute("aria-pressed", String(p === pill));
-    for (const s of sections) s.style.display = f === "all" || s.dataset.category === f ? "" : "none";
+    activeCat = pill.dataset.filter;
+    for (const p of catPills) p.setAttribute("aria-pressed", String(p === pill));
+    applyFilters();
   });
 }
+for (const pill of statusPills) {
+  pill.addEventListener("click", () => {
+    activeStatus = pill.dataset.statusFilter;
+    for (const p of statusPills) p.setAttribute("aria-pressed", String(p === pill));
+    applyFilters();
+  });
+}
+searchInput.addEventListener("input", applyFilters);
 </script>
 </body>
 </html>
