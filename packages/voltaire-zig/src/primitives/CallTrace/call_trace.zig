@@ -209,7 +209,7 @@ pub const CallTrace = struct {
     }
 
     /// Encode to JSON
-    pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
+    pub fn toJson(self: Self, allocator: Allocator) Allocator.Error![]u8 {
         var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
@@ -236,15 +236,7 @@ pub const CallTrace = struct {
             try buf.append(allocator, '"');
         }
 
-        try buf.appendSlice(allocator, ",\"gas\":");
-        var gas_buf: [20]u8 = undefined;
-        const gas_str = try std.fmt.bufPrint(&gas_buf, "{d}", .{self.gas});
-        try buf.appendSlice(allocator, gas_str);
-
-        try buf.appendSlice(allocator, ",\"gasUsed\":");
-        var gas_used_buf: [20]u8 = undefined;
-        const gas_used_str = try std.fmt.bufPrint(&gas_used_buf, "{d}", .{self.gas_used});
-        try buf.appendSlice(allocator, gas_used_str);
+        try buf.print(allocator, ",\"gas\":{d},\"gasUsed\":{d}", .{ self.gas, self.gas_used });
 
         try buf.appendSlice(allocator, ",\"input\":\"");
         const input_hex = try Hex.bytesToHex(allocator, self.input);
@@ -258,6 +250,12 @@ pub const CallTrace = struct {
         try buf.appendSlice(allocator, output_hex);
         try buf.append(allocator, '"');
 
+        try self.appendOptionalJsonFields(&buf, allocator);
+        try buf.append(allocator, '}');
+        return buf.toOwnedSlice(allocator);
+    }
+
+    fn appendOptionalJsonFields(self: Self, buf: *std.ArrayList(u8), allocator: Allocator) Allocator.Error!void {
         if (self.err) |err| {
             try buf.appendSlice(allocator, ",\"error\":\"");
             try buf.appendSlice(allocator, err);
@@ -280,10 +278,6 @@ pub const CallTrace = struct {
             }
             try buf.append(allocator, ']');
         }
-
-        try buf.append(allocator, '}');
-
-        return buf.toOwnedSlice(allocator);
     }
 };
 

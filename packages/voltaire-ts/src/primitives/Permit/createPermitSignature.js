@@ -1,5 +1,4 @@
-// @ts-nocheck
-import * as EIP712 from "../../crypto/EIP712/index.js";
+import { EIP712 } from "../../crypto/EIP712/index.js";
 import { PERMIT_TYPES } from "./constants.js";
 
 /**
@@ -8,7 +7,7 @@ import { PERMIT_TYPES } from "./constants.js";
  * @param {import('./PermitType.js').PermitType} permit - Permit message
  * @param {import('./PermitType.js').PermitDomainType} domain - EIP-712 domain
  * @param {Uint8Array} privateKey - Private key (32 bytes)
- * @returns {Uint8Array} Compact signature (64 bytes + recovery id)
+ * @returns {import('../../crypto/EIP712/EIP712Type.js').Signature} EIP-712 signature
  *
  * @example
  * ```typescript
@@ -35,12 +34,16 @@ import { PERMIT_TYPES } from "./constants.js";
  * ```
  */
 export function createPermitSignature(permit, domain, privateKey) {
-	const typedData = {
-		domain,
-		types: PERMIT_TYPES,
-		primaryType: "Permit",
-		message: permit,
-	};
+	const typedData =
+		/** @type {import('../../crypto/EIP712/EIP712Type.js').TypedData} */ ({
+			domain,
+			types: PERMIT_TYPES,
+			primaryType: "Permit",
+			message:
+				/** @type {import('../../crypto/EIP712/EIP712Type.js').Message} */ (
+					/** @type {unknown} */ (permit)
+				),
+		});
 
 	return EIP712.signTypedData(typedData, privateKey);
 }

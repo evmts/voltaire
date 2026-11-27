@@ -2,6 +2,33 @@ import * as Hex from "../../primitives/Hex/index.js";
 import { from } from "./from.js";
 
 /**
+ * Read a slot value from a nested address->slot map
+ * @param {Map<string, Map<string, bigint>>} store
+ * @param {string} addrKey
+ * @param {bigint} slot
+ * @returns {bigint}
+ */
+function readSlot(store, addrKey, slot) {
+	return store.get(addrKey)?.get(slot.toString(16)) ?? 0n;
+}
+
+/**
+ * Write a slot value into a nested address->slot map
+ * @param {Map<string, Map<string, bigint>>} store
+ * @param {string} addrKey
+ * @param {bigint} slot
+ * @param {bigint} value
+ */
+function writeSlot(store, addrKey, slot, value) {
+	let addrStorage = store.get(addrKey);
+	if (!addrStorage) {
+		addrStorage = new Map();
+		store.set(addrKey, addrStorage);
+	}
+	addrStorage.set(slot.toString(16), value);
+}
+
+/**
  * Create an in-memory Host implementation for testing
  *
  * @returns {import("./HostType.js").BrandedHost} Memory-backed Host
@@ -9,93 +36,41 @@ import { from } from "./from.js";
 export function createMemoryHost() {
 	/** @type {Map<string, bigint>} */
 	const balances = new Map();
-
 	/** @type {Map<string, Uint8Array>} */
 	const codes = new Map();
-
 	/** @type {Map<string, Map<string, bigint>>} */
 	const storage = new Map();
-
 	/** @type {Map<string, Map<string, bigint>>} */
 	const transientStorage = new Map();
-
 	/** @type {Map<string, bigint>} */
 	const nonces = new Map();
 
-	/**
-	 * Get storage key
-	 * @param {import("../../primitives/Address/AddressType.js").AddressType} address - Address
-	 * @param {bigint} slot - Slot
-	 * @returns {string} Storage key
-	 */
-	const _getStorageKey = (address, slot) =>
-		`${Hex.fromBytes(address).slice(2)}-${slot.toString(16)}`;
+	/** @param {Uint8Array} address */
+	const toKey = (address) => Hex.fromBytes(address).slice(2);
 
 	return from({
-		getBalance: (address) => {
-			const key = Hex.fromBytes(address).slice(2);
-			return balances.get(key) ?? 0n;
-		},
-
+		getBalance: (address) => balances.get(toKey(address)) ?? 0n,
 		setBalance: (address, balance) => {
-			const key = Hex.fromBytes(address).slice(2);
-			balances.set(key, balance);
+			balances.set(toKey(address), balance);
 		},
-
-		getCode: (address) => {
-			const key = Hex.fromBytes(address).slice(2);
-			return codes.get(key) ?? new Uint8Array(0);
-		},
-
+		getCode: (address) => codes.get(toKey(address)) ?? new Uint8Array(0),
 		setCode: (address, code) => {
-			const key = Hex.fromBytes(address).slice(2);
-			codes.set(key, code);
+			codes.set(toKey(address), code);
 		},
-
-		getStorage: (address, slot) => {
-			const addrKey = Hex.fromBytes(address).slice(2);
-			const addrStorage = storage.get(addrKey);
-			if (!addrStorage) return 0n;
-			return addrStorage.get(slot.toString(16)) ?? 0n;
-		},
-
+		getStorage: (address, slot) => readSlot(storage, toKey(address), slot),
 		setStorage: (address, slot, value) => {
-			const addrKey = Hex.fromBytes(address).slice(2);
-			let addrStorage = storage.get(addrKey);
-			if (!addrStorage) {
-				addrStorage = new Map();
-				storage.set(addrKey, addrStorage);
-			}
-			addrStorage.set(slot.toString(16), value);
+			writeSlot(storage, toKey(address), slot, value);
 		},
-
-		getNonce: (address) => {
-			const key = Hex.fromBytes(address).slice(2);
-			return nonces.get(key) ?? 0n;
-		},
-
+		getNonce: (address) => nonces.get(toKey(address)) ?? 0n,
 		setNonce: (address, nonce) => {
-			const key = Hex.fromBytes(address).slice(2);
-			nonces.set(key, nonce);
+			nonces.set(toKey(address), nonce);
 		},
-
 		/** @param {Uint8Array} address @param {bigint} slot */
-		getTransientStorage: (address, slot) => {
-			const addrKey = Hex.fromBytes(address).slice(2);
-			const addrStorage = transientStorage.get(addrKey);
-			if (!addrStorage) return 0n;
-			return addrStorage.get(slot.toString(16)) ?? 0n;
-		},
-
+		getTransientStorage: (address, slot) =>
+			readSlot(transientStorage, toKey(address), slot),
 		/** @param {Uint8Array} address @param {bigint} slot @param {bigint} value */
 		setTransientStorage: (address, slot, value) => {
-			const addrKey = Hex.fromBytes(address).slice(2);
-			let addrStorage = transientStorage.get(addrKey);
-			if (!addrStorage) {
-				addrStorage = new Map();
-				transientStorage.set(addrKey, addrStorage);
-			}
-			addrStorage.set(slot.toString(16), value);
+			writeSlot(transientStorage, toKey(address), slot, value);
 		},
 	});
 }

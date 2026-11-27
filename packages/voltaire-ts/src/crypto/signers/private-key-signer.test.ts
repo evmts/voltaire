@@ -34,9 +34,49 @@ describe("PrivateKeySignerImpl", () => {
 			expect(signer.address).toBeDefined();
 			expect(signer.publicKey).toBeDefined();
 		});
+
+		it("creates identical address with or without 0x prefix", () => {
+			const withPrefix = PrivateKeySignerImpl.fromPrivateKey({
+				privateKey: testPrivateKey,
+			});
+			const withoutPrefix = PrivateKeySignerImpl.fromPrivateKey({
+				privateKey: testPrivateKey.slice(2),
+			});
+
+			expect(withoutPrefix.address).toBe(withPrefix.address);
+			expect(withoutPrefix.publicKey).toEqual(withPrefix.publicKey);
+		});
+
+		it("rejects private keys that are not 32 bytes", () => {
+			expect(() =>
+				PrivateKeySignerImpl.fromPrivateKey({
+					privateKey: new Uint8Array(16),
+				}),
+			).toThrow();
+			expect(() =>
+				PrivateKeySignerImpl.fromPrivateKey({
+					privateKey: "0x1234",
+				}),
+			).toThrow();
+		});
 	});
 
 	describe("signMessage", () => {
+		it("signs Uint8Array message bytes", async () => {
+			const signer = PrivateKeySignerImpl.fromPrivateKey({
+				privateKey: testPrivateKey,
+			});
+
+			try {
+				const signature = await signer.signMessage(
+					new Uint8Array([1, 2, 3, 4]),
+				);
+				expect(signature).toMatch(/^0x[0-9a-f]{130}$/i);
+			} catch (error) {
+				expect((error as Error).message).toContain("signHash");
+			}
+		});
+
 		it("signs string message", async () => {
 			const signer = PrivateKeySignerImpl.fromPrivateKey({
 				privateKey: testPrivateKey,

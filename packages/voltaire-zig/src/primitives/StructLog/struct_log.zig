@@ -152,29 +152,11 @@ pub const StructLog = struct {
         var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
-        try buf.appendSlice(allocator, "{\"pc\":");
-        var pc_buf: [20]u8 = undefined;
-        const pc_str = try std.fmt.bufPrint(&pc_buf, "{d}", .{self.pc});
-        try buf.appendSlice(allocator, pc_str);
-
-        try buf.appendSlice(allocator, ",\"op\":\"");
-        try buf.appendSlice(allocator, self.op.name());
-        try buf.appendSlice(allocator, "\"");
-
-        try buf.appendSlice(allocator, ",\"gas\":");
-        var gas_buf: [20]u8 = undefined;
-        const gas_str = try std.fmt.bufPrint(&gas_buf, "{d}", .{self.gas});
-        try buf.appendSlice(allocator, gas_str);
-
-        try buf.appendSlice(allocator, ",\"gasCost\":");
-        var gas_cost_buf: [20]u8 = undefined;
-        const gas_cost_str = try std.fmt.bufPrint(&gas_cost_buf, "{d}", .{self.gas_cost});
-        try buf.appendSlice(allocator, gas_cost_str);
-
-        try buf.appendSlice(allocator, ",\"depth\":");
-        var depth_buf: [10]u8 = undefined;
-        const depth_str = try std.fmt.bufPrint(&depth_buf, "{d}", .{self.depth});
-        try buf.appendSlice(allocator, depth_str);
+        try buf.print(
+            allocator,
+            "{{\"pc\":{d},\"op\":\"{s}\",\"gas\":{d},\"gasCost\":{d},\"depth\":{d}",
+            .{ self.pc, self.op.name(), self.gas, self.gas_cost, self.depth },
+        );
 
         if (self.stack) |stack| {
             try buf.appendSlice(allocator, ",\"stack\":[");
@@ -197,20 +179,14 @@ pub const StructLog = struct {
         }
 
         if (self.refund) |refund| {
-            try buf.appendSlice(allocator, ",\"refund\":");
-            var refund_buf: [20]u8 = undefined;
-            const refund_str = try std.fmt.bufPrint(&refund_buf, "{d}", .{refund});
-            try buf.appendSlice(allocator, refund_str);
+            try buf.print(allocator, ",\"refund\":{d}", .{refund});
         }
 
         if (self.err) |err| {
-            try buf.appendSlice(allocator, ",\"error\":\"");
-            try buf.appendSlice(allocator, err);
-            try buf.append(allocator, '"');
+            try buf.print(allocator, ",\"error\":\"{s}\"", .{err});
         }
 
         try buf.append(allocator, '}');
-
         return buf.toOwnedSlice(allocator);
     }
 

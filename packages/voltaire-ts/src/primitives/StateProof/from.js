@@ -4,6 +4,38 @@
  */
 
 /**
+ * Validate accountProof and storageProof array entries
+ * @param {readonly Uint8Array[]} accountProof
+ * @param {readonly import('../StorageProof/StorageProofType.js').StorageProofType[]} storageProof
+ */
+function validateProofArrays(accountProof, storageProof) {
+	if (!Array.isArray(accountProof)) {
+		throw new TypeError("StateProof.accountProof must be an array");
+	}
+	for (let i = 0; i < accountProof.length; i++) {
+		if (!(accountProof[i] instanceof Uint8Array)) {
+			throw new TypeError(`StateProof.accountProof[${i}] must be a Uint8Array`);
+		}
+	}
+	if (!Array.isArray(storageProof)) {
+		throw new TypeError("StateProof.storageProof must be an array");
+	}
+	for (let i = 0; i < storageProof.length; i++) {
+		const entry = storageProof[i];
+		if (!entry || typeof entry !== "object") {
+			throw new TypeError(
+				`StateProof.storageProof[${i}] must be a StorageProof`,
+			);
+		}
+		if (!entry.key || !entry.value || !entry.proof) {
+			throw new TypeError(
+				`StateProof.storageProof[${i}] must have key, value, and proof`,
+			);
+		}
+	}
+}
+
+/**
  * Creates a StateProof from an object with all required fields.
  *
  * @param {StateProofLike} proof - Object containing all StateProof fields
@@ -22,7 +54,6 @@
  * });
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state proof validation requires many field checks
 export function from(proof) {
 	if (!proof || typeof proof !== "object") {
 		throw new TypeError("StateProof must be an object");
@@ -38,40 +69,21 @@ export function from(proof) {
 		storageProof,
 	} = proof;
 
-	// Validate address
 	if (!(address instanceof Uint8Array)) {
 		throw new TypeError("StateProof.address must be an Address");
 	}
-
-	// Validate accountProof array
-	if (!Array.isArray(accountProof)) {
-		throw new TypeError("StateProof.accountProof must be an array");
-	}
-	for (let i = 0; i < accountProof.length; i++) {
-		if (!(accountProof[i] instanceof Uint8Array)) {
-			throw new TypeError(`StateProof.accountProof[${i}] must be a Uint8Array`);
-		}
-	}
-
-	// Validate balance (Wei is a branded bigint)
 	if (typeof balance !== "bigint") {
 		throw new TypeError("StateProof.balance must be a Wei (bigint)");
 	}
-
-	// Validate codeHash
 	if (!(codeHash instanceof Uint8Array)) {
 		throw new TypeError("StateProof.codeHash must be a Hash");
 	}
 	if (codeHash.length !== 32) {
 		throw new TypeError("StateProof.codeHash must be 32 bytes");
 	}
-
-	// Validate nonce (Nonce is a branded bigint)
 	if (typeof nonce !== "bigint") {
 		throw new TypeError("StateProof.nonce must be a Nonce (bigint)");
 	}
-
-	// Validate storageHash
 	if (!(storageHash instanceof Uint8Array)) {
 		throw new TypeError("StateProof.storageHash must be a StateRoot");
 	}
@@ -79,28 +91,8 @@ export function from(proof) {
 		throw new TypeError("StateProof.storageHash must be 32 bytes");
 	}
 
-	// Validate storageProof array
-	if (!Array.isArray(storageProof)) {
-		throw new TypeError("StateProof.storageProof must be an array");
-	}
-	for (let i = 0; i < storageProof.length; i++) {
-		if (!storageProof[i] || typeof storageProof[i] !== "object") {
-			throw new TypeError(
-				`StateProof.storageProof[${i}] must be a StorageProof`,
-			);
-		}
-		if (
-			!storageProof[i].key ||
-			!storageProof[i].value ||
-			!storageProof[i].proof
-		) {
-			throw new TypeError(
-				`StateProof.storageProof[${i}] must have key, value, and proof`,
-			);
-		}
-	}
+	validateProofArrays(accountProof, storageProof);
 
-	// Return immutable object
 	return Object.freeze({
 		address,
 		accountProof: Object.freeze([...accountProof]),

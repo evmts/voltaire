@@ -52,6 +52,97 @@ function assertIndices(changes, path) {
 }
 
 /**
+ * Validate an account's storageChanges and storageReads ordering and disjointness
+ * @param {import('./BlockAccessListType.js').AccountChanges} account
+ * @param {string} path
+ */
+function assertAccountStorage(account, path) {
+	/** @type {Set<bigint>} */
+	const written = new Set();
+	let previousSlot = -1n;
+	for (const [s, slotChanges] of account.storageChanges.entries()) {
+		const slotPath = `${path}.storageChanges[${s}]`;
+		assertUint(slotChanges.slot, MAX_UINT256, `${slotPath}.slot`);
+		if (slotChanges.slot <= previousSlot) {
+			throw new InvalidBlockAccessListError(
+				`${path}.storageChanges must ascend strictly by slot`,
+				{ value: slotChanges.slot, context: { path: slotPath } },
+			);
+		}
+		previousSlot = slotChanges.slot;
+		written.add(slotChanges.slot);
+		if (slotChanges.changes.length === 0) {
+			throw new InvalidBlockAccessListError(
+				`${slotPath}.changes must hold at least one change`,
+				{ value: slotChanges, context: { path: slotPath } },
+			);
+		}
+		assertIndices(slotChanges.changes, `${slotPath}.changes`);
+		for (const [c, change] of slotChanges.changes.entries()) {
+			assertUint(
+				change.newValue,
+				MAX_UINT256,
+				`${slotPath}.changes[${c}].newValue`,
+			);
+		}
+	}
+
+	let previousRead = -1n;
+	for (const [r, slot] of account.storageReads.entries()) {
+		const readPath = `${path}.storageReads[${r}]`;
+		assertUint(slot, MAX_UINT256, readPath);
+		if (slot <= previousRead) {
+			throw new InvalidBlockAccessListError(
+				`${path}.storageReads must ascend strictly`,
+				{ value: slot, context: { path: readPath } },
+			);
+		}
+		if (written.has(slot)) {
+			throw new InvalidBlockAccessListError(
+				`${readPath} also appears in storageChanges`,
+				{ value: slot, context: { path: readPath } },
+			);
+		}
+		previousRead = slot;
+	}
+}
+
+/**
+ * Validate an account's balance, nonce, and code changes
+ * @param {import('./BlockAccessListType.js').AccountChanges} account
+ * @param {string} path
+ */
+function assertAccountMutations(account, path) {
+	assertIndices(account.balanceChanges, `${path}.balanceChanges`);
+	for (const [i, change] of account.balanceChanges.entries()) {
+		assertUint(
+			change.postBalance,
+			MAX_UINT256,
+			`${path}.balanceChanges[${i}].postBalance`,
+		);
+	}
+
+	assertIndices(account.nonceChanges, `${path}.nonceChanges`);
+	for (const [i, change] of account.nonceChanges.entries()) {
+		assertUint(
+			change.newNonce,
+			MAX_UINT64,
+			`${path}.nonceChanges[${i}].newNonce`,
+		);
+	}
+
+	assertIndices(account.codeChanges, `${path}.codeChanges`);
+	for (const [i, change] of account.codeChanges.entries()) {
+		if (!(change.newCode instanceof Uint8Array)) {
+			throw new InvalidBlockAccessListError(
+				`${path}.codeChanges[${i}].newCode must be bytes`,
+				{ value: change.newCode, context: { path } },
+			);
+		}
+	}
+}
+
+/**
  * Assert that a block access list satisfies every EIP-7928 rule that is
  * checkable without the block: field types and ranges, canonical ordering,
  * and uniqueness.
@@ -64,7 +155,6 @@ function assertIndices(changes, path) {
  * @returns {asserts list is import('./BlockAccessListType.js').BlockAccessListType}
  * @throws {InvalidBlockAccessListError} If any rule is violated
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one linear pass over the EIP-7928 rules, in spec order
 export function assertValid(list) {
 	/** @type {Uint8Array | undefined} */
 	let previousAddress;
@@ -95,81 +185,7 @@ export function assertValid(list) {
 		}
 		previousAddress = account.address;
 
-		/** @type {Set<bigint>} */
-		const written = new Set();
-		let previousSlot = -1n;
-		for (const [s, slotChanges] of account.storageChanges.entries()) {
-			const slotPath = `${path}.storageChanges[${s}]`;
-			assertUint(slotChanges.slot, MAX_UINT256, `${slotPath}.slot`);
-			if (slotChanges.slot <= previousSlot) {
-				throw new InvalidBlockAccessListError(
-					`${path}.storageChanges must ascend strictly by slot`,
-					{ value: slotChanges.slot, context: { path: slotPath } },
-				);
-			}
-			previousSlot = slotChanges.slot;
-			written.add(slotChanges.slot);
-			if (slotChanges.changes.length === 0) {
-				throw new InvalidBlockAccessListError(
-					`${slotPath}.changes must hold at least one change`,
-					{ value: slotChanges, context: { path: slotPath } },
-				);
-			}
-			assertIndices(slotChanges.changes, `${slotPath}.changes`);
-			for (const [c, change] of slotChanges.changes.entries()) {
-				assertUint(
-					change.newValue,
-					MAX_UINT256,
-					`${slotPath}.changes[${c}].newValue`,
-				);
-			}
-		}
-
-		let previousRead = -1n;
-		for (const [r, slot] of account.storageReads.entries()) {
-			const readPath = `${path}.storageReads[${r}]`;
-			assertUint(slot, MAX_UINT256, readPath);
-			if (slot <= previousRead) {
-				throw new InvalidBlockAccessListError(
-					`${path}.storageReads must ascend strictly`,
-					{ value: slot, context: { path: readPath } },
-				);
-			}
-			if (written.has(slot)) {
-				throw new InvalidBlockAccessListError(
-					`${readPath} also appears in storageChanges`,
-					{ value: slot, context: { path: readPath } },
-				);
-			}
-			previousRead = slot;
-		}
-
-		assertIndices(account.balanceChanges, `${path}.balanceChanges`);
-		for (const [i, change] of account.balanceChanges.entries()) {
-			assertUint(
-				change.postBalance,
-				MAX_UINT256,
-				`${path}.balanceChanges[${i}].postBalance`,
-			);
-		}
-
-		assertIndices(account.nonceChanges, `${path}.nonceChanges`);
-		for (const [i, change] of account.nonceChanges.entries()) {
-			assertUint(
-				change.newNonce,
-				MAX_UINT64,
-				`${path}.nonceChanges[${i}].newNonce`,
-			);
-		}
-
-		assertIndices(account.codeChanges, `${path}.codeChanges`);
-		for (const [i, change] of account.codeChanges.entries()) {
-			if (!(change.newCode instanceof Uint8Array)) {
-				throw new InvalidBlockAccessListError(
-					`${path}.codeChanges[${i}].newCode must be bytes`,
-					{ value: change.newCode, context: { path } },
-				);
-			}
-		}
+		assertAccountStorage(account, path);
+		assertAccountMutations(account, path);
 	}
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 
 /**
@@ -14,7 +13,7 @@ import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 function bytesToHex(bytes) {
 	let hex = "0x";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += HEX_BYTE_TABLE[bytes[i]];
+		hex += HEX_BYTE_TABLE[/** @type {number} */ (bytes[i])];
 	}
 	return hex;
 }

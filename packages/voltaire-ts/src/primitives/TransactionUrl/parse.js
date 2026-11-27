@@ -4,6 +4,65 @@ import { Hex } from "../Hex/index.js";
 import { InvalidTransactionUrlError } from "./errors.js";
 
 /**
+ * Parse chain ID suffix after `@` in an ERC-681 URL
+ * @param {string} chainIdStr
+ * @param {string} url
+ * @returns {bigint}
+ */
+function parseChainId(chainIdStr, url) {
+	try {
+		const chainId = BigInt(chainIdStr);
+		if (chainId < 0n) {
+			throw new InvalidTransactionUrlError("Chain ID must be non-negative", {
+				chainId: chainIdStr,
+				url,
+			});
+		}
+		return chainId;
+	} catch (error) {
+		if (error instanceof InvalidTransactionUrlError) {
+			throw error;
+		}
+		throw new InvalidTransactionUrlError("Invalid chain ID", {
+			chainId: chainIdStr,
+			url,
+		});
+	}
+}
+
+/**
+ * Split ERC-681 path body into address, chainId, functionName, and queryString
+ * @param {string} remaining
+ * @param {string} url
+ */
+function splitUrlParts(remaining, url) {
+	let addressPart = remaining;
+	let chainId;
+	let functionName;
+	let queryString;
+
+	const queryIndex = remaining.indexOf("?");
+	if (queryIndex !== -1) {
+		queryString = remaining.slice(queryIndex + 1);
+		addressPart = remaining.slice(0, queryIndex);
+	}
+
+	const functionIndex = addressPart.indexOf("/");
+	if (functionIndex !== -1) {
+		functionName = decodeURIComponent(addressPart.slice(functionIndex + 1));
+		addressPart = addressPart.slice(0, functionIndex);
+	}
+
+	const chainIndex = addressPart.indexOf("@");
+	if (chainIndex !== -1) {
+		chainId = parseChainId(addressPart.slice(chainIndex + 1), url);
+		addressPart = addressPart.slice(0, chainIndex);
+	}
+
+	return { addressPart, chainId, functionName, queryString };
+}
+
+/**
  * Parse ERC-681 transaction URL
  *
  * Format: ethereum:<address>[@<chainId>][/<function>][?<params>]
@@ -33,70 +92,19 @@ import { InvalidTransactionUrlError } from "./errors.js";
  * // { target: AddressType, chainId: 1n, value: 1000000000000000000n }
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: URL parsing requires sequential extraction of components
 export function parse(url) {
-	// Validate scheme
 	if (!url.startsWith("ethereum:")) {
 		throw new InvalidTransactionUrlError(
 			"Invalid URL scheme, expected 'ethereum:'",
-			{
-				url,
-				scheme: url.split(":")[0],
-			},
+			{ url, scheme: url.split(":")[0] },
 		);
 	}
 
-	// Remove scheme
-	const remaining = url.slice(9); // "ethereum:".length
+	const { addressPart, chainId, functionName, queryString } = splitUrlParts(
+		url.slice(9),
+		url,
+	);
 
-	// Split into parts: <address>[@chainId][/function][?params]
-	let addressPart = remaining;
-	let chainId;
-	let functionName;
-	let queryString;
-
-	// Extract query string if present
-	const queryIndex = remaining.indexOf("?");
-	if (queryIndex !== -1) {
-		queryString = remaining.slice(queryIndex + 1);
-		addressPart = remaining.slice(0, queryIndex);
-	}
-
-	// Extract function name if present
-	const functionIndex = addressPart.indexOf("/");
-	if (functionIndex !== -1) {
-		functionName = decodeURIComponent(addressPart.slice(functionIndex + 1));
-		addressPart = addressPart.slice(0, functionIndex);
-	}
-
-	// Extract chain ID if present
-	const chainIndex = addressPart.indexOf("@");
-	if (chainIndex !== -1) {
-		const chainIdStr = addressPart.slice(chainIndex + 1);
-		addressPart = addressPart.slice(0, chainIndex);
-
-		// Parse chain ID
-		try {
-			chainId = BigInt(chainIdStr);
-			// Validate chain ID is non-negative
-			if (chainId < 0n) {
-				throw new InvalidTransactionUrlError("Chain ID must be non-negative", {
-					chainId: chainIdStr,
-					url,
-				});
-			}
-		} catch (error) {
-			if (error instanceof InvalidTransactionUrlError) {
-				throw error;
-			}
-			throw new InvalidTransactionUrlError("Invalid chain ID", {
-				chainId: chainIdStr,
-				url,
-			});
-		}
-	}
-
-	// Parse address
 	let target;
 	try {
 		target = Address.from(addressPart);
@@ -108,42 +116,24 @@ export function parse(url) {
 		});
 	}
 
-	// Build result - use object spread to build incrementally
-	/** @type {Partial<import('./TransactionUrlType.js').ParsedTransactionUrl>} */
-	let result = { target };
+	const queryParams = queryString ? parseQueryString(queryString, url) : {};
+	/** @type {import('./TransactionUrlType.js').ParsedTransactionUrl} */
+	const result = {
+		target,
+		...(chainId !== undefined ? { chainId } : {}),
+		...(functionName !== undefined ? { functionName } : {}),
+		...(queryParams.value !== undefined ? { value: queryParams.value } : {}),
+		...(queryParams.gas !== undefined ? { gas: queryParams.gas } : {}),
+		...(queryParams.gasPrice !== undefined
+			? { gasPrice: queryParams.gasPrice }
+			: {}),
+		...(queryParams.data !== undefined ? { data: queryParams.data } : {}),
+		...(queryParams.functionParams !== undefined
+			? { functionParams: queryParams.functionParams }
+			: {}),
+	};
 
-	if (chainId !== undefined) {
-		result = { ...result, chainId };
-	}
-
-	if (functionName !== undefined) {
-		result = { ...result, functionName };
-	}
-
-	// Parse query parameters
-	if (queryString) {
-		const params = parseQueryString(queryString, url);
-
-		if (params.value !== undefined) {
-			result = { ...result, value: params.value };
-		}
-		if (params.gas !== undefined) {
-			result = { ...result, gas: params.gas };
-		}
-		if (params.gasPrice !== undefined) {
-			result = { ...result, gasPrice: params.gasPrice };
-		}
-		if (params.data !== undefined) {
-			result = { ...result, data: params.data };
-		}
-		if (params.functionParams !== undefined) {
-			result = { ...result, functionParams: params.functionParams };
-		}
-	}
-
-	return /** @type {import('./TransactionUrlType.js').ParsedTransactionUrl} */ (
-		result
-	);
+	return result;
 }
 
 /**

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidRelayDataError } from "./errors.js";
 
@@ -29,8 +28,34 @@ function hexToBytes(hex, expectedLength) {
 }
 
 /**
+ * Parse a fixed-length byte field from Uint8Array or hex string
+ * @param {unknown} input
+ * @param {number} expectedLength
+ * @param {string} fieldName
+ * @returns {Uint8Array}
+ */
+function parseFixedBytes(input, expectedLength, fieldName) {
+	if (input instanceof Uint8Array) {
+		if (input.length !== expectedLength) {
+			throw new InvalidRelayDataError(
+				`${fieldName} must be ${expectedLength} bytes`,
+				{ value: input },
+			);
+		}
+		return input;
+	}
+	if (typeof input === "string") {
+		return hexToBytes(input, expectedLength);
+	}
+	throw new InvalidRelayDataError(
+		`${fieldName} must be Uint8Array or hex string`,
+		{ value: input },
+	);
+}
+
+/**
  * Converts value to bigint
- * @param {any} value
+ * @param {bigint | number | string} value
  * @returns {bigint}
  */
 function toBigInt(value) {
@@ -65,13 +90,10 @@ function toBigInt(value) {
  * });
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation requires checking multiple fields
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new InvalidRelayDataError("RelayData must be an object", { value });
 	}
-
-	// Validate relayUrl
 	if (typeof value.relayUrl !== "string") {
 		throw new InvalidRelayDataError("relayUrl must be a string", {
 			value: value.relayUrl,
@@ -86,94 +108,31 @@ export function from(value) {
 		});
 	}
 
-	// Parse relayPubkey (48 bytes BLS)
-	let relayPubkey;
-	if (value.relayPubkey instanceof Uint8Array) {
-		if (value.relayPubkey.length !== 48) {
-			throw new InvalidRelayDataError("relayPubkey must be 48 bytes", {
-				value: value.relayPubkey,
-			});
-		}
-		relayPubkey = value.relayPubkey;
-	} else if (typeof value.relayPubkey === "string") {
-		relayPubkey = hexToBytes(value.relayPubkey, 48);
-	} else {
-		throw new InvalidRelayDataError(
-			"relayPubkey must be Uint8Array or hex string",
-			{ value: value.relayPubkey },
+	const relayPubkey = parseFixedBytes(value.relayPubkey, 48, "relayPubkey");
+	const builderPubkey =
+		value.builderPubkey !== undefined
+			? parseFixedBytes(value.builderPubkey, 48, "builderPubkey")
+			: undefined;
+	const slot = /** @type {import('../Slot/SlotType.js').SlotType} */ (
+		toBigInt(value.slot)
+	);
+	const parentHash = /** @type {import('../Hash/HashType.js').HashType} */ (
+		parseFixedBytes(value.parentHash, 32, "parentHash")
+	);
+	const proposerFeeRecipient =
+		/** @type {import('../Address/AddressType.js').AddressType} */ (
+			parseFixedBytes(value.proposerFeeRecipient, 20, "proposerFeeRecipient")
 		);
-	}
 
-	// Parse optional builderPubkey (48 bytes BLS)
-	let builderPubkey;
-	if (value.builderPubkey !== undefined) {
-		if (value.builderPubkey instanceof Uint8Array) {
-			if (value.builderPubkey.length !== 48) {
-				throw new InvalidRelayDataError("builderPubkey must be 48 bytes", {
-					value: value.builderPubkey,
-				});
-			}
-			builderPubkey = value.builderPubkey;
-		} else if (typeof value.builderPubkey === "string") {
-			builderPubkey = hexToBytes(value.builderPubkey, 48);
-		} else {
-			throw new InvalidRelayDataError(
-				"builderPubkey must be Uint8Array or hex string",
-				{ value: value.builderPubkey },
-			);
-		}
-	}
-
-	// Parse slot
-	const slot = toBigInt(value.slot);
-
-	// Parse parentHash (32 bytes)
-	let parentHash;
-	if (value.parentHash instanceof Uint8Array) {
-		if (value.parentHash.length !== 32) {
-			throw new InvalidRelayDataError("parentHash must be 32 bytes", {
-				value: value.parentHash,
-			});
-		}
-		parentHash = value.parentHash;
-	} else if (typeof value.parentHash === "string") {
-		parentHash = hexToBytes(value.parentHash, 32);
-	} else {
-		throw new InvalidRelayDataError(
-			"parentHash must be Uint8Array or hex string",
-			{ value: value.parentHash },
-		);
-	}
-
-	// Parse proposerFeeRecipient (20 bytes)
-	let proposerFeeRecipient;
-	if (value.proposerFeeRecipient instanceof Uint8Array) {
-		if (value.proposerFeeRecipient.length !== 20) {
-			throw new InvalidRelayDataError("proposerFeeRecipient must be 20 bytes", {
-				value: value.proposerFeeRecipient,
-			});
-		}
-		proposerFeeRecipient = value.proposerFeeRecipient;
-	} else if (typeof value.proposerFeeRecipient === "string") {
-		proposerFeeRecipient = hexToBytes(value.proposerFeeRecipient, 20);
-	} else {
-		throw new InvalidRelayDataError(
-			"proposerFeeRecipient must be Uint8Array or hex string",
-			{ value: value.proposerFeeRecipient },
-		);
-	}
-
+	/** @type {RelayDataType} */
 	const result = {
 		relayUrl: value.relayUrl,
 		relayPubkey,
 		slot,
 		parentHash,
 		proposerFeeRecipient,
+		...(builderPubkey !== undefined ? { builderPubkey } : {}),
 	};
-
-	if (builderPubkey !== undefined) {
-		result.builderPubkey = builderPubkey;
-	}
 
 	return result;
 }

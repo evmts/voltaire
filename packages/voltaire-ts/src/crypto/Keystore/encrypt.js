@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import { encryptAesCtr } from "./aesCtr.js";
 import {
@@ -43,23 +42,16 @@ export async function encrypt(privateKey, password, options = {}) {
 		} = options;
 		void includeAddress;
 
-		// Derive key from password using selected KDF
 		const derivedKey =
 			kdf === "scrypt"
 				? deriveScrypt(password, salt, scryptN, scryptR, scryptP, 32)
 				: derivePbkdf2(password, salt, pbkdf2C, 32);
 
-		// Split derived key: first 16 bytes for encryption, next 16 for MAC
 		const encryptionKey = derivedKey.slice(0, 16);
 		const macKey = derivedKey.slice(16, 32);
-
-		// Encrypt private key with AES-128-CTR
 		const ciphertext = encryptAesCtr(privateKey, encryptionKey, iv);
-
-		// Compute MAC = keccak256(macKey || ciphertext)
 		const mac = keccak_256(concat(macKey, ciphertext));
 
-		// Build keystore object
 		/** @type {import('./KeystoreType.js').KeystoreV3} */
 		const keystore = {
 			version: 3,
@@ -67,9 +59,7 @@ export async function encrypt(privateKey, password, options = {}) {
 			crypto: {
 				cipher: "aes-128-ctr",
 				ciphertext: bytesToHex(ciphertext),
-				cipherparams: {
-					iv: bytesToHex(iv),
-				},
+				cipherparams: { iv: bytesToHex(iv) },
 				kdf,
 				kdfparams:
 					kdf === "scrypt"
@@ -90,15 +80,6 @@ export async function encrypt(privateKey, password, options = {}) {
 			},
 		};
 
-		// Optional: include address field
-		// if (includeAddress) {
-		// 	const { toAddress } = await import(
-		// 		"../../primitives/PrivateKey/toAddress.js"
-		// 	);
-		// 	const address = toAddress(privateKey);
-		// 	keystore.address = address.toLowerCase().slice(2); // Remove 0x prefix
-		// }
-
 		return keystore;
 	} catch (error) {
 		if (
@@ -107,6 +88,7 @@ export async function encrypt(privateKey, password, options = {}) {
 		) {
 			throw error;
 		}
-		throw new EncryptionError(`Encryption failed: ${error.message}`);
+		const msg = error instanceof Error ? error.message : String(error);
+		throw new EncryptionError(`Encryption failed: ${msg}`);
 	}
 }

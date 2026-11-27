@@ -469,13 +469,39 @@ fn encodeArrayValue(
     return result;
 }
 
+fn encodeIntAtomic(result: []u8, type_str: []const u8, value: Value) !bool {
+    if (std.mem.startsWith(u8, type_str, "uint")) {
+        const bits = std.fmt.parseInt(u16, type_str[4..], 10) catch return error.InvalidType;
+        if (bits < 8 or bits > 256 or bits % 8 != 0) return error.InvalidType;
+        const num = switch (value) {
+            .uint => |n| n,
+            else => return error.ExpectedUint,
+        };
+        std.mem.writeInt(u256, result[0..32], num, .big);
+        return true;
+    }
+
+    if (std.mem.startsWith(u8, type_str, "int")) {
+        const bits = std.fmt.parseInt(u16, type_str[3..], 10) catch return error.InvalidType;
+        if (bits < 8 or bits > 256 or bits % 8 != 0) return error.InvalidType;
+        const num = switch (value) {
+            .int => |n| n,
+            else => return error.ExpectedInt,
+        };
+        const unsigned: u256 = @bitCast(num);
+        std.mem.writeInt(u256, result[0..32], unsigned, .big);
+        return true;
+    }
+
+    return false;
+}
+
 /// Encode atomic value (address, bool, uintN, intN, bytesN)
 fn encodeAtomicValue(allocator: std.mem.Allocator, type_str: []const u8, value: Value) ![]u8 {
     const result = try allocator.alloc(u8, 32);
     errdefer allocator.free(result);
     @memset(result, 0);
 
-    // Address: left-pad to 32 bytes
     if (std.mem.eql(u8, type_str, "address")) {
         const addr = switch (value) {
             .address => |a| a,
@@ -485,7 +511,6 @@ fn encodeAtomicValue(allocator: std.mem.Allocator, type_str: []const u8, value: 
         return result;
     }
 
-    // Bool: 0x00...00 or 0x00...01
     if (std.mem.eql(u8, type_str, "bool")) {
         const b = switch (value) {
             .bool_val => |v| v,
@@ -495,57 +520,23 @@ fn encodeAtomicValue(allocator: std.mem.Allocator, type_str: []const u8, value: 
         return result;
     }
 
-    // BytesN: right-pad to 32 bytes
     if (std.mem.startsWith(u8, type_str, "bytes")) {
         const size_str = type_str[5..];
         if (size_str.len > 0) {
             const size = std.fmt.parseInt(u8, size_str, 10) catch return error.InvalidType;
             if (size < 1 or size > 32) return error.InvalidType;
-
             const data = switch (value) {
                 .fixed_bytes => |fb| fb.data,
                 .bytes => |b| b,
                 else => return error.ExpectedFixedBytes,
             };
-
             const copy_len = @min(data.len, size);
             @memcpy(result[0..copy_len], data[0..copy_len]);
             return result;
         }
     }
 
-    // UintN: big-endian encoding
-    if (std.mem.startsWith(u8, type_str, "uint")) {
-        const bits_str = type_str[4..];
-        const bits = std.fmt.parseInt(u16, bits_str, 10) catch return error.InvalidType;
-        if (bits < 8 or bits > 256 or bits % 8 != 0) return error.InvalidType;
-
-        const num = switch (value) {
-            .uint => |n| n,
-            else => return error.ExpectedUint,
-        };
-
-        std.mem.writeInt(u256, result[0..32], num, .big);
-        return result;
-    }
-
-    // IntN: big-endian encoding (two's complement)
-    if (std.mem.startsWith(u8, type_str, "int")) {
-        const bits_str = type_str[3..];
-        const bits = std.fmt.parseInt(u16, bits_str, 10) catch return error.InvalidType;
-        if (bits < 8 or bits > 256 or bits % 8 != 0) return error.InvalidType;
-
-        const num = switch (value) {
-            .int => |n| n,
-            else => return error.ExpectedInt,
-        };
-
-        // Convert to unsigned for encoding (two's complement)
-        const unsigned: u256 = @bitCast(num);
-        std.mem.writeInt(u256, result[0..32], unsigned, .big);
-        return result;
-    }
-
+    if (try encodeIntAtomic(result, type_str, value)) return result;
     return error.UnknownType;
 }
 

@@ -8,7 +8,9 @@ import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { Address } from "../../primitives/Address/index.js";
 import * as BrandedAddress from "../../primitives/Address/internal-index.js";
+import type { Any as TransactionAny } from "../../primitives/Transaction/types.js";
 import * as primitives from "../../wasm-loader/loader.js";
+import type { TypedData } from "../EIP712/index.js";
 import { Keccak256Wasm } from "../keccak256.wasm.js";
 
 /**
@@ -36,11 +38,16 @@ export interface Signer {
 	/** Sign a message with EIP-191 prefix */
 	signMessage(message: string | Uint8Array): Promise<string>;
 	/** Sign a transaction */
-	// biome-ignore lint/suspicious/noExplicitAny: transaction and return type vary
-	signTransaction(transaction: any): Promise<any>;
+	signTransaction(transaction: TransactionAny): Promise<
+		TransactionAny & {
+			r: Uint8Array;
+			s: Uint8Array;
+			v?: bigint;
+			yParity?: number;
+		}
+	>;
 	/** Sign typed data according to EIP-712 */
-	// biome-ignore lint/suspicious/noExplicitAny: typed data structure varies
-	signTypedData(typedData: any): Promise<string>;
+	signTypedData(typedData: TypedData): Promise<string>;
 }
 
 /**
@@ -232,8 +239,14 @@ export class PrivateKeySignerImpl implements Signer {
 	 * console.log(signedTx.yParity, signedTx.r, signedTx.s);
 	 * ```
 	 */
-	// biome-ignore lint/suspicious/noExplicitAny: transaction type varies by chain
-	async signTransaction(transaction: any): Promise<any> {
+	async signTransaction(transaction: TransactionAny): Promise<
+		TransactionAny & {
+			r: Uint8Array;
+			s: Uint8Array;
+			v?: bigint;
+			yParity?: number;
+		}
+	> {
 		const Transaction = await import(
 			"../../primitives/Transaction/index.js"
 		).then((m) => m);
@@ -252,7 +265,10 @@ export class PrivateKeySignerImpl implements Signer {
 		// Convert v from 0-1 to appropriate format based on tx type
 		if (transaction.type === 0) {
 			// Legacy: v includes chain ID
-			const chainId = transaction.chainId ?? 0n;
+			const chainId =
+				"chainId" in transaction
+					? ((transaction.chainId as bigint | undefined) ?? 0n)
+					: 0n;
 			const vValue = BigInt(v) + 35n + chainId * 2n;
 			return { ...transaction, v: vValue, r, s };
 		}
@@ -297,8 +313,7 @@ export class PrivateKeySignerImpl implements Signer {
 	 * console.log(signature); // '0x...'
 	 * ```
 	 */
-	// biome-ignore lint/suspicious/noExplicitAny: EIP-712 typed data structure varies
-	async signTypedData(typedData: any): Promise<string> {
+	async signTypedData(typedData: TypedData): Promise<string> {
 		const { Eip712Wasm } = await import("../eip712.wasm.js");
 
 		// Hash typed data according to EIP-712

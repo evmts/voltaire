@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { parseHexByte } from "../Hex/parseHexByte.js";
 import { InvalidBuilderBidError } from "./errors.js";
 
@@ -29,8 +28,34 @@ function hexToBytes(hex, expectedLength) {
 }
 
 /**
+ * Parse a fixed-length byte field from Uint8Array or hex string
+ * @param {unknown} input
+ * @param {number} expectedLength
+ * @param {string} fieldName
+ * @returns {Uint8Array}
+ */
+function parseFixedBytes(input, expectedLength, fieldName) {
+	if (input instanceof Uint8Array) {
+		if (input.length !== expectedLength) {
+			throw new InvalidBuilderBidError(
+				`${fieldName} must be ${expectedLength} bytes`,
+				{ value: input },
+			);
+		}
+		return input;
+	}
+	if (typeof input === "string") {
+		return hexToBytes(input, expectedLength);
+	}
+	throw new InvalidBuilderBidError(
+		`${fieldName} must be Uint8Array or hex string`,
+		{ value: input },
+	);
+}
+
+/**
  * Converts value to bigint
- * @param {any} value
+ * @param {bigint | number | string} value
  * @returns {bigint}
  */
 function toBigInt(value) {
@@ -70,132 +95,44 @@ function toBigInt(value) {
  * });
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex logic required
 export function from(value) {
 	if (!value || typeof value !== "object") {
 		throw new InvalidBuilderBidError("BuilderBid must be an object", { value });
 	}
 
-	// Parse slot
-	const slot = toBigInt(value.slot);
-
-	// Parse parentHash
-	let parentHash;
-	if (value.parentHash instanceof Uint8Array) {
-		if (value.parentHash.length !== 32) {
-			throw new InvalidBuilderBidError("parentHash must be 32 bytes", {
-				value: value.parentHash,
-			});
-		}
-		parentHash = value.parentHash;
-	} else if (typeof value.parentHash === "string") {
-		parentHash = hexToBytes(value.parentHash, 32);
-	} else {
-		throw new InvalidBuilderBidError(
-			"parentHash must be Uint8Array or hex string",
-			{ value: value.parentHash },
+	const slot = /** @type {import('../Slot/SlotType.js').SlotType} */ (
+		toBigInt(value.slot)
+	);
+	const parentHash = /** @type {import('../Hash/HashType.js').HashType} */ (
+		parseFixedBytes(value.parentHash, 32, "parentHash")
+	);
+	const blockHash = /** @type {import('../Hash/HashType.js').HashType} */ (
+		parseFixedBytes(value.blockHash, 32, "blockHash")
+	);
+	const builderPubkey = parseFixedBytes(
+		value.builderPubkey,
+		48,
+		"builderPubkey",
+	);
+	const proposerPubkey = parseFixedBytes(
+		value.proposerPubkey,
+		48,
+		"proposerPubkey",
+	);
+	const proposerFeeRecipient =
+		/** @type {import('../Address/AddressType.js').AddressType} */ (
+			parseFixedBytes(value.proposerFeeRecipient, 20, "proposerFeeRecipient")
 		);
-	}
-
-	// Parse blockHash
-	let blockHash;
-	if (value.blockHash instanceof Uint8Array) {
-		if (value.blockHash.length !== 32) {
-			throw new InvalidBuilderBidError("blockHash must be 32 bytes", {
-				value: value.blockHash,
-			});
-		}
-		blockHash = value.blockHash;
-	} else if (typeof value.blockHash === "string") {
-		blockHash = hexToBytes(value.blockHash, 32);
-	} else {
-		throw new InvalidBuilderBidError(
-			"blockHash must be Uint8Array or hex string",
-			{ value: value.blockHash },
-		);
-	}
-
-	// Parse builderPubkey (48 bytes BLS)
-	let builderPubkey;
-	if (value.builderPubkey instanceof Uint8Array) {
-		if (value.builderPubkey.length !== 48) {
-			throw new InvalidBuilderBidError("builderPubkey must be 48 bytes", {
-				value: value.builderPubkey,
-			});
-		}
-		builderPubkey = value.builderPubkey;
-	} else if (typeof value.builderPubkey === "string") {
-		builderPubkey = hexToBytes(value.builderPubkey, 48);
-	} else {
-		throw new InvalidBuilderBidError(
-			"builderPubkey must be Uint8Array or hex string",
-			{ value: value.builderPubkey },
-		);
-	}
-
-	// Parse proposerPubkey (48 bytes BLS)
-	let proposerPubkey;
-	if (value.proposerPubkey instanceof Uint8Array) {
-		if (value.proposerPubkey.length !== 48) {
-			throw new InvalidBuilderBidError("proposerPubkey must be 48 bytes", {
-				value: value.proposerPubkey,
-			});
-		}
-		proposerPubkey = value.proposerPubkey;
-	} else if (typeof value.proposerPubkey === "string") {
-		proposerPubkey = hexToBytes(value.proposerPubkey, 48);
-	} else {
-		throw new InvalidBuilderBidError(
-			"proposerPubkey must be Uint8Array or hex string",
-			{ value: value.proposerPubkey },
-		);
-	}
-
-	// Parse proposerFeeRecipient (20 bytes address)
-	let proposerFeeRecipient;
-	if (value.proposerFeeRecipient instanceof Uint8Array) {
-		if (value.proposerFeeRecipient.length !== 20) {
-			throw new InvalidBuilderBidError(
-				"proposerFeeRecipient must be 20 bytes",
-				{ value: value.proposerFeeRecipient },
-			);
-		}
-		proposerFeeRecipient = value.proposerFeeRecipient;
-	} else if (typeof value.proposerFeeRecipient === "string") {
-		proposerFeeRecipient = hexToBytes(value.proposerFeeRecipient, 20);
-	} else {
-		throw new InvalidBuilderBidError(
-			"proposerFeeRecipient must be Uint8Array or hex string",
-			{ value: value.proposerFeeRecipient },
-		);
-	}
-
-	// Parse gasLimit
-	const gasLimit = toBigInt(value.gasLimit);
-
-	// Parse gasUsed
-	const gasUsed = toBigInt(value.gasUsed);
-
-	// Parse value
-	const bidValue = toBigInt(value.value);
-
-	// Parse signature (96 bytes BLS)
-	let signature;
-	if (value.signature instanceof Uint8Array) {
-		if (value.signature.length !== 96) {
-			throw new InvalidBuilderBidError("signature must be 96 bytes", {
-				value: value.signature,
-			});
-		}
-		signature = value.signature;
-	} else if (typeof value.signature === "string") {
-		signature = hexToBytes(value.signature, 96);
-	} else {
-		throw new InvalidBuilderBidError(
-			"signature must be Uint8Array or hex string",
-			{ value: value.signature },
-		);
-	}
+	const gasLimit = /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+		toBigInt(value.gasLimit)
+	);
+	const gasUsed = /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+		toBigInt(value.gasUsed)
+	);
+	const bidValue = /** @type {import('../Uint/Uint256Type.js').Uint256Type} */ (
+		toBigInt(value.value)
+	);
+	const signature = parseFixedBytes(value.signature, 96, "signature");
 
 	return {
 		slot,

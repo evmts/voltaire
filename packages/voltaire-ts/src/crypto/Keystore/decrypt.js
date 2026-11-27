@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import { constantTimeEqual } from "../ConstantTime/constantTimeEqual.js";
 import { decryptAesCtr } from "./aesCtr.js";
@@ -12,6 +11,48 @@ import {
 } from "./errors.js";
 import { derivePbkdf2, deriveScrypt, MAX_DKLEN } from "./kdf.js";
 import { concat, hexToBytes } from "./utils.js";
+
+/**
+ * Derive KDF key bytes after validating dklen bounds
+ * @param {"scrypt" | "pbkdf2"} kdf
+ * @param {import('./KeystoreType.js').ScryptParams | import('./KeystoreType.js').Pbkdf2Params} kdfparams
+ * @param {string} password
+ * @param {Uint8Array} salt
+ * @returns {Uint8Array}
+ */
+function deriveKeystoreKey(kdf, kdfparams, password, salt) {
+	if (
+		!Number.isInteger(kdfparams.dklen) ||
+		kdfparams.dklen < 32 ||
+		kdfparams.dklen > MAX_DKLEN
+	) {
+		throw new DecryptionError(
+			`dklen must be an integer between 32 and ${MAX_DKLEN}, got ${kdfparams.dklen}`,
+		);
+	}
+	const derivedKey =
+		kdf === "scrypt"
+			? deriveScrypt(
+					password,
+					salt,
+					/** @type {import('./KeystoreType.js').ScryptParams} */ (kdfparams).n,
+					/** @type {import('./KeystoreType.js').ScryptParams} */ (kdfparams).r,
+					/** @type {import('./KeystoreType.js').ScryptParams} */ (kdfparams).p,
+					kdfparams.dklen,
+				)
+			: derivePbkdf2(
+					password,
+					salt,
+					/** @type {import('./KeystoreType.js').Pbkdf2Params} */ (kdfparams).c,
+					kdfparams.dklen,
+				);
+	if (derivedKey.length < 32) {
+		throw new DecryptionError(
+			`Derived key must be at least 32 bytes, got ${derivedKey.length}`,
+		);
+	}
+	return derivedKey;
+}
 
 /**
  * Decrypt Web3 Secret Storage v3 keystore to private key
@@ -33,83 +74,37 @@ import { concat, hexToBytes } from "./utils.js";
  * const privateKey = Keystore.decrypt(keystore, 'my-password');
  * ```
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: linear validation of every keystore field
 export function decrypt(keystore, password) {
 	try {
-		// Validate version
 		if (keystore.version !== 3) {
 			throw new UnsupportedVersionError(keystore.version);
 		}
-
-		const { crypto } = keystore;
-		const { cipher, kdf, kdfparams, ciphertext, cipherparams, mac } = crypto;
-
-		// Validate cipher
+		const { cipher, kdf, kdfparams, ciphertext, cipherparams, mac } =
+			keystore.crypto;
 		if (cipher !== "aes-128-ctr") {
 			throw new DecryptionError(`Unsupported cipher: ${cipher}`);
 		}
-
-		// Validate KDF
 		if (kdf !== "scrypt" && kdf !== "pbkdf2") {
 			throw new UnsupportedKdfError(kdf);
 		}
-
-		// Parse parameters
 		const salt = hexToBytes(kdfparams.salt);
 		const iv = hexToBytes(cipherparams.iv);
 		const ciphertextBytes = hexToBytes(ciphertext);
 		const macBytes = hexToBytes(mac);
-
 		if (iv.length !== 16) {
 			throw new DecryptionError(`IV must be 16 bytes, got ${iv.length}`);
 		}
 		if (macBytes.length !== 32) {
 			throw new DecryptionError(`MAC must be 32 bytes, got ${macBytes.length}`);
 		}
-		// dklen < 32 would leave an empty or short MAC key and let a forged
-		// keystore pass MAC verification. A huge dklen makes the KDF do
-		// unbounded work. Reject both before running the KDF.
-		if (
-			!Number.isInteger(kdfparams.dklen) ||
-			kdfparams.dklen < 32 ||
-			kdfparams.dklen > MAX_DKLEN
-		) {
-			throw new DecryptionError(
-				`dklen must be an integer between 32 and ${MAX_DKLEN}, got ${kdfparams.dklen}`,
-			);
-		}
-
-		// Derive key from password
-		let derivedKey;
-		if (kdf === "scrypt") {
-			const { n, r, p, dklen } =
-				/** @type {import('./KeystoreType.js').ScryptParams} */ (kdfparams);
-			derivedKey = deriveScrypt(password, salt, n, r, p, dklen);
-		} else {
-			const { c, dklen } =
-				/** @type {import('./KeystoreType.js').Pbkdf2Params} */ (kdfparams);
-			derivedKey = derivePbkdf2(password, salt, c, dklen);
-		}
-
-		if (derivedKey.length < 32) {
-			throw new DecryptionError(
-				`Derived key must be at least 32 bytes, got ${derivedKey.length}`,
-			);
-		}
-
-		// Split derived key
+		const derivedKey = deriveKeystoreKey(kdf, kdfparams, password, salt);
 		const encryptionKey = derivedKey.slice(0, 16);
 		const macKey = derivedKey.slice(16, 32);
-
-		// Verify MAC
 		const computedMac = keccak_256(concat(macKey, ciphertextBytes));
 		if (!constantTimeEqual(computedMac, macBytes)) {
 			throw new InvalidMacError();
 		}
-
-		// Decrypt private key
 		const privateKey = decryptAesCtr(ciphertextBytes, encryptionKey, iv);
-
 		return /** @type {import('../../primitives/PrivateKey/PrivateKeyType.js').PrivateKeyType} */ (
 			privateKey
 		);
@@ -124,6 +119,7 @@ export function decrypt(keystore, password) {
 		) {
 			throw error;
 		}
-		throw new DecryptionError(`Decryption failed: ${error.message}`);
+		const msg = error instanceof Error ? error.message : String(error);
+		throw new DecryptionError(`Decryption failed: ${msg}`);
 	}
 }

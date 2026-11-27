@@ -1,44 +1,11 @@
 import { InvalidBloomFilterParameterError } from "./errors.js";
 
 /**
- * Combine multiple bloom filters using bitwise OR
- * All filters must have same size and hash count
- *
- * @param {...import('./BloomFilterType.js').BloomFilterType} filters - Bloom filters to combine
- * @returns {import('./BloomFilterType.js').BloomFilterType} Combined bloom filter
- * @throws {InvalidBloomFilterParameterError} If filters have different parameters
- *
- * @example
- * ```typescript
- * const f1 = BloomFilter.create(2048, 3);
- * const f2 = BloomFilter.create(2048, 3);
- * const f3 = BloomFilter.create(2048, 3);
- * const combined = BloomFilter.combine(f1, f2, f3);
- * ```
+ * Validate all bloom filters match the first filter's size and parameters
+ * @param {import('./BloomFilterType.js').BloomFilterType} first
+ * @param {import('./BloomFilterType.js').BloomFilterType[]} filters
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex bloom filter logic
-export function combine(...filters) {
-	if (filters.length === 0) {
-		throw new InvalidBloomFilterParameterError(
-			"combine requires at least one filter",
-			{
-				value: 0,
-				expected: "at least 1 filter",
-				docsPath: "/primitives/bloom-filter/combine#error-handling",
-			},
-		);
-	}
-
-	const first = filters[0];
-	if (!first) {
-		throw new InvalidBloomFilterParameterError("Invalid filter", {
-			value: first,
-			expected: "valid BloomFilter",
-			docsPath: "/primitives/bloom-filter/combine#error-handling",
-		});
-	}
-
-	// Validate all filters have same parameters
+function assertCompatibleFilters(first, filters) {
 	for (let i = 1; i < filters.length; i++) {
 		const filter = filters[i];
 		if (!filter) {
@@ -72,6 +39,46 @@ export function combine(...filters) {
 			);
 		}
 	}
+}
+
+/**
+ * Combine multiple bloom filters using bitwise OR
+ * All filters must have same size and hash count
+ *
+ * @param {...import('./BloomFilterType.js').BloomFilterType} filters - Bloom filters to combine
+ * @returns {import('./BloomFilterType.js').BloomFilterType} Combined bloom filter
+ * @throws {InvalidBloomFilterParameterError} If filters have different parameters
+ *
+ * @example
+ * ```typescript
+ * const f1 = BloomFilter.create(2048, 3);
+ * const f2 = BloomFilter.create(2048, 3);
+ * const f3 = BloomFilter.create(2048, 3);
+ * const combined = BloomFilter.combine(f1, f2, f3);
+ * ```
+ */
+export function combine(...filters) {
+	if (filters.length === 0) {
+		throw new InvalidBloomFilterParameterError(
+			"combine requires at least one filter",
+			{
+				value: 0,
+				expected: "at least 1 filter",
+				docsPath: "/primitives/bloom-filter/combine#error-handling",
+			},
+		);
+	}
+
+	const first = filters[0];
+	if (!first) {
+		throw new InvalidBloomFilterParameterError("Invalid filter", {
+			value: first,
+			expected: "valid BloomFilter",
+			docsPath: "/primitives/bloom-filter/combine#error-handling",
+		});
+	}
+
+	assertCompatibleFilters(first, filters);
 
 	const result = new Uint8Array(first.length);
 	for (let i = 0; i < first.length; i++) {

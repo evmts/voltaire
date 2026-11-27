@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
 
 /**
@@ -6,10 +5,23 @@ import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
  */
 
 /**
+ * Convert bytes to 0x-prefixed hex string
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+function bytesToHex(bytes) {
+	let hex = "0x";
+	for (let i = 0; i < bytes.length; i++) {
+		hex += HEX_BYTE_TABLE[/** @type {number} */ (bytes[i])];
+	}
+	return hex;
+}
+
+/**
  * Converts bundle to Flashbots RPC parameters
  *
  * @param {BundleType} bundle - Bundle instance
- * @returns {object} Flashbots eth_sendBundle parameters
+ * @returns {{ txs: string[], blockNumber?: string, minTimestamp?: number, maxTimestamp?: number, revertingTxHashes?: string[] }} Flashbots eth_sendBundle parameters
  * @example
  * ```typescript
  * import * as Bundle from './Bundle/index.js';
@@ -18,15 +30,9 @@ import { HEX_BYTE_TABLE } from "../Hex/hexLookup.js";
  * ```
  */
 export function toFlashbotsParams(bundle) {
+	/** @type {{ txs: string[], blockNumber?: string, minTimestamp?: number, maxTimestamp?: number, revertingTxHashes?: string[] }} */
 	const params = {
-		txs: bundle.transactions.map((tx) => {
-			// Convert to hex string
-			let hex = "0x";
-			for (let i = 0; i < tx.length; i++) {
-				hex += HEX_BYTE_TABLE[tx[i]];
-			}
-			return hex;
-		}),
+		txs: bundle.transactions.map(bytesToHex),
 	};
 
 	if (bundle.blockNumber !== undefined) {
@@ -42,13 +48,7 @@ export function toFlashbotsParams(bundle) {
 	}
 
 	if (bundle.revertingTxHashes !== undefined) {
-		params.revertingTxHashes = bundle.revertingTxHashes.map((hash) => {
-			let hex = "0x";
-			for (let i = 0; i < hash.length; i++) {
-				hex += HEX_BYTE_TABLE[hash[i]];
-			}
-			return hex;
-		});
+		params.revertingTxHashes = bundle.revertingTxHashes.map(bytesToHex);
 	}
 
 	return params;

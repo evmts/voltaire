@@ -161,6 +161,40 @@ export namespace Eip712Wasm {
 	// Value Encoding
 	// ==========================================================================
 
+	function encodeArrayValue(
+		type: string,
+		value: unknown,
+		types: Types,
+	): Uint8Array {
+		if (!Array.isArray(value)) {
+			throw new Eip712EncodingError(`Expected array for type ${type}`);
+		}
+		const baseType = type.replace(/\[.*\]$/, "");
+		const encodedElements = value.map((item) =>
+			encodeValue(baseType, item, types),
+		);
+		const concatenated = new Uint8Array(encodedElements.length * 32);
+		for (let i = 0; i < encodedElements.length; i++) {
+			const elem = encodedElements[i];
+			if (elem) {
+				concatenated.set(elem, i * 32);
+			}
+		}
+		return Keccak256Wasm.hash(concatenated) as Uint8Array;
+	}
+
+	function encodeIntWord(
+		value: bigint | number,
+		result: Uint8Array,
+	): Uint8Array {
+		const bigNum = typeof value === "bigint" ? value : BigInt(value);
+		const hex = bigNum.toString(16).padStart(64, "0");
+		for (let i = 0; i < 32; i++) {
+			result[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+		}
+		return result;
+	}
+
 	/**
 	 * Encode single value
 	 *
@@ -169,7 +203,6 @@ export namespace Eip712Wasm {
 	 * @param types - Type definitions (for structs)
 	 * @returns 32-byte encoded value
 	 */
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: EIP-712 encoding inherently complex
 	export function encodeValue(
 		type: string,
 		value: unknown,
@@ -177,69 +210,37 @@ export namespace Eip712Wasm {
 	): Uint8Array {
 		const result = new Uint8Array(32);
 
-		// Handle arrays
 		if (type.includes("[")) {
-			if (!Array.isArray(value)) {
-				throw new Eip712EncodingError(`Expected array for type ${type}`);
-			}
-			const baseType = type.replace(/\[.*\]$/, "");
-			const encodedElements = value.map((item) =>
-				encodeValue(baseType, item, types),
-			);
-			const concatenated = new Uint8Array(encodedElements.length * 32);
-			for (let i = 0; i < encodedElements.length; i++) {
-				const elem = encodedElements[i];
-				if (elem) {
-					concatenated.set(elem, i * 32);
-				}
-			}
-			return Keccak256Wasm.hash(concatenated) as Uint8Array;
+			return encodeArrayValue(type, value, types);
 		}
-
-		// Handle structs
 		if (types[type]) {
 			return hashStruct(type, value as Message, types) as Uint8Array;
 		}
-
-		// Handle atomic types
 		if (type === "string") {
-			const bytes = new TextEncoder().encode(value as string);
-			return Keccak256Wasm.hash(bytes) as Uint8Array;
+			return Keccak256Wasm.hash(
+				new TextEncoder().encode(value as string),
+			) as Uint8Array;
 		}
-
 		if (type === "bytes") {
 			return Keccak256Wasm.hash(value as Uint8Array) as Uint8Array;
 		}
-
 		if (type.startsWith("bytes")) {
 			const size = Number.parseInt(type.slice(5), 10);
-			const bytes = value as Uint8Array;
-			result.set(bytes.slice(0, size), 0);
+			result.set((value as Uint8Array).slice(0, size), 0);
 			return result;
 		}
-
 		if (type === "address") {
 			const addr =
 				typeof value === "string" ? hexToBytes(value) : (value as Uint8Array);
 			result.set(addr, 12);
 			return result;
 		}
-
 		if (type === "bool") {
 			result[31] = (value as boolean) ? 1 : 0;
 			return result;
 		}
-
 		if (type.startsWith("uint") || type.startsWith("int")) {
-			const num = value as bigint | number;
-			const bigNum = typeof num === "bigint" ? num : BigInt(num);
-
-			// Convert to 32-byte big-endian
-			const hex = bigNum.toString(16).padStart(64, "0");
-			for (let i = 0; i < 32; i++) {
-				result[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-			}
-			return result;
+			return encodeIntWord(value as bigint | number, result);
 		}
 
 		throw new Eip712EncodingError(`Unsupported type: ${type}`);

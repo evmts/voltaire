@@ -80,7 +80,11 @@ pub const SiweMessage = struct {
         try result.appendSlice(allocator, "Issued At: ");
         try result.appendSlice(allocator, self.issued_at);
 
-        // Optional fields
+        try self.appendOptionalFields(&result, allocator);
+        return result.toOwnedSlice(allocator);
+    }
+
+    fn appendOptionalFields(self: *const SiweMessage, result: *std.ArrayList(u8), allocator: Allocator) !void {
         if (self.expiration_time) |exp| {
             try result.appendSlice(allocator, "\nExpiration Time: ");
             try result.appendSlice(allocator, exp);
@@ -103,8 +107,6 @@ pub const SiweMessage = struct {
                 try result.appendSlice(allocator, resource);
             }
         }
-
-        return result.toOwnedSlice(allocator);
     }
 
     pub fn validate(self: *const SiweMessage) !void {

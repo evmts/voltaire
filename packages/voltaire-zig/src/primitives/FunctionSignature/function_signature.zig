@@ -109,54 +109,8 @@ pub const ParseError = error{
     MissingCloseParen,
 };
 
-/// Create FunctionSignature from signature string.
-/// Parses the signature and computes the selector.
-pub fn fromSignature(sig: []const u8) ParseError!FunctionSignature {
-    if (sig.len > 512) {
-        return ParseError.SignatureTooLong;
-    }
-
-    // Find opening parenthesis
-    var paren_index: ?usize = null;
-    for (sig, 0..) |c, i| {
-        if (c == '(') {
-            paren_index = i;
-            break;
-        }
-    }
-
-    if (paren_index == null) {
-        return ParseError.MissingOpenParen;
-    }
-
-    // Verify closing parenthesis
-    if (sig[sig.len - 1] != ')') {
-        return ParseError.MissingCloseParen;
-    }
-
-    var result: FunctionSignature = undefined;
-
-    // Copy signature
-    @memcpy(result.signature_buf[0..sig.len], sig);
-    result.signature_len = sig.len;
-
-    // Store name end
-    result.name_end = paren_index.?;
-
-    // Compute selector
-    result.selector = computeSelector(sig);
-
-    // Parse inputs
-    const params_start = paren_index.? + 1;
-    const params_end = sig.len - 1;
-    const params_str = sig[params_start..params_end];
-
-    result.input_count = 0;
-
-    if (params_str.len == 0) {
-        // No parameters
-        return result;
-    }
+fn parseParamRanges(sig: []const u8, params_start: usize, params_end: usize, result: *FunctionSignature) ParseError!void {
+    if (params_start >= params_end) return;
 
     // Split by comma, handling nested types (tuples, arrays)
     var current_start = params_start;
@@ -166,10 +120,7 @@ pub fn fromSignature(sig: []const u8) ParseError!FunctionSignature {
     while (i < params_end) : (i += 1) {
         const c = sig[i];
         if (c == ',' and depth == 0) {
-            // Found parameter boundary
-            if (result.input_count >= MAX_INPUTS) {
-                return ParseError.TooManyInputs;
-            }
+            if (result.input_count >= MAX_INPUTS) return ParseError.TooManyInputs;
             result.input_starts[result.input_count] = current_start;
             result.input_lens[result.input_count] = i - current_start;
             result.input_count += 1;
@@ -181,16 +132,30 @@ pub fn fromSignature(sig: []const u8) ParseError!FunctionSignature {
         }
     }
 
-    // Add last parameter
     if (current_start < params_end) {
-        if (result.input_count >= MAX_INPUTS) {
-            return ParseError.TooManyInputs;
-        }
+        if (result.input_count >= MAX_INPUTS) return ParseError.TooManyInputs;
         result.input_starts[result.input_count] = current_start;
         result.input_lens[result.input_count] = params_end - current_start;
         result.input_count += 1;
     }
+}
 
+/// Create FunctionSignature from signature string.
+/// Parses the signature and computes the selector.
+pub fn fromSignature(sig: []const u8) ParseError!FunctionSignature {
+    if (sig.len > 512) return ParseError.SignatureTooLong;
+
+    const paren_index = std.mem.indexOfScalar(u8, sig, '(') orelse return ParseError.MissingOpenParen;
+    if (sig[sig.len - 1] != ')') return ParseError.MissingCloseParen;
+
+    var result: FunctionSignature = undefined;
+    @memcpy(result.signature_buf[0..sig.len], sig);
+    result.signature_len = sig.len;
+    result.name_end = paren_index;
+    result.selector = computeSelector(sig);
+    result.input_count = 0;
+
+    try parseParamRanges(sig, paren_index + 1, sig.len - 1, &result);
     return result;
 }
 

@@ -122,62 +122,37 @@ pub const TraceConfig = struct {
         return self.enable_memory and !self.disable_memory;
     }
 
+    fn appendBoolField(buf: *std.ArrayList(u8), allocator: Allocator, first: *bool, enabled: bool, kv: []const u8) !void {
+        if (!enabled) return;
+        if (!first.*) try buf.append(allocator, ',');
+        try buf.appendSlice(allocator, kv);
+        first.* = false;
+    }
+
+    fn appendStringField(buf: *std.ArrayList(u8), allocator: Allocator, first: *bool, key: []const u8, value: ?[]const u8) !void {
+        const str = value orelse return;
+        if (!first.*) try buf.append(allocator, ',');
+        try buf.print(allocator, "\"{s}\":\"{s}\"", .{ key, str });
+        first.* = false;
+    }
+
     /// Encode to JSON
     pub fn toJson(self: Self, allocator: Allocator) ![]u8 {
         var buf = std.ArrayList(u8).empty;
         defer buf.deinit(allocator);
 
         try buf.append(allocator, '{');
-
         var first = true;
 
-        if (self.disable_storage) {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"disableStorage\":true");
-            first = false;
-        }
-
-        if (self.disable_stack) {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"disableStack\":true");
-            first = false;
-        }
-
-        if (self.disable_memory) {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"disableMemory\":true");
-            first = false;
-        }
-
-        if (self.enable_memory) {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"enableMemory\":true");
-            first = false;
-        }
-
-        if (self.enable_return_data) {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"enableReturnData\":true");
-            first = false;
-        }
-
-        if (self.tracer) |tracer| {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"tracer\":\"");
-            try buf.appendSlice(allocator, tracer);
-            try buf.append(allocator, '"');
-            first = false;
-        }
-
-        if (self.timeout) |timeout| {
-            if (!first) try buf.append(allocator, ',');
-            try buf.appendSlice(allocator, "\"timeout\":\"");
-            try buf.appendSlice(allocator, timeout);
-            try buf.append(allocator, '"');
-        }
+        try appendBoolField(&buf, allocator, &first, self.disable_storage, "\"disableStorage\":true");
+        try appendBoolField(&buf, allocator, &first, self.disable_stack, "\"disableStack\":true");
+        try appendBoolField(&buf, allocator, &first, self.disable_memory, "\"disableMemory\":true");
+        try appendBoolField(&buf, allocator, &first, self.enable_memory, "\"enableMemory\":true");
+        try appendBoolField(&buf, allocator, &first, self.enable_return_data, "\"enableReturnData\":true");
+        try appendStringField(&buf, allocator, &first, "tracer", self.tracer);
+        try appendStringField(&buf, allocator, &first, "timeout", self.timeout);
 
         try buf.append(allocator, '}');
-
         return buf.toOwnedSlice(allocator);
     }
 
