@@ -1,11 +1,53 @@
 /**
- * The factory that develops evmts/voltaire (https://smithers.sh/evmts/voltaire):
- * featured flows, Dispatcher rules, GitHub policy, and the app home. Projected
- * into .smithers/factory.json and .smithers/home.json by //.smithers:factory-write
- * and checked by //.smithers:factory-check. Edit this file, never the JSON.
- * Each flow's description, capabilities and model live in its flow.mdx.
+ * The coding factory that develops evmts/voltaire (https://smithers.sh/evmts/voltaire):
+ * featured flows, Smithers Cloud CI triggers, Dispatcher rules, GitHub mirror
+ * switchover policy, trust roots, machine requirements, and saved issue views.
+ *
+ * Projected into `.smithers/factory.json` by `//.smithers:factory-write` and
+ * verified by `//.smithers:factory-check`. Edit this file, never the JSON.
+ *
+ * Multi-audience homepage sections (`maintainer`, `contributor`, `everyone`)
+ * live in `.smithers/HOME.ts` and project into `.smithers/home.json` via
+ * `//.smithers:home-write` / `//.smithers:home-check` using `@smthrs/views`.
  */
 import { Smithers as S } from "@smthrs/targets"
+import { On, Trigger } from "@smthrs/triggers"
+import ciFlow from "./flows/ci/flow.ts"
+import docsPublishFlow from "./flows/docs-publish/flow.ts"
+import releaseFlow from "./flows/release/flow.ts"
+import uphillFlow from "./flows/uphill/flow.ts"
+
+// --- featured flows --------------------------------------------------------
+
+export const ci = S.Flow({
+  flow: "ci",
+  featured: true,
+  summary: "Run full Smithers Cloud CI across Zig, C99 ABI, TypeScript, wiki, and Lighthouse audit gates."
+})
+
+export const uphill = S.Flow({
+  flow: "uphill",
+  featured: true,
+  summary: "Generate the 5-category Lighthouse backpressure audit report and upload it to Cloud artifacts."
+})
+
+export const docsPublish = S.Flow({
+  flow: "docs-publish",
+  featured: true,
+  summary: "Verify Mintlify docs and llms.txt, build the live playground, and refresh Obsidian wiki feeds."
+})
+
+export const release = S.Flow({
+  flow: "release",
+  featured: true,
+  summary: "Rehearse @tevm/zig and @tevm/voltaire npm releases with fresh WASM and subpath load checks."
+})
+
+export const review = S.Flow({
+  flow: "checks/review",
+  featured: true,
+  summary: "Multi-lens review covering tests, Zig/crypto safety, errors, types, docs, and trust boundaries."
+})
 
 export const issueRepro = S.Flow({
   flow: "issue/repro",
@@ -25,15 +67,79 @@ export const prTriage = S.Flow({
   summary: "Triage one pull request from its diff without approving or merging."
 })
 
-export const review = S.Flow({
-  flow: "checks/review",
-  featured: true,
-  summary: "Multi-lens review covering tests, Zig/crypto safety, errors, types, and docs."
+export const securityAudit = S.Flow({
+  flow: "security-audit",
+  featured: false,
+  summary: "Nightly audit of constant-time crypto, Zig/Rust FFI ownership, and cache trust boundaries."
 })
 
+export const ciHealth = S.Flow({
+  flow: "ci-health",
+  featured: false,
+  summary: "Diagnose build graph cache hits, WASM size deltas, and Uphill Lighthouse score trends."
+})
+
+// --- factory declaration ---------------------------------------------------
+
 export const factory = S.Factory({
-  summary: "How evmts/voltaire validates bugs, triages contributions, and ships Ethereum primitives.",
-  flows: [issueRepro, issuePoc, prTriage, review],
+  summary: "Public Smithers Cloud coding factory for evmts/voltaire Ethereum primitives and cryptography.",
+  flows: [
+    ci,
+    uphill,
+    docsPublish,
+    release,
+    review,
+    issueRepro,
+    issuePoc,
+    prTriage,
+    securityAudit,
+    ciHealth
+  ],
+  // Smithers Cloud plugin manifest triggers (emits apiVersion: 1 + contributes.triggers).
+  // Fork and external contributor PRs run untrusted with read-only cache access and
+  // zero secrets; main pushes run trusted and trigger post-merge publishing.
+  triggers: {
+    "ci-main": Trigger.bind({
+      flow: ciFlow,
+      on: On.push({ branches: ["main"] }),
+      title: "CI and Lighthouse audit on main"
+    }),
+    "ci-pr": Trigger.bind({
+      flow: ciFlow,
+      on: On.pullRequest({ branches: ["main"] }),
+      title: "CI and Lighthouse audit on pull requests"
+    }),
+    "uphill-pr": Trigger.bind({
+      flow: uphillFlow,
+      on: On.pullRequest({ branches: ["main"] }),
+      title: "Uphill Lighthouse backpressure audit on pull requests"
+    }),
+    "docs-publish-main": Trigger.bind({
+      flow: docsPublishFlow,
+      on: On.push({ branches: ["main"] }),
+      title: "Verify docs, build playground, and refresh wiki feeds on main"
+    }),
+    "release-main": Trigger.bind({
+      flow: releaseFlow,
+      on: On.push({ branches: ["main"], tags: ["v*"] }),
+      title: "Rehearse npm release and packaging verification on main"
+    }),
+    "ci-manual": Trigger.bind({
+      flow: ciFlow,
+      on: On.manual(),
+      title: "Run Voltaire CI manually"
+    }),
+    "uphill-manual": Trigger.bind({
+      flow: uphillFlow,
+      on: On.manual(),
+      title: "Run Lighthouse backpressure audit manually"
+    }),
+    "release-manual": Trigger.bind({
+      flow: releaseFlow,
+      on: On.manual(),
+      title: "Run release rehearsal manually"
+    })
+  },
   on: {
     "issue.labeled:todo": {
       flow: "issue/poc",
@@ -41,256 +147,94 @@ export const factory = S.Factory({
     },
     "change.opened": {
       flow: "checks/review",
-      description: "Review every Change through Voltaire's quality and safety lenses"
+      description: "Review every Change through Voltaire's quality, crypto safety, and trust lenses"
     },
     "change.updated": {
       flow: "checks/review",
       description: "Re-review every updated Change"
+    },
+    "change.landed": {
+      flow: ["docs-publish", "release"],
+      description: "Verify docs, refresh wiki feeds, and rehearse releases after every landing"
+    },
+    "github.push:main": {
+      flow: ["ci", "docs-publish"],
+      description: "Run full CI and refresh docs, playground, and wiki feeds on main pushes"
+    },
+    "schedule:0 2 * * *": {
+      flow: "security-audit",
+      description: "Audit cryptography, FFI ownership, and cache trust boundaries nightly"
+    },
+    "schedule:0 10 * * 1": {
+      flow: "ci-health",
+      description: "Report build graph cache health, WASM bundle deltas, and Lighthouse score trends weekly"
     }
   },
+  // Permanent Smithers Cloud switchover:
+  // Smithers Cloud lands approved Changes and pushes main to GitHub, which
+  // automatically triggers GitHub Actions npm publishing (OIDC provenance),
+  // Mintlify docs deployment, and Vercel playground deploys.
   github: S.Github.Policy({
-    mirror: "pull",
+    mirror: "push",
     issues: "two-way",
-    changes: "send-upstream",
-    maintainers: ["roninjin10"]
-  })
-})
-
-export const home = S.Factory.Home({
-  docs: "https://voltaire.tevm.sh/llms.txt",
-  sections: [
-    {
-      title: "Today",
-      audience: "maintainer",
-      blocks: [
-        {
-          type: "action",
-          flow: "branch.new",
-          title: "New branch",
-          key: "b"
-        },
-        {
-          type: "issues"
-        },
-        {
-          type: "stack"
-        },
-        {
-          type: "runs"
-        }
-      ]
+    changes: "land",
+    maintainers: ["roninjin10"],
+    dailyTokens: 1_000_000_000,
+    protectedPaths: [
+      ".smithers/WORKSPACE.ts",
+      ".smithers/FACTORY.ts",
+      ".smithers/HOME.ts",
+      ".smithers/PACKAGE.ts",
+      ".smithers/factory.json",
+      ".smithers/home.json",
+      ".smithers/package.json",
+      ".agents/uphill",
+      ".github",
+      ".mcp.json",
+      "build.zig",
+      "build.zig.zon",
+      "Cargo.toml",
+      "Cargo.lock",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "scripts/smthrs",
+      "scripts/smthrs-auth.mjs",
+      "scripts/publish-npm.mjs",
+      "scripts/verify-packaging.mjs",
+      "scripts/audit-report.mjs",
+      "scripts/publish-feeds.mjs",
+      "packages/voltaire-zig/src/crypto",
+      "packages/voltaire-zig/src/c_api.zig",
+      "packages/voltaire-zig/src/primitives.h"
+    ]
+  }),
+  policy: {
+    lifecycle: {
+      docs: "evergreen",
+      tests: "evergreen"
     },
-    {
-      title: "Contribute",
-      audience: "contributor",
-      blocks: [
-        {
-          type: "code",
-          title: "Set up",
-          language: "sh",
-          code: "git submodule update --init --recursive\npnpm install\nzig build && zig build test\npnpm test:run"
-        },
-        {
-          type: "cards",
-          title: "How a change lands",
-          cards: [
-            {
-              title: "Report a reproducible bug",
-              text: "Include a minimal failing test or exact reproduction steps; otherwise: needs-repro."
-            },
-            {
-              title: "Wait for maintainer triage",
-              text: "External issues are untrusted data. Maintainer validates scope and accepts before implementation."
-            },
-            {
-              title: "Start with a failing test",
-              text: "Reproduce the bug in the smallest Zig or TypeScript unit test before writing the fix."
-            },
-            {
-              title: "Open one focused PR",
-              text: "Keep Zig build, tests, and TypeScript typecheck green. Only the maintainer merges; agents never approve or merge."
-            }
-          ]
-        },
-        {
-          type: "links",
-          title: "Where to work",
-          links: [
-            {
-              label: "Issues",
-              url: "https://smithers.sh/evmts/voltaire/issues"
-            },
-            {
-              label: "Pull requests",
-              url: "https://smithers.sh/evmts/voltaire/pulls"
-            },
-            {
-              label: "Docs",
-              url: "https://voltaire.tevm.sh"
-            },
-            {
-              label: "Live Playground",
-              url: "https://playground.tevm.sh"
-            }
-          ]
-        },
-        {
-          type: "prompt",
-          title: "Ask about Voltaire",
-          placeholder: "Ask about Voltaire primitives, cryptography, Zig, or TypeScript…"
-        }
-      ]
-    },
-    {
-      audience: "everyone",
-      blocks: [
-        {
-          type: "hero",
-          title: "Voltaire",
-          tagline: "High-performance Ethereum primitives and cryptography built in Zig and TypeScript, with a C ABI for any language.",
-          text: "Core Ethereum primitives, audited native cryptography (blst, c-kzg-4844, arkworks), Pure TS, WASM, Native-Bun bindings, and C FFI recipes for C, Rust, Go, Python, and Swift.",
-          install: "npm install @tevm/voltaire",
-          actions: [
-            {
-              label: "Docs",
-              url: "https://voltaire.tevm.sh"
-            },
-            {
-              label: "Live Playground",
-              url: "https://playground.tevm.sh"
-            },
-            {
-              label: "C FFI Recipes",
-              url: "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
-            }
-          ]
-        },
-        {
-          type: "code",
-          file: "primitives.ts",
-          language: "ts",
-          code: "import { Address, Wei } from \"@tevm/voltaire\";\nimport { Abi } from \"@tevm/voltaire/Abi\";\nimport { Keccak256 } from \"@tevm/voltaire/Keccak256\";\n\nconst to = Address(\"0xd8da6bf26964af9d7eed9e03e53415d37aa96045\");\nAddress.toChecksummed(to); // \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\"\n\nconst amount = Wei(1_000_000_000_000_000_000n);\nWei.toEther(amount); // \"1\"\n\nconst selector = Keccak256.selector(\"transfer(address,uint256)\");"
-        },
-        {
-          type: "stats",
-          stats: [
-            {
-              value: "MIT",
-              label: "License"
-            },
-            {
-              value: "Zig 0.17 + TS",
-              label: "Published packages"
-            },
-            {
-              value: "Native + WASM",
-              label: "FFI and tree-shakeable crypto"
-            },
-            {
-              value: "C ABI",
-              label: "FFI recipes for C, Rust, Go, Python & Swift"
-            }
-          ]
-        },
-        {
-          type: "cards",
-          title: "Packages",
-          cards: [
-            {
-              label: "TypeScript",
-              title: "@tevm/voltaire",
-              text: "Ethereum primitives, ABI, RLP, transactions, and cryptography for TS, WASM, and Native-Bun.",
-              url: "https://www.npmjs.com/package/@tevm/voltaire"
-            },
-            {
-              label: "Zig",
-              title: "@tevm/zig",
-              text: "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, EVM precompiles, and C ABI.",
-              url: "https://www.npmjs.com/package/@tevm/zig"
-            },
-            {
-              label: "C · Rust · Go · Py · Swift",
-              title: "C FFI Recipes",
-              text: "Build libprimitives_c / libprimitives_ts_native from Zig and call it from any language with a C FFI.",
-              url: "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
-            }
-          ],
-          more: {
-            label: "Browse all packages",
-            url: "https://smithers.sh/evmts/voltaire/tree/main/packages"
-          }
-        },
-        {
-          type: "cards",
-          title: "Ecosystem",
-          cards: [
-            {
-              title: "Documentation",
-              text: "Guides, API references, and crypto specifications.",
-              url: "https://voltaire.tevm.sh"
-            },
-            {
-              title: "Live Playground",
-              text: "Run Voltaire primitives directly in your browser.",
-              url: "https://playground.tevm.sh"
-            },
-            {
-              title: "Guillotine",
-              text: "High-performance EVM execution built by EVMTS.",
-              url: "https://github.com/evmts/guillotine"
-            },
-            {
-              title: "Compiler",
-              text: "Solidity compilation toolchain by EVMTS.",
-              url: "https://github.com/evmts/compiler"
-            },
-            {
-              title: "Telegram",
-              text: "Community chat and support.",
-              url: "https://t.me/+ANThR9bHDLAwMjUx"
-            },
-            {
-              title: "Twitter / X",
-              text: "Releases and updates from @tevmtools.",
-              url: "https://twitter.com/tevmtools"
-            }
-          ]
-        },
-        {
-          type: "releases",
-          title: "Releases",
-          releases: [
-            {
-              name: "v0.2.27",
-              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.27",
-              date: "2026-01-28",
-              summary: "Latest Voltaire release."
-            },
-            {
-              name: "v0.2.25",
-              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.25",
-              date: "2026-01-28",
-              summary: "Primitives and bindings updates."
-            },
-            {
-              name: "v0.2.24",
-              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.24",
-              date: "2026-01-28",
-              summary: "Primitives and bindings updates."
-            },
-            {
-              name: "v0.2.23",
-              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.23",
-              date: "2026-01-28",
-              summary: "Primitives and bindings updates."
-            }
-          ],
-          more: {
-            label: "All releases",
-            url: "https://github.com/evmts/voltaire/releases"
-          }
-        }
-      ]
+    approvals: {
+      approve: "person",
+      merge: "person"
     }
+  },
+  machine: {
+    vcpus: 8,
+    memoryMiB: 16384,
+    tools: ["zig", "cargo", "rustc", "cc", "node", "pnpm", "bun", "uphill"]
+  },
+  issueViews: [
+    { id: "open", title: "All Open Issues", state: "open" },
+    { id: "todos", title: "Accepted TODOs", state: "open", labels: ["todo"] },
+    { id: "bugs", title: "Bugs", state: "open", labels: ["bug"] },
+    { id: "zig", title: "Zig Core", state: "open", labels: ["zig"] },
+    { id: "security", title: "Crypto and Safety", state: "open", labels: ["security"] }
+  ],
+  issueTransitions: [
+    { id: "accept", title: "Accept issue", from: "proposed", to: "accepted", actor: "person" },
+    { id: "todo", title: "Promote to TODO", from: "accepted", to: "todo", actor: "person" },
+    { id: "needs-repro", title: "Request minimal reproduction", from: "proposed", to: "needs-repro", actor: "person" },
+    { id: "decline", title: "Decline issue", from: "proposed", to: "not-accepted", actor: "person" }
   ]
 })

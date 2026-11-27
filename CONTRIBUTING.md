@@ -59,10 +59,10 @@ If your contribution is large, please open a discussion to chat about the change
 
 ## Before You Start
 
-1. **Read `CLAUDE.md`** - Critical development guidelines
-2. **Understand the architecture** - Read `README.md` and each package's `README.md` under `packages/`
-3. **Check existing issues** - Your change may already be discussed
-4. **Run tests** - Ensure everything works before making changes
+1. **Read `CLAUDE.md` and `AGENTS.md`** - Critical development guidelines and Smithers Cloud factory workflow
+2. **Explore the Factory & Wiki** - Browse `https://smithers.sh/evmts/voltaire` and `.smithers/wiki/pages/start-here.md` (Obsidian-compatible engineering wiki + Mythical History)
+3. **Connect Your Agent via Cloud MCP** - Point Claude Code, Codex, Antigravity, or Cursor at `https://smithers.sh/evmts/voltaire/mcp` (already declared in `.mcp.json`) to read issues, draft TODOs, inspect flows, and review diffs
+4. **Run Untrusted Checks & Lighthouse Audit** - External contributors are encouraged to run CI and `node scripts/audit-report.mjs` locally or on fork PRs; untrusted runs read the shared cache at `https://build.smithers.sh` in read-only mode so they never poison shared cache results or bypass gates
 
 ## Prerequisites
 

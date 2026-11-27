@@ -259,6 +259,7 @@ tevm-monorepo/
 # Smithers build cache and run state
 .smithers/cache/
 .smithers/reports/
+.smithers/.home-projection.unused
 .flows/
 
 # Uphill generated reports

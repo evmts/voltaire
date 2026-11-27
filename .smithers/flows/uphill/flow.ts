@@ -1,50 +1,45 @@
-/**
- * `uphill`: continuous metrics and hill climbing for `evmts/voltaire`.
- *
- * Runs `uphill --compact` inside a durable Smithers CI job so pull requests and
- * scheduled audits score WASM/primitive footprint, Zig & Rust safety, TS/Effect
- * quality, and architecture metrics against `.agents/uphill/uphill.baseline.yaml`.
- */
 import { Flow } from "@smthrs/flow"
 import { Node } from "@smthrs/plan"
 import { CiJob } from "@smthrs/sandbox"
 import { Schema } from "effect"
 
-const implementationVersion = "uphill/v1"
+// Continuous Lighthouse-style backpressure audit for evmts/voltaire.
+// Runs Uphill across all 5 categories (Footprint, Zig & Rust Safety,
+// TypeScript Quality, Architecture & Testing, Factory & Supply Chain), renders
+// the self-contained Lighthouse HTML/JSON audit report, and uploads both
+// artifacts to the Smithers Cloud shared R2 object store.
 
-const uphillJob = CiJob.make("uphill", {
+const uphillAudit = CiJob.make("uphill-audit", {
   steps: [
     {
       name: "install-uphill",
       run: "command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh"
     },
     {
-      name: "uphill",
-      run: "PATH=\"$HOME/.uphill/bin:$HOME/.bun/bin:$PATH\" uphill --compact"
+      name: "uphill-check-and-score",
+      run: "PATH=\"$HOME/.uphill/bin:$HOME/.bun/bin:$PATH\" uphill check && PATH=\"$HOME/.uphill/bin:$HOME/.bun/bin:$PATH\" uphill --compact"
+    },
+    {
+      name: "lighthouse-audit-report",
+      run: "PATH=\"$HOME/.uphill/bin:$HOME/.bun/bin:$PATH\" node scripts/audit-report.mjs --skip-uphill --upload-artifacts --strict"
     }
   ]
 })
 
 export default Flow.make("uphill", {
-  description: "Score continuous WASM footprint, Zig/Rust safety, TS/Effect quality, and architecture metrics with Uphill.",
-  capabilities: ["sandbox:job"],
-  effects: {
-    reads: ["**"],
-    writes: [".uphill/**"],
-    mode: "expected",
-    onConflict: "serialize",
-    tier: "reversible"
+  description: "Score continuous WASM footprint, Zig/Rust safety, TS quality, architecture, and factory supply-chain health, producing a Lighthouse-style audit report.",
+  payload: {
+    run: Schema.String,
+    repo: Schema.String,
+    sha: Schema.String,
+    ref: Schema.String,
+    event: Schema.String
   },
-  modelInvocable: true,
-  payload: Schema.Struct({
-    run: CiJob.Target.fields.run,
-    repo: CiJob.Target.fields.repo,
-    sha: CiJob.Target.fields.sha,
-    ref: CiJob.Target.fields.ref
+  success: Schema.Struct({
+    uphillAudit: CiJob.Result
   }),
-  success: CiJob.Result,
-  body: Node.capture(
-    { implementationVersion },
-    (target: CiJob.Target) => uphillJob.call(target)
-  )
+  body: (run) =>
+    Node.all({
+      uphillAudit: uphillAudit.call(run)
+    })
 })

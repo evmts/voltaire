@@ -1,0 +1,354 @@
+/**
+ * Multi-audience Smithers Cloud homepage declaration for evmts/voltaire
+ * (https://smithers.sh/evmts/voltaire).
+ *
+ * Projected into `.smithers/home.json` by `//.smithers:home-write` and
+ * schema-validated against `@smthrs/views` (`Home.read`) by `//.smithers:home-check`.
+ *
+ * Audiences:
+ * - `maintainer`: Command Center (New branch, Triage/PRs, TODO Stack, Runs, Flows, Ops links)
+ * - `contributor`: Contributor Workbench for contributors who hold a repository role
+ *   (`contributors: "role"`), distinct from signed-out viewers
+ * - `everyone`: Instant pre-clone Product Showcase and Public Coding Factory landing page
+ *
+ * Copy discipline: no HTML, no em dashes, no semicolons, and no `markdown` blocks
+ * so the page paints immediately before cloning.
+ */
+export const home = {
+  docs: "https://voltaire.tevm.sh/llms.txt",
+  contributors: "role",
+  sections: [
+    {
+      title: "Command Center",
+      audience: "maintainer",
+      blocks: [
+        {
+          type: "action",
+          flow: "branch.new",
+          title: "New branch",
+          key: "b"
+        },
+        {
+          type: "issues",
+          title: "Triage and Pull Requests"
+        },
+        {
+          type: "stack",
+          title: "Public TODO Stack"
+        },
+        {
+          type: "runs",
+          title: "Recent Factory Runs"
+        },
+        {
+          type: "flows",
+          title: "Factory Flows"
+        },
+        {
+          type: "links",
+          title: "Maintainer Surfaces",
+          links: [
+            {
+              label: "Factory Dashboard",
+              url: "https://smithers.sh/evmts/voltaire/-/factory"
+            },
+            {
+              label: "Fleet and Runners",
+              url: "https://smithers.sh/evmts/voltaire/-/fleet"
+            },
+            {
+              label: "Engineering Wiki",
+              url: "https://smithers.sh/evmts/voltaire/-/wiki"
+            },
+            {
+              label: "Cloud MCP Endpoint",
+              url: "https://smithers.sh/evmts/voltaire/mcp"
+            },
+            {
+              label: "GitHub Mirror and Releases",
+              url: "https://github.com/evmts/voltaire/releases"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      title: "Contributor Workbench",
+      audience: "contributor",
+      blocks: [
+        {
+          type: "code",
+          title: "Local Setup and Backpressure",
+          language: "sh",
+          code: "cd .smithers && bun install && cd ..\nscripts/smthrs ci //.smithers:factory-check //.smithers:wiki-check //.smithers:factory-test\nzig build && zig build test\npnpm --filter @tevm/voltaire run test:run\nnode scripts/audit-report.mjs"
+        },
+        {
+          type: "cards",
+          title: "How a Change Lands",
+          cards: [
+            {
+              label: "BYOA MCP",
+              title: "Connect Your Agent Over Cloud MCP",
+              text: "Attach Claude Code, Codex, or Antigravity to smithers.sh/evmts/voltaire/mcp to read issues, draft TODOs, and inspect flows.",
+              url: "https://smithers.sh/evmts/voltaire/mcp"
+            },
+            {
+              label: "Trust Model",
+              title: "Run Untrusted Checks Freely",
+              text: "External contributors are encouraged to run CI and Uphill audits. Untrusted runs read build.smithers.sh cache but never write to it."
+            },
+            {
+              label: "Backpressure",
+              title: "Pass the Lighthouse Audit Report",
+              text: "Every change is scored across Footprint, Zig and Rust Safety, TypeScript Quality, Architecture, and Factory Supply Chain."
+            },
+            {
+              label: "Post-Merge",
+              title: "Land on Smithers Cloud",
+              text: "A human maintainer approves and merges. Mirroring to GitHub automatically triggers npm releases, Mintlify docs, and playground deploys."
+            }
+          ]
+        },
+        {
+          type: "stack",
+          title: "Active TODO Stack"
+        },
+        {
+          type: "links",
+          title: "Where to Work",
+          links: [
+            {
+              label: "Issues and Triage",
+              url: "https://smithers.sh/evmts/voltaire/issues"
+            },
+            {
+              label: "Pull Requests",
+              url: "https://smithers.sh/evmts/voltaire/pulls"
+            },
+            {
+              label: "Engineering Wiki",
+              url: "https://smithers.sh/evmts/voltaire/-/wiki"
+            },
+            {
+              label: "Mythical History",
+              url: "https://github.com/evmts/voltaire/blob/main/.smithers/wiki/pages/mythical-history.md"
+            },
+            {
+              label: "Documentation",
+              url: "https://voltaire.tevm.sh"
+            },
+            {
+              label: "Live Playground",
+              url: "https://playground.tevm.sh"
+            }
+          ]
+        },
+        {
+          type: "prompt",
+          title: "Ask About Voltaire Internals",
+          placeholder: "Ask about Zig FFI, constant-time crypto, ABI encoding, or an open TODO..."
+        }
+      ]
+    },
+    {
+      audience: "everyone",
+      blocks: [
+        {
+          type: "hero",
+          title: "Voltaire",
+          tagline: "High-performance Ethereum primitives and cryptography built in Zig and TypeScript, with a C99 ABI for any language.",
+          text: "Core Ethereum primitives, audited native cryptography (blst, c-kzg-4844, arkworks), Pure TS, WASM, Bun Native FFI, and C FFI recipes for C, Rust, Go, Python, and Swift.",
+          install: "npm install @tevm/voltaire",
+          announcement: {
+            label: "Built publicly on Smithers Cloud with Cloud MCP, Wiki, and Lighthouse audits",
+            url: "https://smithers.sh/evmts/voltaire/-/wiki"
+          },
+          actions: [
+            {
+              label: "Docs",
+              url: "https://voltaire.tevm.sh"
+            },
+            {
+              label: "Live Playground",
+              url: "https://playground.tevm.sh"
+            },
+            {
+              label: "Engineering Wiki",
+              url: "https://smithers.sh/evmts/voltaire/-/wiki"
+            }
+          ]
+        },
+        {
+          type: "code",
+          file: "primitives.ts",
+          language: "ts",
+          code: "import { Address, Wei } from \"@tevm/voltaire\";\nimport { Abi } from \"@tevm/voltaire/Abi\";\nimport { Keccak256 } from \"@tevm/voltaire/Keccak256\";\n\nconst to = Address(\"0xd8da6bf26964af9d7eed9e03e53415d37aa96045\");\nAddress.toChecksummed(to); // \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\"\n\nconst amount = Wei(1_000_000_000_000_000_000n);\nWei.toEther(amount); // \"1\"\n\nconst selector = Keccak256.selector(\"transfer(address,uint256)\");"
+        },
+        {
+          type: "stats",
+          stats: [
+            {
+              value: "MIT",
+              label: "License"
+            },
+            {
+              value: "Zig 0.17.1 + TS",
+              label: "Dual-language core"
+            },
+            {
+              value: "Native + WASM",
+              label: "FFI and tree-shakeable crypto"
+            },
+            {
+              value: "C99 ABI",
+              label: "C, Rust, Go, Python, and Swift"
+            },
+            {
+              value: "Public MCP",
+              label: "Smithers Cloud coding factory"
+            }
+          ]
+        },
+        {
+          type: "cards",
+          title: "Packages and Bindings",
+          cards: [
+            {
+              label: "TypeScript",
+              title: "@tevm/voltaire",
+              text: "Ethereum primitives, ABI, RLP, transactions, and cryptography for Pure TS, WASM, and Bun Native FFI.",
+              url: "https://www.npmjs.com/package/@tevm/voltaire"
+            },
+            {
+              label: "Zig",
+              title: "@tevm/zig",
+              text: "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, EVM precompiles, and C99 ABI.",
+              url: "https://www.npmjs.com/package/@tevm/zig"
+            },
+            {
+              label: "C · Rust · Go · Py · Swift",
+              title: "C FFI Recipes",
+              text: "Build libprimitives_c from Zig and call Voltaire from any language with a C FFI.",
+              url: "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
+            },
+            {
+              label: "Interactive",
+              title: "Live Browser Playground",
+              text: "Run Voltaire primitives, ABI encoding, and hashing directly in your browser.",
+              url: "https://playground.tevm.sh"
+            }
+          ],
+          more: {
+            label: "Browse all packages",
+            url: "https://smithers.sh/evmts/voltaire/tree/main/packages"
+          }
+        },
+        {
+          type: "cards",
+          title: "Public Coding Factory",
+          cards: [
+            {
+              label: "Knowledge Base",
+              title: "Engineering Wiki and Mythical History",
+              text: "Obsidian-compatible architecture wiki and clean from-scratch epic history verified on every change.",
+              url: "https://smithers.sh/evmts/voltaire/-/wiki"
+            },
+            {
+              label: "Backpressure",
+              title: "Lighthouse Audit Scorecard",
+              text: "Continuous 5-category audit covering WASM footprint, Zig and Rust safety, TypeScript quality, architecture, and supply chain.",
+              url: "https://github.com/evmts/voltaire/blob/main/.smithers/wiki/pages/backpressure-and-audits.md"
+            },
+            {
+              label: "Bring Your Own Agent",
+              title: "Cloud MCP Server",
+              text: "Connect Claude Code, Codex, or Antigravity to https://smithers.sh/evmts/voltaire/mcp with OAuth 2.1 PKCE.",
+              url: "https://smithers.sh/evmts/voltaire/mcp"
+            },
+            {
+              label: "Open Contributions",
+              title: "Public Issues and TODOs",
+              text: "Browse open issues, run untrusted checks against the read-only shared cache, and open focused changes.",
+              url: "https://smithers.sh/evmts/voltaire/issues"
+            }
+          ]
+        },
+        {
+          type: "cards",
+          title: "Tevm Ecosystem",
+          cards: [
+            {
+              title: "Documentation",
+              text: "Guides, API references, Osaka hardfork specs, and MCP docs.",
+              url: "https://voltaire.tevm.sh"
+            },
+            {
+              title: "ZEVM",
+              text: "Embeddable Zig Ethereum node powered by Voltaire primitives.",
+              url: "https://smithers.sh/evmts/zevm"
+            },
+            {
+              title: "Guillotine",
+              text: "High-performance EVM execution built by EVMTS.",
+              url: "https://github.com/evmts/guillotine"
+            },
+            {
+              title: "Compiler",
+              text: "Solidity compilation toolchain by EVMTS.",
+              url: "https://github.com/evmts/compiler"
+            },
+            {
+              title: "Telegram",
+              text: "Community chat and engineering support.",
+              url: "https://t.me/+ANThR9bHDLAwMjUx"
+            },
+            {
+              title: "Twitter / X",
+              text: "Releases and engineering updates from @tevmtools.",
+              url: "https://twitter.com/tevmtools"
+            }
+          ]
+        },
+        {
+          type: "releases",
+          title: "Releases",
+          releases: [
+            {
+              name: "v0.2.27",
+              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.27",
+              date: "2026-01-28",
+              summary: "Latest published GitHub release. v0.5.0 Zig 0.17.1 release queued via Changesets."
+            },
+            {
+              name: "v0.2.25",
+              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.25",
+              date: "2026-01-28",
+              summary: "Primitives and bindings updates."
+            },
+            {
+              name: "v0.2.24",
+              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.24",
+              date: "2026-01-28",
+              summary: "Primitives and bindings updates."
+            },
+            {
+              name: "v0.2.23",
+              url: "https://github.com/evmts/voltaire/releases/tag/v0.2.23",
+              date: "2026-01-28",
+              summary: "Primitives and bindings updates."
+            }
+          ],
+          more: {
+            label: "All releases",
+            url: "https://github.com/evmts/voltaire/releases"
+          }
+        },
+        {
+          type: "prompt",
+          title: "Explore Voltaire",
+          placeholder: "Ask about Ethereum primitives, cryptography, WASM, or how to contribute..."
+        }
+      ]
+    }
+  ]
+} as const

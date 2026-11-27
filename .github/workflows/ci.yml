@@ -126,11 +126,53 @@ jobs:
           version: 0.17.1
       - name: Check formatting
         run: zig fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples
-      # .smithers/FACTORY.ts projects these; //.smithers:factory-check proves
-      # they match it locally. CI only needs them to parse.
       - name: Factory projections are valid JSON
         run: |
           node -e 'for (const f of [".smithers/factory.json", ".smithers/home.json"]) JSON.parse(require("fs").readFileSync(f, "utf8")); console.log("factory projections valid")'
+
+  smithers-factory:
+    name: Smithers Factory, Wiki & Lighthouse Audit
+    runs-on: ubuntu-latest
+    env:
+      # Shared Smithers Cloud object store (https://build.smithers.sh).
+      # Fork PRs are untrusted: they may read cached results but NEVER receive
+      # SMITHERS_CACHE_WRITE_TOKEN so they cannot poison the shared cache.
+      SMITHERS_CACHE_READ_TOKEN: ${{ secrets.SMITHERS_CACHE_READ_TOKEN }}
+      SMITHERS_CACHE_WRITE_TOKEN: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && secrets.SMITHERS_CACHE_WRITE_TOKEN || '' }}
+      GITHUB_HEAD_REPO_FORK: ${{ github.event.pull_request.head.repo.fork == true && 'true' || 'false' }}
+      SMITHERS_UNTRUSTED: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true) && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Smithers factory dependencies
+        working-directory: .smithers
+        run: bun install --frozen-lockfile
+      - name: Install Uphill
+        run: |
+          command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh
+          echo "$HOME/.uphill/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+      - name: Verify Smithers factory, home, wiki, mythical history, audit, and trust tests
+        run: |
+          scripts/smthrs ci \
+            //.smithers:factory-check \
+            //.smithers:home-check \
+            //.smithers:wiki-check \
+            //.smithers:mythical-check \
+            //.smithers:factory-test \
+            //.smithers:audit-report
+      - name: Upload Lighthouse backpressure audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: voltaire-lighthouse-audit-report
+          path: |
+            .smithers/reports/audit-report.html
+            .smithers/reports/audit-report.json
+          retention-days: 30
 
   typescript:
     runs-on: ubuntu-latest

@@ -216,3 +216,17 @@ architecture:
     "*": { baseline: pass }
   docs-links:
     "*": { baseline: pass }
+
+factory-and-ci:
+  factory-projection:
+    "*": { baseline: pass }
+  trust-boundaries:
+    "*": { baseline: pass }
+  wiki-integrity:
+    "*": { baseline: pass }
+  mythical-integrity:
+    "*": { baseline: pass }
+  docs-llms-freshness:
+    "*": { baseline: pass }
+  c-abi-header:
+    "*": { baseline: pass }

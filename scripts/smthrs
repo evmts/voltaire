@@ -1,0 +1,46 @@
+#!/bin/sh
+# Runs the Smithers CLI (`smthrs`) against Voltaire's .smithers/WORKSPACE.ts graph.
+#
+# Usage:
+#   scripts/smthrs targets //...
+#   scripts/smthrs ci //...
+#   scripts/smthrs ci //.smithers:factory-check //.smithers:wiki-check //.smithers:factory-test
+#   scripts/smthrs target //.smithers:factory-write --write
+#   scripts/smthrs cache status
+#   scripts/smthrs explain //.smithers:zig-build
+#
+# Trust model for shared Smithers Cloud remote cache (https://build.smithers.sh):
+# - Trusted maintainer / controlled sandbox runs provide SMITHERS_CACHE_WRITE_TOKEN
+#   and SMITHERS_CACHE_READ_TOKEN (can read and publish action results).
+# - Untrusted / external contributor runs only ever receive read-only access
+#   (SMITHERS_CACHE_READ_TOKEN) and can never poison the shared object store.
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+
+# Refuse cache writes when explicitly marked untrusted.
+if [ "${SMITHERS_UNTRUSTED:-0}" = "1" ] || [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ] && [ "${GITHUB_HEAD_REPO_FORK:-false}" = "true" ]; then
+  unset SMITHERS_CACHE_WRITE_TOKEN
+fi
+
+if [ -n "${SMTHRS_BIN:-}" ] && [ -x "$SMTHRS_BIN" ]; then
+  exec "$SMTHRS_BIN" "$@"
+fi
+
+local_bin="$root/.smithers/node_modules/.bin/smthrs"
+if [ -x "$local_bin" ]; then
+  exec "$local_bin" "$@"
+fi
+
+if command -v smthrs >/dev/null 2>&1; then
+  exec smthrs "$@"
+fi
+
+sibling="$root/../smithers/node_modules/.bin/smthrs"
+if [ -x "$sibling" ]; then
+  exec "$sibling" "$@"
+fi
+
+echo "error: smthrs not found. Run 'cd .smithers && bun install' or set SMTHRS_BIN." >&2
+exit 1

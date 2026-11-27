@@ -248,3 +248,7 @@ Ethereum Name Service: offline normalization and hashing in the `Ens` primitive,
 - [Zig Overview](/zig/introduction): Using Voltaire from Zig
 - [Zig Getting Started](/zig/getting-started): Installation and setup for Zig
 - [Zig Contributing](/zig/dev): Contributor guide for the Zig implementation
+
+## Smithers Cloud & MCP
+
+- [Model Context Protocol (MCP)](/model-context-protocol): Live Smithers Cloud MCP server (`https://smithers.sh/evmts/voltaire/mcp`), OAuth 2.1 PKCE, one-time sandbox auth, and public coding factory at `https://smithers.sh/evmts/voltaire`

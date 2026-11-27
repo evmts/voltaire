@@ -1,0 +1,19 @@
+---
+description: Diagnose slow build targets, cache misses, WASM size regressions, and Uphill score trends across Voltaire's build graph.
+capabilities:
+  - "fs:read:**"
+  - "proc:spawn:scripts/smthrs *"
+  - "proc:spawn:node scripts/audit-report.mjs*"
+model: repository/research
+budget:
+  tokens: 32000
+  milliseconds: 300000
+---
+
+Analyze Voltaire's build graph, remote cache health, WASM bundle sizes, and Uphill Lighthouse scores:
+
+1. Inspect `scripts/smthrs cache status` and `scripts/smthrs targets //...` to identify uncached or overly broad input closures in `.smithers/PACKAGE.ts`.
+2. Run `node scripts/audit-report.mjs` and inspect `.smithers/reports/audit-report.json` for category scores, WASM footprint against the 350 kB ReleaseSmall budget, and the highest-leverage Opportunities.
+3. Recommend targeted, minimal changes that improve cache hit rate, reduce build latency, or raise Lighthouse category scores without weakening any gate.
+
+Do not edit tracked files or mutate caches. Return a concise, prioritized diagnostic report.

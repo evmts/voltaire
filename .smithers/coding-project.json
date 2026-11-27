@@ -1,0 +1,204 @@
+{
+  "wiki": true,
+  "wikiOutput": ".smithers/reports/wiki",
+  "reviewer": "voltaire-public-engineering-v1",
+  "implementation": "coding/implementation",
+  "seats": {
+    "coding/implement": "auto",
+    "coding/dispatch": "auto",
+    "coding/plan": "auto",
+    "coding/poc": "auto",
+    "coding/review": "auto",
+    "wiki/reviewer": "auto",
+    "repository/research": "auto",
+    "repository/evaluator": "auto",
+    "repository/author": "auto",
+    "flow/author": "auto"
+  },
+  "pages": [
+    {
+      "id": "start-here",
+      "title": "Start Here",
+      "purpose": "Navigate Voltaire's dual-language Zig/TypeScript repo, packages, and Smithers Cloud factory.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/start-here.md",
+      "inputs": [
+        "README.md",
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-workspace.yaml"
+      ],
+      "related": [
+        "architecture",
+        "primitives",
+        "cryptography",
+        "backpressure-and-audits",
+        "factory-and-mcp",
+        "mythical-history"
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "Dual-Language Architecture",
+      "purpose": "Explain the Zig/TypeScript structural mirror, module import rules, and safety standards.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/architecture.md",
+      "inputs": [
+        "CLAUDE.md",
+        "build.zig",
+        "packages/voltaire-zig/src/root.zig",
+        "packages/voltaire-ts/src/index.ts"
+      ],
+      "related": [
+        "start-here",
+        "primitives",
+        "wasm-and-ffi",
+        "mythical-history"
+      ]
+    },
+    {
+      "id": "primitives",
+      "title": "Ethereum Primitives",
+      "purpose": "Document Voltaire's branded Uint8Array types, tree-shakeable namespaces, and Osaka hardfork defaults.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/primitives.md",
+      "inputs": [
+        "packages/voltaire-ts/src/brand.ts",
+        "packages/voltaire-ts/package.json"
+      ],
+      "related": [
+        "architecture",
+        "cryptography",
+        "evm-and-state",
+        "wasm-and-ffi"
+      ]
+    },
+    {
+      "id": "cryptography",
+      "title": "Cryptography and Constant-Time Safety",
+      "purpose": "Catalog native Zig/C/Rust cryptographic implementations and constant-time invariants.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/cryptography.md",
+      "inputs": [
+        "packages/voltaire-zig/src/crypto/crypto.zig",
+        "packages/voltaire-zig/src/crypto/constant_time.zig",
+        "Cargo.toml"
+      ],
+      "related": [
+        "architecture",
+        "primitives",
+        "backpressure-and-audits",
+        "factory-and-mcp"
+      ]
+    },
+    {
+      "id": "evm-and-state",
+      "title": "EVM, State Manager, and Blockchain",
+      "purpose": "Cover EVM precompiles, O(1) StateCache/BlockStore, ForkBackend, and EIP-1186 MPT proofs.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/evm-and-state.md",
+      "inputs": [
+        "packages/voltaire-zig/src/primitives/trie.zig",
+        "packages/voltaire-zig/src/root.zig"
+      ],
+      "related": [
+        "primitives",
+        "cryptography",
+        "wasm-and-ffi",
+        "mythical-history"
+      ]
+    },
+    {
+      "id": "wasm-and-ffi",
+      "title": "WASM, Native FFI, and C ABI",
+      "purpose": "Specify ReleaseSmall/ReleaseFast WASM, Bun FFI, Node-API, and C99 primitives.h contracts.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/wasm-and-ffi.md",
+      "inputs": [
+        "packages/voltaire-zig/src/c_api.zig",
+        "packages/voltaire-zig/src/primitives.h",
+        "docs/C_FFI_RECIPES.md"
+      ],
+      "related": [
+        "architecture",
+        "cryptography",
+        "backpressure-and-audits",
+        "release-and-publishing"
+      ]
+    },
+    {
+      "id": "backpressure-and-audits",
+      "title": "Backpressure and Lighthouse Audit Reports",
+      "purpose": "Detail the 5-category Uphill scorecard, Lighthouse HTML report, and untrusted cache trust model.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/backpressure-and-audits.md",
+      "inputs": [
+        ".agents/uphill/uphill.yaml",
+        ".agents/uphill/rules.md",
+        "scripts/audit-report.mjs"
+      ],
+      "related": [
+        "start-here",
+        "factory-and-mcp",
+        "cryptography",
+        "release-and-publishing"
+      ]
+    },
+    {
+      "id": "factory-and-mcp",
+      "title": "Smithers Cloud Factory and MCP Server",
+      "purpose": "Explain smithers.sh/evmts/voltaire, live Cloud MCP, one-time sandbox auth, and audience-personalized UI.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/factory-and-mcp.md",
+      "inputs": [
+        ".smithers/WORKSPACE.ts",
+        ".smithers/FACTORY.ts",
+        ".smithers/HOME.ts",
+        ".mcp.json",
+        "scripts/smthrs-auth.mjs"
+      ],
+      "related": [
+        "start-here",
+        "backpressure-and-audits",
+        "release-and-publishing",
+        "mythical-history"
+      ]
+    },
+    {
+      "id": "release-and-publishing",
+      "title": "Release, Docs, and Playground Publishing",
+      "purpose": "Trace automated npm publishing, Mintlify docs sync, playground deployment, and wiki refreshes after merge.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/release-and-publishing.md",
+      "inputs": [
+        ".github/workflows/release.yml",
+        ".github/workflows/deploy-playground.yml",
+        "scripts/publish-npm.mjs",
+        "scripts/verify-packaging.mjs"
+      ],
+      "related": [
+        "factory-and-mcp",
+        "wasm-and-ffi",
+        "backpressure-and-audits",
+        "mythical-history"
+      ]
+    },
+    {
+      "id": "mythical-history",
+      "title": "Mythical History",
+      "purpose": "Maintain Voltaire's clean from-scratch epic graph and atomic commit narrative.",
+      "kind": "current",
+      "document": ".smithers/wiki/pages/mythical-history.md",
+      "inputs": [
+        ".smithers/mythical/epics.json",
+        ".smithers/mythical/README.md"
+      ],
+      "related": [
+        "start-here",
+        "architecture",
+        "factory-and-mcp",
+        "backpressure-and-audits"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,213 @@
 {
-  "summary": "How evmts/voltaire validates bugs, triages contributions, and ships Ethereum primitives.",
+  "apiVersion": 1,
+  "summary": "Public Smithers Cloud coding factory for evmts/voltaire Ethereum primitives and cryptography.",
   "flows": [
+    {
+      "id": "ci",
+      "description": "Run Voltaire's full Smithers Cloud CI: factory & wiki gates, TypeScript typecheck/lint/tests, Zig & C99 ABI verification, and Lighthouse-style Uphill backpressure audit.",
+      "summary": "Run full Smithers Cloud CI across Zig, C99 ABI, TypeScript, wiki, and Lighthouse audit gates.",
+      "featured": true,
+      "kind": "ts",
+      "path": ".smithers/flows/ci/flow.ts",
+      "capabilities": [],
+      "model": null,
+      "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            },
+            "sha": {
+              "type": "string"
+            },
+            "ref": {
+              "type": "string"
+            },
+            "event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "run",
+            "repo",
+            "sha",
+            "ref",
+            "event"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": []
+    },
+    {
+      "id": "uphill",
+      "description": "Score continuous WASM footprint, Zig/Rust safety, TS quality, architecture, and factory supply-chain health, producing a Lighthouse-style audit report.",
+      "summary": "Generate the 5-category Lighthouse backpressure audit report and upload it to Cloud artifacts.",
+      "featured": true,
+      "kind": "ts",
+      "path": ".smithers/flows/uphill/flow.ts",
+      "capabilities": [],
+      "model": null,
+      "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            },
+            "sha": {
+              "type": "string"
+            },
+            "ref": {
+              "type": "string"
+            },
+            "event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "run",
+            "repo",
+            "sha",
+            "ref",
+            "event"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": []
+    },
+    {
+      "id": "docs-publish",
+      "description": "Verify Mintlify docs and llms.txt, build the live playground, refresh the Obsidian wiki and mythical history feeds, and publish artifacts on main merges.",
+      "summary": "Verify Mintlify docs and llms.txt, build the live playground, and refresh Obsidian wiki feeds.",
+      "featured": true,
+      "kind": "ts",
+      "path": ".smithers/flows/docs-publish/flow.ts",
+      "capabilities": [],
+      "model": null,
+      "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            },
+            "sha": {
+              "type": "string"
+            },
+            "ref": {
+              "type": "string"
+            },
+            "event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "run",
+            "repo",
+            "sha",
+            "ref",
+            "event"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": []
+    },
+    {
+      "id": "release",
+      "description": "Rehearse @tevm/zig and @tevm/voltaire npm releases with fresh WASM, subpath load verification, and strict Lighthouse audit gates.",
+      "summary": "Rehearse @tevm/zig and @tevm/voltaire npm releases with fresh WASM and subpath load checks.",
+      "featured": true,
+      "kind": "ts",
+      "path": ".smithers/flows/release/flow.ts",
+      "capabilities": [],
+      "model": null,
+      "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            },
+            "sha": {
+              "type": "string"
+            },
+            "ref": {
+              "type": "string"
+            },
+            "event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "run",
+            "repo",
+            "sha",
+            "ref",
+            "event"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": []
+    },
+    {
+      "id": "checks/review",
+      "description": "Review a Change through Voltaire's code quality, crypto safety, and factory trust lenses and return findings bound to its commit.",
+      "summary": "Multi-lens review covering tests, Zig/crypto safety, errors, types, docs, and trust boundaries.",
+      "featured": true,
+      "kind": "mdx",
+      "path": ".smithers/flows/checks/review/flow.mdx",
+      "capabilities": [
+        "fs:read:**"
+      ],
+      "model": null,
+      "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "args"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": []
+    },
     {
       "id": "issue/repro",
       "description": "Validate and minimally reproduce a bug report before any implementation.",
@@ -114,16 +321,19 @@
       }
     },
     {
-      "id": "checks/review",
-      "description": "Review a Change through Voltaire's code quality and safety lenses and return findings bound to its commit.",
-      "summary": "Multi-lens review covering tests, Zig/crypto safety, errors, types, and docs.",
-      "featured": true,
+      "id": "security-audit",
+      "description": "Nightly audit of Voltaire cryptographic safety, constant-time invariants, Zig/Rust FFI ownership, and Smithers Cloud trust boundaries.",
+      "summary": "Nightly audit of constant-time crypto, Zig/Rust FFI ownership, and cache trust boundaries.",
+      "featured": false,
       "kind": "mdx",
-      "path": ".smithers/flows/checks/review/flow.mdx",
+      "path": ".smithers/flows/security-audit/flow.mdx",
       "capabilities": [
-        "fs:read:**"
+        "fs:read:**",
+        "proc:spawn:rg *",
+        "proc:spawn:node scripts/audit-report.mjs*",
+        "proc:spawn:zig build test*"
       ],
-      "model": null,
+      "model": "repository/research",
       "modelInvocable": true,
       "inputSchema": {
         "dialect": "draft-2020-12",
@@ -141,7 +351,47 @@
         },
         "definitions": {}
       },
-      "flows": []
+      "flows": [],
+      "budget": {
+        "tokens": 48000,
+        "milliseconds": 600000
+      }
+    },
+    {
+      "id": "ci-health",
+      "description": "Diagnose slow build targets, cache misses, WASM size regressions, and Uphill score trends across Voltaire's build graph.",
+      "summary": "Diagnose build graph cache hits, WASM size deltas, and Uphill Lighthouse score trends.",
+      "featured": false,
+      "kind": "mdx",
+      "path": ".smithers/flows/ci-health/flow.mdx",
+      "capabilities": [
+        "fs:read:**",
+        "proc:spawn:scripts/smthrs *",
+        "proc:spawn:node scripts/audit-report.mjs*"
+      ],
+      "model": "repository/research",
+      "modelInvocable": true,
+      "inputSchema": {
+        "dialect": "draft-2020-12",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "args"
+          ],
+          "additionalProperties": true
+        },
+        "definitions": {}
+      },
+      "flows": [],
+      "budget": {
+        "tokens": 32000,
+        "milliseconds": 300000
+      }
     }
   ],
   "on": [
@@ -153,20 +403,233 @@
     {
       "event": "change.opened",
       "flow": "checks/review",
-      "description": "Review every Change through Voltaire's quality and safety lenses"
+      "description": "Review every Change through Voltaire's quality, crypto safety, and trust lenses"
     },
     {
       "event": "change.updated",
       "flow": "checks/review",
       "description": "Re-review every updated Change"
+    },
+    {
+      "event": "change.landed",
+      "flow": [
+        "docs-publish",
+        "release"
+      ],
+      "description": "Verify docs, refresh wiki feeds, and rehearse releases after every landing"
+    },
+    {
+      "event": "github.push:main",
+      "flow": [
+        "ci",
+        "docs-publish"
+      ],
+      "description": "Run full CI and refresh docs, playground, and wiki feeds on main pushes"
+    },
+    {
+      "event": "schedule:0 2 * * *",
+      "flow": "security-audit",
+      "description": "Audit cryptography, FFI ownership, and cache trust boundaries nightly"
+    },
+    {
+      "event": "schedule:0 10 * * 1",
+      "flow": "ci-health",
+      "description": "Report build graph cache health, WASM bundle deltas, and Lighthouse score trends weekly"
     }
   ],
   "github": {
-    "mirror": "pull",
+    "mirror": "push",
     "issues": "two-way",
-    "changes": "send-upstream",
+    "changes": "land",
+    "protectedPaths": [
+      ".smithers/WORKSPACE.ts",
+      ".smithers/FACTORY.ts",
+      ".smithers/HOME.ts",
+      ".smithers/PACKAGE.ts",
+      ".smithers/factory.json",
+      ".smithers/home.json",
+      ".smithers/package.json",
+      ".agents/uphill",
+      ".github",
+      ".mcp.json",
+      "build.zig",
+      "build.zig.zon",
+      "Cargo.toml",
+      "Cargo.lock",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "scripts/smthrs",
+      "scripts/smthrs-auth.mjs",
+      "scripts/publish-npm.mjs",
+      "scripts/verify-packaging.mjs",
+      "scripts/audit-report.mjs",
+      "scripts/publish-feeds.mjs",
+      "packages/voltaire-zig/src/crypto",
+      "packages/voltaire-zig/src/c_api.zig",
+      "packages/voltaire-zig/src/primitives.h"
+    ],
     "maintainers": [
       "roninjin10"
+    ],
+    "dailyTokens": 1000000000
+  },
+  "policy": {
+    "lifecycle": {
+      "docs": "evergreen",
+      "tests": "evergreen"
+    },
+    "notifications": {
+      "quietHours": []
+    },
+    "approvals": {
+      "approve": "person",
+      "merge": "person"
+    }
+  },
+  "machine": {
+    "vcpus": 8,
+    "memoryMiB": 16384,
+    "tools": [
+      "zig",
+      "cargo",
+      "rustc",
+      "cc",
+      "node",
+      "pnpm",
+      "bun",
+      "uphill"
+    ]
+  },
+  "issueViews": [
+    {
+      "id": "open",
+      "title": "All Open Issues",
+      "state": "open"
+    },
+    {
+      "id": "todos",
+      "title": "Accepted TODOs",
+      "state": "open",
+      "labels": [
+        "todo"
+      ]
+    },
+    {
+      "id": "bugs",
+      "title": "Bugs",
+      "state": "open",
+      "labels": [
+        "bug"
+      ]
+    },
+    {
+      "id": "zig",
+      "title": "Zig Core",
+      "state": "open",
+      "labels": [
+        "zig"
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Crypto and Safety",
+      "state": "open",
+      "labels": [
+        "security"
+      ]
+    }
+  ],
+  "issueTransitions": [
+    {
+      "id": "accept",
+      "title": "Accept issue",
+      "from": "proposed",
+      "to": "accepted",
+      "actor": "person"
+    },
+    {
+      "id": "todo",
+      "title": "Promote to TODO",
+      "from": "accepted",
+      "to": "todo",
+      "actor": "person"
+    },
+    {
+      "id": "needs-repro",
+      "title": "Request minimal reproduction",
+      "from": "proposed",
+      "to": "needs-repro",
+      "actor": "person"
+    },
+    {
+      "id": "decline",
+      "title": "Decline issue",
+      "from": "proposed",
+      "to": "not-accepted",
+      "actor": "person"
+    }
+  ],
+  "contributes": {
+    "triggers": [
+      {
+        "on": "github.push",
+        "flow": "ci",
+        "title": "CI and Lighthouse audit on main",
+        "branches": [
+          "main"
+        ]
+      },
+      {
+        "on": "github.pull_request",
+        "flow": "ci",
+        "title": "CI and Lighthouse audit on pull requests",
+        "branches": [
+          "main"
+        ]
+      },
+      {
+        "on": "github.pull_request",
+        "flow": "uphill",
+        "title": "Uphill Lighthouse backpressure audit on pull requests",
+        "branches": [
+          "main"
+        ]
+      },
+      {
+        "on": "github.push",
+        "flow": "docs-publish",
+        "title": "Verify docs, build playground, and refresh wiki feeds on main",
+        "branches": [
+          "main"
+        ]
+      },
+      {
+        "on": "github.push",
+        "flow": "release",
+        "title": "Rehearse npm release and packaging verification on main",
+        "branches": [
+          "main"
+        ],
+        "tags": [
+          "v*"
+        ]
+      },
+      {
+        "on": "manual",
+        "flow": "ci",
+        "title": "Run Voltaire CI manually"
+      },
+      {
+        "on": "manual",
+        "flow": "uphill",
+        "title": "Run Lighthouse backpressure audit manually"
+      },
+      {
+        "on": "manual",
+        "flow": "release",
+        "title": "Run release rehearsal manually"
+      }
     ]
   }
 }

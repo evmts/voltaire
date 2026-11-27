@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "repository": "evmts/voltaire",
+  "branch": "mythical",
+  "baseBranch": "main",
+  "epics": [
+    {
+      "id": "epic-01-primitives-foundation",
+      "title": "Ethereum Primitives Foundation",
+      "status": "shipped",
+      "summary": "Zero-overhead branded Uint8Array primitives in TypeScript mirrored onto Zig core primitives (Address, Hex, Hash, Uint, Int256, RLP, ABI, Transactions).",
+      "dependsOn": [],
+      "wikiPage": "primitives",
+      "targets": ["//.smithers:zig-test", "//.smithers:ts-typecheck", "//.smithers:ts-test"],
+      "paths": [
+        "packages/voltaire-zig/src/primitives",
+        "packages/voltaire-ts/src/primitives",
+        "packages/voltaire-ts/src/brand.ts"
+      ]
+    },
+    {
+      "id": "epic-02-audited-cryptography",
+      "title": "Audited Native Cryptography & Constant-Time Safety",
+      "status": "shipped",
+      "summary": "Native Zig, C (blst, c-kzg-4844), and Rust (Arkworks BN254) cryptography with constant-time guarantees and hardware acceleration.",
+      "dependsOn": ["epic-01-primitives-foundation"],
+      "wikiPage": "cryptography",
+      "targets": ["//.smithers:zig-test", "//.smithers:ts-test"],
+      "paths": [
+        "packages/voltaire-zig/src/crypto",
+        "packages/voltaire-ts/src/crypto",
+        "Cargo.toml"
+      ]
+    },
+    {
+      "id": "epic-03-evm-state-and-trie",
+      "title": "EVM Precompiles, State Manager, Blockchain & MPT Proofs",
+      "status": "shipped",
+      "summary": "Osaka hardfork defaults, EVM precompiles, O(1) StateCache and BlockStore, ForkBackend, and canonical EIP-1186 Merkle Patricia Trie proofs.",
+      "dependsOn": ["epic-01-primitives-foundation", "epic-02-audited-cryptography"],
+      "wikiPage": "evm-and-state",
+      "targets": ["//.smithers:zig-test", "//.smithers:ts-test"],
+      "paths": [
+        "packages/voltaire-zig/src/evm",
+        "packages/voltaire-zig/src/state-manager",
+        "packages/voltaire-zig/src/blockchain",
+        "packages/voltaire-zig/src/primitives/trie.zig"
+      ]
+    },
+    {
+      "id": "epic-04-multi-target-abi",
+      "title": "Multi-Target WASM, Native FFI & C99 ABI",
+      "status": "shipped",
+      "summary": "ReleaseSmall/ReleaseFast WASM, tree-shakeable crypto WASM, Bun FFI, Node-API, and C99 libprimitives_c with FFI recipes for C, Rust, Go, Python, and Swift.",
+      "dependsOn": ["epic-02-audited-cryptography", "epic-03-evm-state-and-trie"],
+      "wikiPage": "wasm-and-ffi",
+      "targets": ["//.smithers:wasm-build", "//.smithers:ts-test-wasm", "//.smithers:c-api-smoke"],
+      "paths": [
+        "packages/voltaire-zig/src/c_api.zig",
+        "packages/voltaire-zig/src/primitives.h",
+        "packages/voltaire-ts/src/wasm-loader",
+        "packages/voltaire-ts/src/native-loader",
+        "docs/C_FFI_RECIPES.md"
+      ]
+    },
+    {
+      "id": "epic-05-zig-017-and-perf",
+      "title": "Zig 0.17.1 Modernization & Hot-Path Performance",
+      "status": "shipped",
+      "summary": "Zig 0.17.1 and Node 22 upgrade, SafeGCD modinv64, 4-limb BN254/secp256k1, 2-way ARMv8.2 Keccak, single-pass BlockHeader RLP, and unified Smithers benchmark adapter.",
+      "dependsOn": ["epic-04-multi-target-abi"],
+      "wikiPage": "architecture",
+      "targets": ["//.smithers:zig-build", "//.smithers:zig-test"],
+      "paths": [
+        "build.zig",
+        "build.zig.zon",
+        "docs/MIGRATION_ZIG_017.md",
+        "scripts/smthrs-bench.mjs"
+      ]
+    },
+    {
+      "id": "epic-06-docs-and-playground",
+      "title": "Mintlify Documentation, llms.txt & Live Playground",
+      "status": "shipped",
+      "summary": "Public Mintlify documentation at voltaire.tevm.sh, machine-checked llms.txt index, and interactive browser playground at playground.tevm.sh.",
+      "dependsOn": ["epic-04-multi-target-abi"],
+      "wikiPage": "release-and-publishing",
+      "targets": ["//.smithers:docs-check", "//.smithers:playground-build"],
+      "paths": [
+        "packages/voltaire-ts/docs/docs.json",
+        "packages/voltaire-ts/docs/llms.txt",
+        "packages/voltaire-ts/docs/docs-index.test.ts",
+        "apps/playground"
+      ]
+    },
+    {
+      "id": "epic-07-smithers-cloud-factory",
+      "title": "Public Smithers Cloud Coding Factory & Lighthouse Backpressure",
+      "status": "active",
+      "summary": "Public coding factory at smithers.sh/evmts/voltaire with shared build.smithers.sh object store, untrusted read-only cache isolation, 5-category Lighthouse audit reports, Obsidian wiki, Cloud MCP with one-time sandbox auth, and GitHub mirror post-merge releases.",
+      "dependsOn": ["epic-05-zig-017-and-perf", "epic-06-docs-and-playground"],
+      "wikiPage": "factory-and-mcp",
+      "targets": [
+        "//.smithers:factory-check",
+        "//.smithers:home-check",
+        "//.smithers:wiki-check",
+        "//.smithers:mythical-check",
+        "//.smithers:audit-report",
+        "//.smithers:factory-test"
+      ],
+      "paths": [
+        ".smithers/WORKSPACE.ts",
+        ".smithers/FACTORY.ts",
+        ".smithers/HOME.ts",
+        ".smithers/PACKAGE.ts",
+        ".smithers/wiki",
+        ".smithers/mythical",
+        ".agents/uphill",
+        ".mcp.json"
+      ]
+    }
+  ]
+}

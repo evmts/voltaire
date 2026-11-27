@@ -78,3 +78,26 @@ architecture:
   # Verify local Markdown links in top-level contributor documentation resolve cleanly.
   docs-links:
     description: Keep all relative Markdown links in `README.md`, `CLAUDE.md`, and `CONTRIBUTING.md` valid.
+
+factory-and-ci:
+  run: bun .agents/uphill/metrics/factory-and-ci.ts
+  title: Factory & Supply Chain
+  description: Enforce Smithers Cloud factory parity, shared object-store trust boundaries, Obsidian wiki links, mythical history integrity, and C ABI freshness.
+  factory-projection:
+    weight: 2
+    description: Keep `.smithers/FACTORY.ts`, `factory.json`, `home.json`, and `WORKSPACE.ts` valid, synchronized, and ready for Smithers Cloud.
+  trust-boundaries:
+    weight: 3
+    description: Keep remote cache read/write credentials split, strip write tokens on untrusted runs, commit zero secrets, and point `.mcp.json` at `https://smithers.sh/evmts/voltaire/mcp`.
+  wiki-integrity:
+    weight: 2
+    description: Keep every `.smithers/wiki/` page valid with YAML frontmatter, working `[[wikilinks]]`, and real source inputs declared in `.smithers/coding-project.json`.
+  mythical-integrity:
+    weight: 1
+    description: Keep `.smithers/mythical/epics.json` valid with acyclic dependencies and real repository paths.
+  docs-llms-freshness:
+    weight: 1
+    description: Keep Mintlify `docs.json` and `llms.txt` valid and synchronized with published documentation.
+  c-abi-header:
+    weight: 1
+    description: Keep `packages/voltaire-zig/src/primitives.h` valid C99 with exported `primitives_` symbols.

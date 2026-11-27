@@ -1,6 +1,8 @@
 name: Uphill
 
 on:
+  push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -9,7 +11,28 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
+    env:
+      GITHUB_HEAD_REPO_FORK: ${{ github.event.pull_request.head.repo.fork == true && 'true' || 'false' }}
+      SMITHERS_UNTRUSTED: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true) && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: wevm/uphill@main
+      - name: Generate Voltaire Lighthouse Backpressure Report
+        run: |
+          command -v uphill >/dev/null 2>&1 || curl -fsSL https://wevm.sh/uphill | sh
+          PATH="$HOME/.uphill/bin:$HOME/.bun/bin:$PATH" node scripts/audit-report.mjs --strict
+      - name: Upload Lighthouse Audit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uphill-lighthouse-report
+          path: |
+            .smithers/reports/audit-report.html
+            .smithers/reports/audit-report.json
+            .uphill/report.html
+            .uphill/report.json
+          retention-days: 30

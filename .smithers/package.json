@@ -1,0 +1,28 @@
+{
+  "name": "voltaire-smithers",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "factory:write": "../scripts/smthrs target //.smithers:factory-write --write",
+    "factory:check": "../scripts/smthrs target //.smithers:factory-check",
+    "test:factory": "node --test tests/factory.test.mjs"
+  },
+  "dependencies": {
+    "@smthrs/artifacts": "1.0.0-rc.18",
+    "@smthrs/crypto": "1.0.0-rc.18",
+    "@smthrs/engine": "1.0.0-rc.18",
+    "@smthrs/flow": "1.0.0-rc.18",
+    "@smthrs/plan": "1.0.0-rc.18",
+    "@smthrs/sandbox": "1.0.0-rc.18",
+    "@smthrs/triggers": "1.0.0-rc.18",
+    "@smthrs/views": "1.0.0-rc.18",
+    "effect": "4.1.1"
+  },
+  "devDependencies": {
+    "@smthrs/cli": "1.0.0-rc.18",
+    "@smthrs/targets": "1.0.0-rc.18"
+  },
+  "overrides": {
+    "@effect/platform-node-shared": "4.1.1"
+  }
+}

@@ -3,7 +3,25 @@ title: Model Context Protocol (MCP)
 description: Connect AI assistants to Voltaire documentation and generate custom Skills
 ---
 
-[Model Context Protocol](https://modelcontextprotocol.io) allows AI assistants to access external tools and data sources. Use MCP servers to give Claude and other AI assistants access to Voltaire documentation and generate custom Skills for your contracts.
+[Model Context Protocol](https://modelcontextprotocol.io) allows AI assistants to access external tools and data sources. Voltaire ships with a live public Smithers Cloud MCP server for repository interaction, issues, TODOs, flows, and documentation, plus local tooling for generating custom Skills.
+
+## Voltaire Smithers Cloud MCP Server
+
+Connect Claude Code, Codex, Cursor, or Antigravity directly to Voltaire's public Streamable HTTP MCP endpoint (also checked into the repository in `.mcp.json`):
+
+- **Endpoint:** `https://smithers.sh/evmts/voltaire/mcp`
+- **OAuth 2.1 Discovery:** `https://smithers.sh/.well-known/oauth-protected-resource` (PKCE `S256`, scopes `mcp:read`, `mcp:write`)
+- **Public Web Factory UI:** `https://smithers.sh/evmts/voltaire`
+
+```bash
+# Claude Code
+claude mcp add --transport http smithers-voltaire https://smithers.sh/evmts/voltaire/mcp
+
+# Codex
+codex mcp add smithers-voltaire --url https://smithers.sh/evmts/voltaire/mcp
+```
+
+Every write performed through Cloud MCP is attributed as `<login> (agent)` under the caller's live repository role. Person-only actions (merging, final triage, committing TODOs, writing secrets) are enforced server-side. For one-time sandbox or agent session authentication, run `node scripts/smthrs-auth.mjs attach-instructions` or `node scripts/smthrs-auth.mjs mint --scope read:runs --ttl 15m --out <mode-600-file>`.
 
 ## Generating Custom Skills
 

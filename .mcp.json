@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "smithers-voltaire": {
+      "type": "http",
+      "url": "https://smithers.sh/evmts/voltaire/mcp"
+    }
+  }
+}

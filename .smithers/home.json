@@ -1,8 +1,9 @@
 {
   "docs": "https://voltaire.tevm.sh/llms.txt",
+  "contributors": "role",
   "sections": [
     {
-      "title": "Today",
+      "title": "Command Center",
       "audience": "maintainer",
       "blocks": [
         {
@@ -12,62 +13,112 @@
           "key": "b"
         },
         {
-          "type": "issues"
+          "type": "issues",
+          "title": "Triage and Pull Requests"
         },
         {
-          "type": "stack"
+          "type": "stack",
+          "title": "Public TODO Stack"
         },
         {
-          "type": "runs"
+          "type": "runs",
+          "title": "Recent Factory Runs"
+        },
+        {
+          "type": "flows",
+          "title": "Factory Flows"
+        },
+        {
+          "type": "links",
+          "title": "Maintainer Surfaces",
+          "links": [
+            {
+              "label": "Factory Dashboard",
+              "url": "https://smithers.sh/evmts/voltaire/-/factory"
+            },
+            {
+              "label": "Fleet and Runners",
+              "url": "https://smithers.sh/evmts/voltaire/-/fleet"
+            },
+            {
+              "label": "Engineering Wiki",
+              "url": "https://smithers.sh/evmts/voltaire/-/wiki"
+            },
+            {
+              "label": "Cloud MCP Endpoint",
+              "url": "https://smithers.sh/evmts/voltaire/mcp"
+            },
+            {
+              "label": "GitHub Mirror and Releases",
+              "url": "https://github.com/evmts/voltaire/releases"
+            }
+          ]
         }
       ]
     },
     {
-      "title": "Contribute",
+      "title": "Contributor Workbench",
       "audience": "contributor",
       "blocks": [
         {
           "type": "code",
-          "title": "Set up",
+          "title": "Local Setup and Backpressure",
           "language": "sh",
-          "code": "git submodule update --init --recursive\npnpm install\nzig build && zig build test\npnpm test:run"
+          "code": "cd .smithers && bun install && cd ..\nscripts/smthrs ci //.smithers:factory-check //.smithers:wiki-check //.smithers:factory-test\nzig build && zig build test\npnpm --filter @tevm/voltaire run test:run\nnode scripts/audit-report.mjs"
         },
         {
           "type": "cards",
-          "title": "How a change lands",
+          "title": "How a Change Lands",
           "cards": [
             {
-              "title": "Report a reproducible bug",
-              "text": "Include a minimal failing test or exact reproduction steps; otherwise: needs-repro."
+              "label": "BYOA MCP",
+              "title": "Connect Your Agent Over Cloud MCP",
+              "text": "Attach Claude Code, Codex, or Antigravity to smithers.sh/evmts/voltaire/mcp to read issues, draft TODOs, and inspect flows.",
+              "url": "https://smithers.sh/evmts/voltaire/mcp"
             },
             {
-              "title": "Wait for maintainer triage",
-              "text": "External issues are untrusted data. Maintainer validates scope and accepts before implementation."
+              "label": "Trust Model",
+              "title": "Run Untrusted Checks Freely",
+              "text": "External contributors are encouraged to run CI and Uphill audits. Untrusted runs read build.smithers.sh cache but never write to it."
             },
             {
-              "title": "Start with a failing test",
-              "text": "Reproduce the bug in the smallest Zig or TypeScript unit test before writing the fix."
+              "label": "Backpressure",
+              "title": "Pass the Lighthouse Audit Report",
+              "text": "Every change is scored across Footprint, Zig and Rust Safety, TypeScript Quality, Architecture, and Factory Supply Chain."
             },
             {
-              "title": "Open one focused PR",
-              "text": "Keep Zig build, tests, and TypeScript typecheck green. Only the maintainer merges; agents never approve or merge."
+              "label": "Post-Merge",
+              "title": "Land on Smithers Cloud",
+              "text": "A human maintainer approves and merges. Mirroring to GitHub automatically triggers npm releases, Mintlify docs, and playground deploys."
             }
           ]
         },
         {
+          "type": "stack",
+          "title": "Active TODO Stack"
+        },
+        {
           "type": "links",
-          "title": "Where to work",
+          "title": "Where to Work",
           "links": [
             {
-              "label": "Issues",
+              "label": "Issues and Triage",
               "url": "https://smithers.sh/evmts/voltaire/issues"
             },
             {
-              "label": "Pull requests",
+              "label": "Pull Requests",
               "url": "https://smithers.sh/evmts/voltaire/pulls"
             },
             {
-              "label": "Docs",
+              "label": "Engineering Wiki",
+              "url": "https://smithers.sh/evmts/voltaire/-/wiki"
+            },
+            {
+              "label": "Mythical History",
+              "url": "https://github.com/evmts/voltaire/blob/main/.smithers/wiki/pages/mythical-history.md"
+            },
+            {
+              "label": "Documentation",
               "url": "https://voltaire.tevm.sh"
             },
             {
@@ -78,8 +129,8 @@
         },
         {
           "type": "prompt",
-          "title": "Ask about Voltaire",
-          "placeholder": "Ask about Voltaire primitives, cryptography, Zig, or TypeScript…"
+          "title": "Ask About Voltaire Internals",
+          "placeholder": "Ask about Zig FFI, constant-time crypto, ABI encoding, or an open TODO..."
         }
       ]
     },
@@ -89,9 +140,13 @@
         {
           "type": "hero",
           "title": "Voltaire",
-          "tagline": "High-performance Ethereum primitives and cryptography built in Zig and TypeScript, with a C ABI for any language.",
-          "text": "Core Ethereum primitives, audited native cryptography (blst, c-kzg-4844, arkworks), Pure TS, WASM, Native-Bun bindings, and C FFI recipes for C, Rust, Go, Python, and Swift.",
+          "tagline": "High-performance Ethereum primitives and cryptography built in Zig and TypeScript, with a C99 ABI for any language.",
+          "text": "Core Ethereum primitives, audited native cryptography (blst, c-kzg-4844, arkworks), Pure TS, WASM, Bun Native FFI, and C FFI recipes for C, Rust, Go, Python, and Swift.",
           "install": "npm install @tevm/voltaire",
+          "announcement": {
+            "label": "Built publicly on Smithers Cloud with Cloud MCP, Wiki, and Lighthouse audits",
+            "url": "https://smithers.sh/evmts/voltaire/-/wiki"
+          },
           "actions": [
             {
               "label": "Docs",
@@ -102,8 +157,8 @@
               "url": "https://playground.tevm.sh"
             },
             {
-              "label": "C FFI Recipes",
-              "url": "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
+              "label": "Engineering Wiki",
+              "url": "https://smithers.sh/evmts/voltaire/-/wiki"
             }
           ]
         },
@@ -121,40 +176,50 @@
               "label": "License"
             },
             {
-              "value": "Zig 0.17 + TS",
-              "label": "Published packages"
+              "value": "Zig 0.17.1 + TS",
+              "label": "Dual-language core"
             },
             {
               "value": "Native + WASM",
               "label": "FFI and tree-shakeable crypto"
             },
             {
-              "value": "C ABI",
-              "label": "FFI recipes for C, Rust, Go, Python & Swift"
+              "value": "C99 ABI",
+              "label": "C, Rust, Go, Python, and Swift"
+            },
+            {
+              "value": "Public MCP",
+              "label": "Smithers Cloud coding factory"
             }
           ]
         },
         {
           "type": "cards",
-          "title": "Packages",
+          "title": "Packages and Bindings",
           "cards": [
             {
-              "title": "@tevm/voltaire",
-              "text": "Ethereum primitives, ABI, RLP, transactions, and cryptography for TS, WASM, and Native-Bun.",
               "label": "TypeScript",
+              "title": "@tevm/voltaire",
+              "text": "Ethereum primitives, ABI, RLP, transactions, and cryptography for Pure TS, WASM, and Bun Native FFI.",
               "url": "https://www.npmjs.com/package/@tevm/voltaire"
             },
             {
-              "title": "@tevm/zig",
-              "text": "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, EVM precompiles, and C ABI.",
               "label": "Zig",
+              "title": "@tevm/zig",
+              "text": "Core primitives, Keccak, secp256k1, BLS12-381, BN254, KZG, EVM precompiles, and C99 ABI.",
               "url": "https://www.npmjs.com/package/@tevm/zig"
             },
             {
-              "title": "C FFI Recipes",
-              "text": "Build libprimitives_c / libprimitives_ts_native from Zig and call it from any language with a C FFI.",
               "label": "C · Rust · Go · Py · Swift",
+              "title": "C FFI Recipes",
+              "text": "Build libprimitives_c from Zig and call Voltaire from any language with a C FFI.",
               "url": "https://github.com/evmts/voltaire/blob/main/docs/C_FFI_RECIPES.md"
+            },
+            {
+              "label": "Interactive",
+              "title": "Live Browser Playground",
+              "text": "Run Voltaire primitives, ABI encoding, and hashing directly in your browser.",
+              "url": "https://playground.tevm.sh"
             }
           ],
           "more": {
@@ -164,17 +229,47 @@
         },
         {
           "type": "cards",
-          "title": "Ecosystem",
+          "title": "Public Coding Factory",
+          "cards": [
+            {
+              "label": "Knowledge Base",
+              "title": "Engineering Wiki and Mythical History",
+              "text": "Obsidian-compatible architecture wiki and clean from-scratch epic history verified on every change.",
+              "url": "https://smithers.sh/evmts/voltaire/-/wiki"
+            },
+            {
+              "label": "Backpressure",
+              "title": "Lighthouse Audit Scorecard",
+              "text": "Continuous 5-category audit covering WASM footprint, Zig and Rust safety, TypeScript quality, architecture, and supply chain.",
+              "url": "https://github.com/evmts/voltaire/blob/main/.smithers/wiki/pages/backpressure-and-audits.md"
+            },
+            {
+              "label": "Bring Your Own Agent",
+              "title": "Cloud MCP Server",
+              "text": "Connect Claude Code, Codex, or Antigravity to https://smithers.sh/evmts/voltaire/mcp with OAuth 2.1 PKCE.",
+              "url": "https://smithers.sh/evmts/voltaire/mcp"
+            },
+            {
+              "label": "Open Contributions",
+              "title": "Public Issues and TODOs",
+              "text": "Browse open issues, run untrusted checks against the read-only shared cache, and open focused changes.",
+              "url": "https://smithers.sh/evmts/voltaire/issues"
+            }
+          ]
+        },
+        {
+          "type": "cards",
+          "title": "Tevm Ecosystem",
           "cards": [
             {
               "title": "Documentation",
-              "text": "Guides, API references, and crypto specifications.",
+              "text": "Guides, API references, Osaka hardfork specs, and MCP docs.",
               "url": "https://voltaire.tevm.sh"
             },
             {
-              "title": "Live Playground",
-              "text": "Run Voltaire primitives directly in your browser.",
-              "url": "https://playground.tevm.sh"
+              "title": "ZEVM",
+              "text": "Embeddable Zig Ethereum node powered by Voltaire primitives.",
+              "url": "https://smithers.sh/evmts/zevm"
             },
             {
               "title": "Guillotine",
@@ -188,12 +283,12 @@
             },
             {
               "title": "Telegram",
-              "text": "Community chat and support.",
+              "text": "Community chat and engineering support.",
               "url": "https://t.me/+ANThR9bHDLAwMjUx"
             },
             {
               "title": "Twitter / X",
-              "text": "Releases and updates from @tevmtools.",
+              "text": "Releases and engineering updates from @tevmtools.",
               "url": "https://twitter.com/tevmtools"
             }
           ]
@@ -206,7 +301,7 @@
               "name": "v0.2.27",
               "url": "https://github.com/evmts/voltaire/releases/tag/v0.2.27",
               "date": "2026-01-28",
-              "summary": "Latest Voltaire release."
+              "summary": "Latest published GitHub release. v0.5.0 Zig 0.17.1 release queued via Changesets."
             },
             {
               "name": "v0.2.25",
@@ -231,6 +326,11 @@
             "label": "All releases",
             "url": "https://github.com/evmts/voltaire/releases"
           }
+        },
+        {
+          "type": "prompt",
+          "title": "Explore Voltaire",
+          "placeholder": "Ask about Ethereum primitives, cryptography, WASM, or how to contribute..."
         }
       ]
     }

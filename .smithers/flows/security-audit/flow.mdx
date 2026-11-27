@@ -1,0 +1,21 @@
+---
+description: Nightly audit of Voltaire cryptographic safety, constant-time invariants, Zig/Rust FFI ownership, and Smithers Cloud trust boundaries.
+capabilities:
+  - "fs:read:**"
+  - "proc:spawn:rg *"
+  - "proc:spawn:node scripts/audit-report.mjs*"
+  - "proc:spawn:zig build test*"
+model: repository/research
+budget:
+  tokens: 48000
+  milliseconds: 600000
+---
+
+Audit `evmts/voltaire` across four security domains and report concrete file:line findings with root-input tracing:
+
+1. **Cryptography & Constant-Time Safety:** Inspect `packages/voltaire-zig/src/crypto/` and `packages/voltaire-ts/src/crypto/` for secret-dependent branches, non-constant-time comparisons, `@panic` / `catch unreachable`, or Rust `.unwrap()` / `panic!()` across FFI boundaries.
+2. **Memory & C99 ABI Safety:** Inspect `packages/voltaire-zig/src/c_api.zig` and `packages/voltaire-zig/src/primitives.h` for missing `defer`/`errdefer` cleanup, unchecked buffer lengths, or ABI mismatches.
+3. **Factory & Cache Trust Boundaries:** Verify `.smithers/WORKSPACE.ts`, `.smithers/FACTORY.ts`, `scripts/smthrs`, `scripts/smthrs-auth.mjs`, and `.github/workflows/*.yml` guarantee untrusted/fork runs never receive `SMITHERS_CACHE_WRITE_TOKEN`, cannot bypass gates, and cannot edit `protectedPaths` without maintainer approval.
+4. **Lighthouse Backpressure:** Run `node scripts/audit-report.mjs --strict` and report category score deltas and top security/safety opportunities.
+
+Never modify tracked files, approve PRs, or print secret values. Produce a structured security audit report suitable for maintainer review.

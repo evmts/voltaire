@@ -409,6 +409,17 @@ Propose→wait. Blocked: stop, explain, wait.
 ❌ Submodule changes - NEVER commit submodule changes without explicit user direction.
 ✅ `git revert` - Use for reverting commits safely.
 
+## Smithers Cloud Factory & MCP
+
+Voltaire runs publicly on Smithers Cloud at `https://smithers.sh/evmts/voltaire` with GitHub mirroring (`mirror: "push"`, `issues: "two-way"`, `changes: "land"`).
+
+- **Cloud MCP Server (`.mcp.json`):** Connect all coding agents to `https://smithers.sh/evmts/voltaire/mcp` (OAuth 2.1 PKCE `S256` at `https://smithers.sh/.well-known/oauth-protected-resource`) to read/create issues, draft TODOs, open PRs/Changes, manage stacked changesets, inspect flows, and read docs/wiki. Every write is attributed as `<login> (agent)`; person-only actions (merge, final triage, committing TODOs, secrets) stay maintainer-only.
+- **One-Time Sandbox & Agent Auth:** Run `node scripts/smthrs-auth.mjs status` to verify live Cloud MCP + trust mode, `node scripts/smthrs-auth.mjs attach-instructions` for one-time BYOA pairing, or `node scripts/smthrs-auth.mjs mint --scope read:runs --ttl 15m --out <mode-600-file>` for short-lived scoped tokens (never print raw tokens to logs).
+- **Shared Object Store & Trust Model:** `.smithers/WORKSPACE.ts` uses `https://build.smithers.sh` with split `SMITHERS_CACHE_READ_TOKEN` and `SMITHERS_CACHE_WRITE_TOKEN`. Untrusted/external runs are encouraged and receive read-only cache access only (`scripts/smthrs` strips `SMITHERS_CACHE_WRITE_TOKEN` when untrusted); untrusted results can never poison the shared cache or skip gates. Run artifacts upload to `http://artifacts.smithers.internal/<name>` (Smithers Cloud R2).
+- **Lighthouse Backpressure Report:** Run `node scripts/audit-report.mjs --strict` to generate `.smithers/reports/audit-report.html` and `audit-report.json` across all 5 Uphill categories (Footprint, Zig & Rust Safety, TypeScript Quality, Architecture & Testing, Factory & Supply Chain).
+- **Obsidian Wiki & Mythical History:** `.smithers/wiki/pages/*.md` (cataloged in `.smithers/coding-project.json`) and `.smithers/mythical/epics.json`. Validate with `scripts/smthrs ci //.smithers:factory-check //.smithers:home-check //.smithers:wiki-check //.smithers:mythical-check //.smithers:factory-test`.
+- **Personalized Factory Home:** `.smithers/HOME.ts` projects `.smithers/home.json` for `maintainer`, `contributor` (`contributors: "role"`), and `everyone` (viewer). Regenerate with `scripts/smthrs target //.smithers:home-write`.
+
 ## GitHub
 
 "_Note: Claude AI assistant, not @roninjin10 or @fucory_" (all issue/API ops)

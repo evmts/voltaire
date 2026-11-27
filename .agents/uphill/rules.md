@@ -36,3 +36,14 @@ Maintain high test depth across Zig and TypeScript packages, Zig/TS module parit
 - Maintain at least a 70% test-to-source line ratio across every core Zig and TypeScript subsystem. At least 70.
 - Keep core module directories in `packages/voltaire-zig/src/` mirrored by name in `packages/voltaire-ts/src/` (CLAUDE.md).
 - Keep all relative Markdown links in `README.md`, `CLAUDE.md`, and `CONTRIBUTING.md` valid.
+
+## Factory & Supply Chain
+
+Enforce Smithers Cloud factory parity, shared object-store trust boundaries, Obsidian wiki links, mythical history integrity, and C ABI freshness.
+
+- Keep `.smithers/FACTORY.ts`, `factory.json`, `home.json`, and `WORKSPACE.ts` valid, synchronized, and ready for Smithers Cloud.
+- Keep remote cache read/write credentials split, strip write tokens on untrusted runs, commit zero secrets, and point `.mcp.json` at `https://smithers.sh/evmts/voltaire/mcp`.
+- Keep every `.smithers/wiki/` page valid with YAML frontmatter, working `[[wikilinks]]`, and real source inputs declared in `.smithers/coding-project.json`.
+- Keep `.smithers/mythical/epics.json` valid with acyclic dependencies and real repository paths.
+- Keep Mintlify `docs.json` and `llms.txt` valid and synchronized with published documentation.
+- Keep `packages/voltaire-zig/src/primitives.h` valid C99 with exported `primitives_` symbols.
