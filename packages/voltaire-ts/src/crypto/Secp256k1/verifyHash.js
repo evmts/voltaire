@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { equalsConstantTime } from "../../primitives/Bytes/equalsConstantTime.js";
 import { CryptoError } from "../../primitives/errors/index.js";

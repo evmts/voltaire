@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * WASM implementation of Ethereum Address type
  * Uses WebAssembly bindings to Zig implementation

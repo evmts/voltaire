@@ -130,26 +130,20 @@ export const validate: (auth: AuthorizationType) => void = validateImpl;
 
 // Create wrapped functions with auto-injected crypto
 const hash: HashFn = Hash({
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-	keccak256: keccak256 as any,
-	rlpEncode,
+	keccak256,
+	rlpEncode: rlpEncode as unknown as (data: Uint8Array[]) => Uint8Array,
 });
 const verify: VerifyFn = Verify({
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-	keccak256: keccak256 as any,
-	rlpEncode,
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-	recoverPublicKey: recoverPublicKey as any,
+	keccak256,
+	rlpEncode: rlpEncode as unknown as (data: Uint8Array[]) => Uint8Array,
+	recoverPublicKey: recoverPublicKey as never,
 	addressFromPublicKey,
 });
 const sign: SignFn = Sign({
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-	keccak256: keccak256 as any,
-	rlpEncode,
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-	sign: secp256k1Sign as any,
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-	recoverPublicKey: recoverPublicKey as any,
+	keccak256,
+	rlpEncode: rlpEncode as unknown as (data: Uint8Array[]) => Uint8Array,
+	sign: secp256k1Sign as never,
+	recoverPublicKey: recoverPublicKey as never,
 	addressFromPublicKey,
 });
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { format } from "./format.js";
 import { formatWithArgs } from "./formatWithArgs.js";
 import { getItem } from "./getItem.js";

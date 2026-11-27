@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * ERC-5564 Stealth Address Constants
  *

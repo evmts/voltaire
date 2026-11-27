@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * secp256k1 curve order (number of points on the curve)
  *

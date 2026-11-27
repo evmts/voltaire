@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * EVM Opcode Constants
  * @module Opcode/constants

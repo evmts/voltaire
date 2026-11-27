@@ -1,4 +1,3 @@
-// @ts-nocheck
 export { HEX_SIZE, SIZE } from "./constants.js";
 
 import { HEX_SIZE, SIZE } from "./constants.js";

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * EIP-4844 Constants
  *

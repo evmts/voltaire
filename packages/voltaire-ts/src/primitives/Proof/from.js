@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./ProofType.js').ProofType} ProofType
  * @typedef {import('./ProofType.js').ProofLike} ProofLike

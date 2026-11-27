@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./StorageProofType.js').StorageProofType} StorageProofType
  * @typedef {import('./StorageProofType.js').StorageProofLike} StorageProofLike

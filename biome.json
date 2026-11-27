@@ -35,6 +35,7 @@
 			"!**/worktrees",
 			"!**/tests/mcp-evals",
 			"!**/demo",
+			"!**/CHANGELOG.md",
 			"!calculate_burned_eth.ts",
 			"!find_deployment_block.ts",
 			"!query_owner.ts",

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { encodeHexDigits } from "../Hex/encodeHexDigits.js";
 import { name } from "./name.js";
 

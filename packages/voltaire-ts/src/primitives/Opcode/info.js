@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { INFO_TABLE } from "./infoTable.js";
 
 /**

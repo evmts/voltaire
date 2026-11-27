@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BLS12-381 Random Private Key Generation
  *

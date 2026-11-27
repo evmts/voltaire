@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BaseFee } from "./BaseFee.js";
 import {
 	calculateExcessBlobGas,

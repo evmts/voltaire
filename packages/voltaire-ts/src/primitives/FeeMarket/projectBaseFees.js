@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { nextState } from "./nextState.js";
 
 /**

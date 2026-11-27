@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * EIP-1559 Constants
  *

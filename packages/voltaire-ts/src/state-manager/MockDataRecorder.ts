@@ -95,6 +95,58 @@ export function recordMockData(mockRpc: MockRpcClient): RecordedData {
 	};
 }
 
+function computeSerializedSize(
+	data: RecordedData,
+	encoder: TextEncoder,
+): number {
+	let size = 16; // Header: 4 + 4 + 8
+	for (const account of data.accounts) {
+		const codeBytes = encoder.encode(account.code);
+		size += 20 + 32 + 8 + 4 + codeBytes.length + 4;
+		size += account.storageSlots.length * 64;
+	}
+	for (const block of data.blocks) {
+		size += 8 + 66 + 66 + 8 + 8 + 8 + 8 + 42 + 4;
+		size += block.transactions.reduce((sum, tx) => sum + tx.length + 1, 0);
+	}
+	return size;
+}
+
+function writeAccountRecord(
+	buffer: Uint8Array,
+	view: DataView,
+	startOffset: number,
+	account: RecordedAccount,
+	encoder: TextEncoder,
+): number {
+	let offset = startOffset;
+	buffer.set(hexToBytes(account.address), offset);
+	offset += 20;
+
+	const balanceHex = account.balance.toString(16).padStart(64, "0");
+	buffer.set(hexToBytes(`0x${balanceHex}`), offset);
+	offset += 32;
+
+	view.setBigUint64(offset, account.nonce, true);
+	offset += 8;
+
+	const codeBytes = encoder.encode(account.code);
+	view.setUint32(offset, codeBytes.length, true);
+	offset += 4;
+	buffer.set(codeBytes, offset);
+	offset += codeBytes.length;
+
+	view.setUint32(offset, account.storageSlots.length, true);
+	offset += 4;
+	for (const { slot, value } of account.storageSlots) {
+		buffer.set(hexToBytes(`0x${slot.toString(16).padStart(64, "0")}`), offset);
+		offset += 32;
+		buffer.set(hexToBytes(`0x${value.toString(16).padStart(64, "0")}`), offset);
+		offset += 32;
+	}
+	return offset;
+}
+
 /**
  * Serialize recorded data into C-compatible format for FFI
  *
@@ -105,38 +157,10 @@ export function recordMockData(mockRpc: MockRpcClient): RecordedData {
  */
 export function serializeMockData(data: RecordedData): Uint8Array {
 	const encoder = new TextEncoder();
-
-	// Calculate total size
-	let size = 16; // Header: 4 + 4 + 8
-
-	for (const account of data.accounts) {
-		size += 20; // address
-		size += 32; // balance
-		size += 8; // nonce
-		const codeBytes = encoder.encode(account.code);
-		size += 4 + codeBytes.length; // code_len + code
-		size += 4; // storage_count
-		size += account.storageSlots.length * (32 + 32); // slot + value pairs
-	}
-
-	for (const block of data.blocks) {
-		size += 8; // number
-		size += 66; // hash hex string (0x + 64 chars)
-		size += 66; // parentHash
-		size += 8; // timestamp
-		size += 8; // gasLimit
-		size += 8; // gasUsed
-		size += 8; // baseFeePerGas (or 0)
-		size += 42; // miner address
-		size += 4; // tx count
-		size += block.transactions.reduce((sum, tx) => sum + tx.length + 1, 0); // txs
-	}
-
-	const buffer = new Uint8Array(size);
+	const buffer = new Uint8Array(computeSerializedSize(data, encoder));
 	const view = new DataView(buffer.buffer);
 	let offset = 0;
 
-	// Write header
 	view.setUint32(offset, data.accounts.length, true);
 	offset += 4;
 	view.setUint32(offset, data.blocks.length, true);
@@ -144,51 +168,13 @@ export function serializeMockData(data: RecordedData): Uint8Array {
 	view.setBigUint64(offset, data.forkBlockNumber, true);
 	offset += 8;
 
-	// Write accounts
 	for (const account of data.accounts) {
-		// Address (20 bytes)
-		const addrBytes = hexToBytes(account.address);
-		buffer.set(addrBytes, offset);
-		offset += 20;
-
-		// Balance (32 bytes, big-endian u256)
-		const balanceHex = account.balance.toString(16).padStart(64, "0");
-		const balanceBytes = hexToBytes(`0x${balanceHex}`);
-		buffer.set(balanceBytes, offset);
-		offset += 32;
-
-		// Nonce (8 bytes, little-endian u64)
-		view.setBigUint64(offset, account.nonce, true);
-		offset += 8;
-
-		// Code
-		const codeBytes = encoder.encode(account.code);
-		view.setUint32(offset, codeBytes.length, true);
-		offset += 4;
-		buffer.set(codeBytes, offset);
-		offset += codeBytes.length;
-
-		// Storage
-		view.setUint32(offset, account.storageSlots.length, true);
-		offset += 4;
-		for (const { slot, value } of account.storageSlots) {
-			const slotHex = slot.toString(16).padStart(64, "0");
-			const slotBytes = hexToBytes(`0x${slotHex}`);
-			buffer.set(slotBytes, offset);
-			offset += 32;
-
-			const valueHex = value.toString(16).padStart(64, "0");
-			const valueBytes = hexToBytes(`0x${valueHex}`);
-			buffer.set(valueBytes, offset);
-			offset += 32;
-		}
+		offset = writeAccountRecord(buffer, view, offset, account, encoder);
 	}
 
-	// Write blocks (simplified for now - just number and hash)
 	for (const block of data.blocks) {
 		view.setBigUint64(offset, block.number, true);
 		offset += 8;
-
 		const hashBytes = encoder.encode(`${block.hash}\0`);
 		buffer.set(hashBytes, offset);
 		offset += hashBytes.length;

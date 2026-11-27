@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Size of RIPEMD160 hash in bytes (160 bits)
  *

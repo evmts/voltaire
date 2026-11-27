@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as BlobSchedule from "./blobSchedule.js";
 import * as Eip4844 from "./eip4844Constants.js";
 import { resolveBlobContext } from "./resolveBlobContext.js";

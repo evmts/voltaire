@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./StateProofType.js').StateProofType} StateProofType
  * @typedef {import('./StateProofType.js').StateProofLike} StateProofLike

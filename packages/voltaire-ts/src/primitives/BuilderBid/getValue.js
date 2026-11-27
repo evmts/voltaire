@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./BuilderBidType.js').BuilderBidType} BuilderBidType
  */

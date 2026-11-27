@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { BlobBaseFee } from "./BlobBaseFee.js";
 import { resolveBlobContext } from "./resolveBlobContext.js";
 

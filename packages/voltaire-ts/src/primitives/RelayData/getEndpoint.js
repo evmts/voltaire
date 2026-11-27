@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * @typedef {import('./RelayDataType.js').RelayDataType} RelayDataType
  */

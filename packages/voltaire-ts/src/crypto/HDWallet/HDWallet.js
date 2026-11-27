@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * HD Wallet (Hierarchical Deterministic Wallets) Implementation
  *

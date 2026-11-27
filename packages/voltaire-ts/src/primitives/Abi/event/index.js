@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 export { Event } from "./Event.js";
 export * from "./EventType.js";
 

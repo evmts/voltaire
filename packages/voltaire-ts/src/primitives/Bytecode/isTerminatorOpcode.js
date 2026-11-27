@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Opcode from "../Opcode/index.js";
 
 /**

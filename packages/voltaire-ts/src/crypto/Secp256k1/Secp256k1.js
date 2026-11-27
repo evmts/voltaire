@@ -1,4 +1,3 @@
-// @ts-nocheck
 export * from "./constants.js";
 export * from "./errors.js";
 export * from "./Secp256k1PublicKeyType.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { calculateBlobBaseFee } from "./calculateBlobBaseFee.js";
 
 /**

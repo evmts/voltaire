@@ -5,7 +5,6 @@
 ### Patch Changes
 
 - [#402](https://github.com/evmts/voltaire/pull/402) [`9c53e46`](https://github.com/evmts/voltaire/commit/9c53e4616ca6ed8a1c9bbee8ec1ce69a2a18e509) Thanks [@roninjin10](https://github.com/roninjin10)! - Upgrade JavaScript/TypeScript dependencies and toolchain:
-  
   - `@tevm/voltaire`: upgrade runtime dependency `ox` from `^0.11.1` to `^1.9.0` (preserving multiline statement and field-level error semantics in `Siwe.parse`), and upgrade dev toolchain (`typescript@^6.0.3`, `vitest@5.1.2`, `tsup@^9.0.0`, `@biomejs/biome@^2.6.9`).
 
 ## 0.5.0

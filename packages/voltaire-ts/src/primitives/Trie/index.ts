@@ -33,10 +33,8 @@ import { RootHash as _RootHash } from "./rootHash.js";
 import type { TrieProof, Trie as TrieTypeInternal } from "./TrieType.js";
 import { Verify as _Verify } from "./verify.js";
 
-// biome-ignore lint/suspicious/noExplicitAny: RLP encode accepts arbitrary nested data structures
-type RlpEncodeFn = (data: any) => Uint8Array;
-// biome-ignore lint/suspicious/noExplicitAny: RLP decode returns arbitrary nested data structures
-type RlpDecodeFn = (bytes: Uint8Array, stream?: boolean) => any;
+type RlpEncodeFn = typeof rlpEncode;
+type RlpDecodeFn = typeof rlpDecode;
 
 type HashNodeDeps = {
 	keccak256: (data: Uint8Array) => Uint8Array;

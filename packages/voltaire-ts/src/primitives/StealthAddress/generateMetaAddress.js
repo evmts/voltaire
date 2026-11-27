@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
 	COMPRESSED_PUBLIC_KEY_SIZE,
 	STEALTH_META_ADDRESS_SIZE,

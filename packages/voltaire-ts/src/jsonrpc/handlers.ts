@@ -1,3 +1,4 @@
+import type { Block } from "../blockchain/Blockchain/index.js";
 import { encodeHexDigits } from "../primitives/Hex/encodeHexDigits.js";
 
 /**
@@ -146,8 +147,10 @@ export function createRpcHandler(deps: HandlerDependencies): RpcHandler {
 /**
  * Format block for JSON-RPC response
  */
-// biome-ignore lint/suspicious/noExplicitAny: Block structure is dynamic
-function formatBlock(block: any, _fullTransactions = false): any {
+function formatBlock(
+	block: Block,
+	_fullTransactions = false,
+): Record<string, unknown> {
 	return {
 		number: `0x${block.number.toString(16)}`,
 		hash: block.hash,

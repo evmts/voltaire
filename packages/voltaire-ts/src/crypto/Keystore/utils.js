@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { encodeHexDigits } from "../../primitives/Hex/encodeHexDigits.js";
 import { parseHexByte } from "../../primitives/Hex/parseHexByte.js";
 import { KeystoreError } from "./errors.js";

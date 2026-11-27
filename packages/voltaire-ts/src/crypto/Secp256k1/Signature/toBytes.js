@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Convert signature to bytes with v appended (65 bytes: r || s || v)
  *

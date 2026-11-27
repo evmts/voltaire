@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Eip1559 from "./eip1559Constants.js";
 
 /**

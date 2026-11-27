@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { COMPRESSED_PUBLIC_KEY_SIZE } from "./constants.js";
 import { InvalidAnnouncementError } from "./errors.js";
 

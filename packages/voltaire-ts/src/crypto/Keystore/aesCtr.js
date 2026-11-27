@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ctr } from "@noble/ciphers/aes.js";
 
 /**

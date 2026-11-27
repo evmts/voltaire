@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Convert wei to gwei for display
  *

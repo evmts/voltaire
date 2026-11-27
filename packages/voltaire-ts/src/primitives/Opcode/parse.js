@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { pushBytes } from "./pushBytes.js";
 
 /**

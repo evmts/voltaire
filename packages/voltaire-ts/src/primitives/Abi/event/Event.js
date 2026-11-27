@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
 	keccak256 as keccak256Impl,
 	keccak256String as keccak256StringImpl,

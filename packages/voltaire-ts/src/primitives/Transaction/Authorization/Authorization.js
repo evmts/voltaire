@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getAuthorizer } from "./getAuthorizer.js";
 import { getSigningHash } from "./getSigningHash.js";
 import { verifySignature } from "./verifySignature.js";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { p256 } from "@noble/curves/nist.js";
 import { PUBLIC_KEY_SIZE } from "./constants.js";
 import { InvalidPublicKeyError } from "./errors.js";

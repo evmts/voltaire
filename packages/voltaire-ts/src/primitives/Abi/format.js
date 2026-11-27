@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /**
  * Format an ABI item as a human-readable string
  *

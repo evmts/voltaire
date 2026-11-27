@@ -7,7 +7,10 @@
  * @module provider/ForkProvider
  */
 
-import type { BlockchainFFIExports } from "../blockchain/Blockchain/index.js";
+import type {
+	Block,
+	BlockchainFFIExports,
+} from "../blockchain/Blockchain/index.js";
 import { Blockchain } from "../blockchain/Blockchain/index.js";
 import {
 	isBun,
@@ -466,8 +469,10 @@ export class ForkProvider implements Provider {
 	/**
 	 * Format block for JSON-RPC response
 	 */
-	// biome-ignore lint/suspicious/noExplicitAny: JSON-RPC block response has complex shape
-	private formatBlock(block: any, _fullTransactions = false): any {
+	private formatBlock(
+		block: Block,
+		_fullTransactions = false,
+	): Record<string, unknown> {
 		// Simplified formatting - production should handle full block structure
 		return {
 			number: `0x${block.number.toString(16)}`,
