@@ -403,7 +403,7 @@ pub const ForkBackend = struct {
             },
             .storage_proof => {
                 var slot_buf: [66]u8 = undefined;
-                const slot_hex = std.fmt.bufPrint(&slot_buf, "0x{x:0>64}", .{slot}) catch unreachable;
+                const slot_hex = try std.fmt.bufPrint(&slot_buf, "0x{x:0>64}", .{slot});
                 return std.fmt.allocPrint(self.allocator, "[\"{s}\",[\"{s}\"],\"{s}\"]", .{
                     addr_hex[0..],
                     slot_hex,

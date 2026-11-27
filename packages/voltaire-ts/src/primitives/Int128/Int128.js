@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { abs } from "./abs.js";
 import { bitLength } from "./bitLength.js";
 import { bitwiseAnd } from "./bitwiseAnd.js";

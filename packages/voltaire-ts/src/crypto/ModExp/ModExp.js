@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { calculateGas } from "./calculateGas.js";
 import { modexp } from "./compute.js";
 import { modexpBytes } from "./modexpBytes.js";

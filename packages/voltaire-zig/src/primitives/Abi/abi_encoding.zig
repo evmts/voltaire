@@ -1415,6 +1415,30 @@ pub fn encodeEventTopics(allocator: std.mem.Allocator, event_signature: []const 
 
 pub const PackedError = error{ UnsupportedType, OutOfMemory };
 
+fn wordU256(val: u256) [32]u8 {
+    var word: [32]u8 = undefined;
+    std.mem.writeInt(u256, &word, val, .big);
+    return word;
+}
+
+fn wordAddress(bytes: [20]u8) [32]u8 {
+    var word: [32]u8 = @splat(0);
+    @memcpy(word[12..32], &bytes);
+    return word;
+}
+
+fn wordBool(val: bool) [32]u8 {
+    var word: [32]u8 = @splat(0);
+    word[31] = @intFromBool(val);
+    return word;
+}
+
+fn wordBytes4(val: [4]u8) [32]u8 {
+    var word: [32]u8 = @splat(0);
+    @memcpy(word[0..4], &val);
+    return word;
+}
+
 /// Append `values` in Solidity's non-standard packed mode.
 ///
 /// - Elementary values use their natural width with no padding
@@ -1449,13 +1473,13 @@ fn appendPacked(result: *std.array_list.AlignedManaged(u8, null), values: []cons
 
             // Arrays: every element is a 32-byte word
             .@"bytes32[]" => |val| for (val) |item| try result.appendSlice(&item),
-            .@"uint256[]" => |val| for (val) |item| try result.appendSlice(&(abiWord(.{ .uint256 = item }) catch unreachable)),
-            .@"address[]" => |val| for (val) |item| try result.appendSlice(&(abiWord(.{ .address = item }) catch unreachable)),
-            .@"bool[]" => |val| for (val) |item| try result.appendSlice(&(abiWord(.{ .bool = item }) catch unreachable)),
-            inline .@"uint256[2]", .@"uint256[3]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .uint256 = item }) catch unreachable)),
-            .@"address[2]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .address = item }) catch unreachable)),
-            .@"bool[4]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .bool = item }) catch unreachable)),
-            .@"bytes4[2]" => |arr| for (arr) |item| try result.appendSlice(&(abiWord(.{ .bytes4 = item }) catch unreachable)),
+            .@"uint256[]" => |val| for (val) |item| try result.appendSlice(&wordU256(item)),
+            .@"address[]" => |val| for (val) |item| try result.appendSlice(&wordAddress(item.bytes)),
+            .@"bool[]" => |val| for (val) |item| try result.appendSlice(&wordBool(item)),
+            inline .@"uint256[2]", .@"uint256[3]" => |arr| for (arr) |item| try result.appendSlice(&wordU256(item)),
+            .@"address[2]" => |arr| for (arr) |item| try result.appendSlice(&wordAddress(item.bytes)),
+            .@"bool[4]" => |arr| for (arr) |item| try result.appendSlice(&wordBool(item)),
+            .@"bytes4[2]" => |arr| for (arr) |item| try result.appendSlice(&wordBytes4(item)),
 
             // Shapes solc rejects in packed mode
             .@"string[]" => |val| {
@@ -1465,7 +1489,7 @@ fn appendPacked(result: *std.array_list.AlignedManaged(u8, null), values: []cons
             .@"uint256[][]" => |val| {
                 if (strict) return error.UnsupportedType;
                 for (val) |arr| {
-                    for (arr) |item| try result.appendSlice(&(abiWord(.{ .uint256 = item }) catch unreachable));
+                    for (arr) |item| try result.appendSlice(&wordU256(item));
                 }
             },
         }

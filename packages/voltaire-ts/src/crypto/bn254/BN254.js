@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * BN254 (BN128) Elliptic Curve Cryptography
  *

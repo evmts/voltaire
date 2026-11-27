@@ -389,12 +389,6 @@ pub fn bitLength(value: Int256) u16 {
 
 const testing = std.testing;
 
-fn hexToBytes(comptime hex: []const u8) [32]u8 {
-    var out: [32]u8 = undefined;
-    _ = std.fmt.hexToBytes(&out, hex) catch unreachable;
-    return out;
-}
-
 test "Int256: constants" {
     try testing.expectEqual(MIN, std.math.minInt(i256));
     try testing.expectEqual(MAX, std.math.maxInt(i256));
@@ -405,6 +399,12 @@ test "Int256: constants" {
     try testing.expectEqual(@as(u16, 256), BITS);
     // MAX = 2^255 - 1
     try testing.expectEqual(@as(u256, 1) << 255, @as(u256, @intCast(MAX)) + 1);
+}
+
+fn hexToBytes(comptime hex: []const u8) [32]u8 {
+    var out: [32]u8 = undefined;
+    _ = std.fmt.hexToBytes(&out, hex) catch unreachable;
+    return out;
 }
 
 test "Int256: widening constructors" {

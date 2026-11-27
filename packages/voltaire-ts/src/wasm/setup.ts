@@ -11,5 +11,3 @@ import { resolve } from "node:path";
 const wasmPath = resolve(import.meta.dir, "../../wasm-loader/primitives.wasm");
 const wasmBuffer = await readFile(wasmPath);
 await loadWasm(wasmBuffer.buffer as ArrayBuffer);
-
-console.log("✅ WASM module loaded successfully");

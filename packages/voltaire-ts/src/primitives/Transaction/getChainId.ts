@@ -17,8 +17,7 @@ import type { Any } from "./types.js";
  */
 export function getChainId(this: Any): bigint | null {
 	if (isLegacy(this)) {
-		// biome-ignore lint/suspicious/noExplicitAny: branded type cast
-		return Legacy.getChainId.call(this as any);
+		return Legacy.getChainId.call(this as never);
 	}
 	return this.chainId;
 }

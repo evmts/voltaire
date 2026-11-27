@@ -43,28 +43,25 @@ type VerifyMessageFn = (
 ) => ValidationResult;
 
 // Re-export factories (tree-shakeable) with proper types
-export const GetMessageHash: (deps: {
+export const GetMessageHash = _GetMessageHash as unknown as (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
-	// biome-ignore lint/suspicious/noExplicitAny: factory function type coercion
-}) => GetMessageHashFn = _GetMessageHash as any;
-export const Verify: (deps: {
-	keccak256: (data: Uint8Array) => Uint8Array;
-	secp256k1RecoverPublicKey: (
-		signature: { r: Uint8Array; s: Uint8Array; v: number },
-		hash: HashType,
-	) => Secp256k1PublicKeyType;
-	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
-	// biome-ignore lint/suspicious/noExplicitAny: factory function type coercion
-}) => VerifyFn = _Verify as any;
-export const VerifyMessage: (deps: {
+}) => GetMessageHashFn;
+export const Verify = _Verify as unknown as (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
 	secp256k1RecoverPublicKey: (
 		signature: { r: Uint8Array; s: Uint8Array; v: number },
 		hash: HashType,
 	) => Secp256k1PublicKeyType;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
-	// biome-ignore lint/suspicious/noExplicitAny: factory function type coercion
-}) => VerifyMessageFn = _VerifyMessage as any;
+}) => VerifyFn;
+export const VerifyMessage = _VerifyMessage as unknown as (deps: {
+	keccak256: (data: Uint8Array) => Uint8Array;
+	secp256k1RecoverPublicKey: (
+		signature: { r: Uint8Array; s: Uint8Array; v: number },
+		hash: HashType,
+	) => Secp256k1PublicKeyType;
+	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
+}) => VerifyMessageFn;
 
 // Import non-crypto functions
 import { create as _create } from "./create.js";

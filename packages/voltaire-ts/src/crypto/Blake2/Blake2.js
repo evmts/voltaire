@@ -1,4 +1,3 @@
-// @ts-nocheck
 export { SIZE } from "./Blake2HashType.js";
 
 import { SIZE } from "./Blake2HashType.js";

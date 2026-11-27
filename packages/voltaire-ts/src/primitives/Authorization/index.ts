@@ -40,13 +40,12 @@ type SignFn = (
 type VerifyFn = (auth: AuthorizationType) => AddressType;
 
 // Re-export typed factories (types are flexible for crypto deps)
-export const Hash: (deps: {
+export const Hash = HashFactory as unknown as (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
 	rlpEncode: (data: Uint8Array[]) => Uint8Array;
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-}) => HashFn = HashFactory as any;
+}) => HashFn;
 
-export const Sign: (deps: {
+export const Sign = SignFactory as unknown as (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
 	rlpEncode: (data: Uint8Array[]) => Uint8Array;
 	sign: (
@@ -58,10 +57,9 @@ export const Sign: (deps: {
 		messageHash: Uint8Array,
 	) => Uint8Array;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-}) => SignFn = SignFactory as any;
+}) => SignFn;
 
-export const Verify: (deps: {
+export const Verify = VerifyFactory as unknown as (deps: {
 	keccak256: (data: Uint8Array) => Uint8Array;
 	rlpEncode: (data: Uint8Array[]) => Uint8Array;
 	recoverPublicKey: (
@@ -69,8 +67,7 @@ export const Verify: (deps: {
 		messageHash: Uint8Array,
 	) => Uint8Array;
 	addressFromPublicKey: (x: bigint, y: bigint) => AddressType;
-	// biome-ignore lint/suspicious/noExplicitAny: type coercion required
-}) => VerifyFn = VerifyFactory as any;
+}) => VerifyFn;
 
 // Import other functions with proper types
 import { calculateGasCost as calculateGasCostImpl } from "./calculateGasCost.js";

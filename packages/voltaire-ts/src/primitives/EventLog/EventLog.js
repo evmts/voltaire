@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 export * from "./EventLogConstructor.js";
 export * from "./EventLogType.js";
 

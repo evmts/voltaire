@@ -557,9 +557,14 @@ Address.prototype.toHex = function () {
 };
 Address.prototype.setFromHex =
 	Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
+type CryptoHost = {
+	_crypto?: {
+		keccak256?: (b: Uint8Array) => Uint8Array;
+		rlpEncode?: (d: Uint8Array[]) => Uint8Array;
+	};
+};
 Address.prototype.toChecksummed = function () {
-	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
-	const crypto = (this as any)._crypto;
+	const crypto = (this as CryptoHost)._crypto;
 	if (!crypto?.keccak256) {
 		throw new InvalidValueError(
 			"keccak256 not provided to Address constructor. Pass { keccak256 } to enable toChecksummed()",
@@ -609,8 +614,7 @@ Address.prototype.toBytes = function (): Uint8Array {
 Address.prototype.clone = function (): AddressType {
 	const result = BrandedAddress.clone(this as AddressType);
 	Object.setPrototypeOf(result, Address.prototype);
-	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
-	const crypto = (this as any)._crypto;
+	const crypto = (this as CryptoHost)._crypto;
 	if (crypto) {
 		Object.defineProperty(result, "_crypto", {
 			value: crypto,
@@ -624,8 +628,7 @@ Address.prototype.clone = function (): AddressType {
 Address.prototype.calculateCreateAddress = function (
 	nonce: bigint,
 ): AddressType {
-	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
-	const crypto = (this as any)._crypto;
+	const crypto = (this as CryptoHost)._crypto;
 	if (!crypto?.keccak256) {
 		throw new InvalidValueError(
 			"keccak256 not provided to Address constructor. Pass { keccak256, rlpEncode } to enable calculateCreateAddress()",
@@ -690,8 +693,7 @@ Address.prototype.calculateCreate2Address = function (
 	salt: HashType,
 	initCode: BrandedBytecode,
 ): AddressType {
-	// biome-ignore lint/suspicious/noExplicitAny: wasm interface requires any
-	const crypto = (this as any)._crypto;
+	const crypto = (this as CryptoHost)._crypto;
 	if (!crypto?.keccak256) {
 		throw new InvalidValueError(
 			"keccak256 not provided to Address constructor. Pass { keccak256 } to enable calculateCreate2Address()",

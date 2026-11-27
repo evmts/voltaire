@@ -255,28 +255,28 @@ fn formatBlockJson(allocator: std.mem.Allocator, block: Block.Block) ![]u8 {
     defer if (extra_allocated) allocator.free(extra_data_hex);
 
     var difficulty_buf: [66]u8 = undefined;
-    const difficulty_hex = std.fmt.bufPrint(&difficulty_buf, "0x{x}", .{block.header.difficulty}) catch unreachable;
+    const difficulty_hex = try std.fmt.bufPrint(&difficulty_buf, "0x{x}", .{block.header.difficulty});
 
     var number_buf: [18]u8 = undefined;
-    const number_hex = std.fmt.bufPrint(&number_buf, "0x{x}", .{block.header.number}) catch unreachable;
+    const number_hex = try std.fmt.bufPrint(&number_buf, "0x{x}", .{block.header.number});
 
     var gas_limit_buf: [18]u8 = undefined;
-    const gas_limit_hex = std.fmt.bufPrint(&gas_limit_buf, "0x{x}", .{block.header.gas_limit}) catch unreachable;
+    const gas_limit_hex = try std.fmt.bufPrint(&gas_limit_buf, "0x{x}", .{block.header.gas_limit});
 
     var gas_used_buf: [18]u8 = undefined;
-    const gas_used_hex = std.fmt.bufPrint(&gas_used_buf, "0x{x}", .{block.header.gas_used}) catch unreachable;
+    const gas_used_hex = try std.fmt.bufPrint(&gas_used_buf, "0x{x}", .{block.header.gas_used});
 
     var timestamp_buf: [18]u8 = undefined;
-    const timestamp_hex = std.fmt.bufPrint(&timestamp_buf, "0x{x}", .{block.header.timestamp}) catch unreachable;
+    const timestamp_hex = try std.fmt.bufPrint(&timestamp_buf, "0x{x}", .{block.header.timestamp});
 
     var size_buf: [18]u8 = undefined;
-    const size_hex = std.fmt.bufPrint(&size_buf, "0x{x}", .{block.size}) catch unreachable;
+    const size_hex = try std.fmt.bufPrint(&size_buf, "0x{x}", .{block.size});
 
     var base_fee_json: []const u8 = "null";
     var base_fee_allocated = false;
     if (block.header.base_fee_per_gas) |fee| {
         var base_fee_buf: [66]u8 = undefined;
-        const base_fee_hex = std.fmt.bufPrint(&base_fee_buf, "0x{x}", .{fee}) catch unreachable;
+        const base_fee_hex = try std.fmt.bufPrint(&base_fee_buf, "0x{x}", .{fee});
         base_fee_json = try std.fmt.allocPrint(allocator, "\"{s}\"", .{base_fee_hex});
         base_fee_allocated = true;
     }
@@ -286,7 +286,7 @@ fn formatBlockJson(allocator: std.mem.Allocator, block: Block.Block) ![]u8 {
     var total_diff_allocated = false;
     if (block.total_difficulty) |td| {
         var total_diff_buf: [66]u8 = undefined;
-        const total_diff_hex = std.fmt.bufPrint(&total_diff_buf, "0x{x}", .{td}) catch unreachable;
+        const total_diff_hex = try std.fmt.bufPrint(&total_diff_buf, "0x{x}", .{td});
         total_diff_json = try std.fmt.allocPrint(allocator, "\"{s}\"", .{total_diff_hex});
         total_diff_allocated = true;
     }

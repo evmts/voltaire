@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { calcDecodedSize } from "./calcDecodedSize.js";
 import { calcEncodedSize } from "./calcEncodedSize.js";
 import { decode } from "./decode.js";

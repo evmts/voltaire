@@ -135,8 +135,10 @@ export namespace Eip712Wasm {
 				const typeFields = types[typeName];
 				if (!typeFields) return "";
 				const fields = typeFields
-					// biome-ignore lint/suspicious/noExplicitAny: dynamic EIP-712 types
-					.map((field: any) => `${field.type} ${field.name}`)
+					.map(
+						(field: { name: string; type: string }) =>
+							`${field.type} ${field.name}`,
+					)
 					.join(",");
 				return `${typeName}(${fields})`;
 			})

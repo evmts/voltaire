@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as arith from "./arithmetic.js";
 import * as bit from "./bitwise.js";
 import * as cmp from "./comparison.js";

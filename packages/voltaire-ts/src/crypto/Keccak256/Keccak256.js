@@ -1,4 +1,3 @@
-// @ts-nocheck
 export * from "./constants.js";
 
 import { DIGEST_SIZE, RATE, STATE_SIZE } from "./constants.js";

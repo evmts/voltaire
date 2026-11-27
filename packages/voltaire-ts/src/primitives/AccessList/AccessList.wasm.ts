@@ -8,14 +8,15 @@ import type { AddressType as BrandedAddress } from "../Address/AddressType.js";
 import type { HashType } from "../Hash/Hash.js";
 import type { BrandedAccessList as AccessListType } from "./AccessListType.js";
 
+type LoaderAccessList = Parameters<typeof loader.accessListGasCost>[0];
+
 /**
  * Calculate total gas cost for access list
  * @param accessList - Access list to calculate cost for
  * @returns Gas cost as bigint
  */
 export function gasCostWasm(accessList: AccessListType): bigint {
-	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
-	return loader.accessListGasCost(accessList as any);
+	return loader.accessListGasCost(accessList as unknown as LoaderAccessList);
 }
 
 /**
@@ -24,8 +25,7 @@ export function gasCostWasm(accessList: AccessListType): bigint {
  * @returns Gas savings as bigint
  */
 export function gasSavingsWasm(accessList: AccessListType): bigint {
-	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
-	return loader.accessListGasSavings(accessList as any);
+	return loader.accessListGasSavings(accessList as unknown as LoaderAccessList);
 }
 
 /**
@@ -38,8 +38,10 @@ export function includesAddressWasm(
 	accessList: AccessListType,
 	address: BrandedAddress,
 ): boolean {
-	// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
-	return loader.accessListIncludesAddress(accessList as any, address);
+	return loader.accessListIncludesAddress(
+		accessList as unknown as LoaderAccessList,
+		address,
+	);
 }
 
 /**
@@ -55,8 +57,7 @@ export function includesStorageKeyWasm(
 	storageKey: HashType,
 ): boolean {
 	return loader.accessListIncludesStorageKey(
-		// biome-ignore lint/suspicious/noExplicitAny: wasm loader interface requires any
-		accessList as any,
+		accessList as unknown as LoaderAccessList,
 		address,
 		storageKey,
 	);

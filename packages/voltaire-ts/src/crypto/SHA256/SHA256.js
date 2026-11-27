@@ -1,4 +1,3 @@
-// @ts-nocheck
 export * from "./constants.js";
 
 import { BLOCK_SIZE, OUTPUT_SIZE } from "./constants.js";

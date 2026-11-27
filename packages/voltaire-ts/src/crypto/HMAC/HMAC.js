@@ -1,4 +1,3 @@
-// @ts-nocheck
 export { EmptyKeyError } from "./errors.js";
 export {
 	OUTPUT_SIZE as SHA256_OUTPUT_SIZE,

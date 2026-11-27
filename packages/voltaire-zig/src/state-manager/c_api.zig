@@ -516,7 +516,7 @@ export fn state_manager_get_balance_sync(
 
     // Convert to hex
     var hex_buffer: [66]u8 = undefined; // "0x" + 64 hex digits
-    const hex_str = std.fmt.bufPrint(&hex_buffer, "0x{x:0>64}", .{balance}) catch unreachable;
+    const hex_str = std.fmt.bufPrint(&hex_buffer, "0x{x:0>64}", .{balance}) catch return STATE_MANAGER_ERROR_INVALID_INPUT;
 
     @memcpy(out_buffer[0..hex_str.len], hex_str);
     out_buffer[hex_str.len] = 0; // Null terminator
@@ -656,7 +656,7 @@ export fn state_manager_get_storage_sync(
 
     // Convert to hex
     var hex_buffer: [66]u8 = undefined;
-    const hex_str = std.fmt.bufPrint(&hex_buffer, "0x{x:0>64}", .{value}) catch unreachable;
+    const hex_str = std.fmt.bufPrint(&hex_buffer, "0x{x:0>64}", .{value}) catch return STATE_MANAGER_ERROR_INVALID_INPUT;
 
     @memcpy(out_buffer[0..hex_str.len], hex_str);
     out_buffer[hex_str.len] = 0;

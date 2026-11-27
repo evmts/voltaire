@@ -863,9 +863,13 @@ pub fn Evm(comptime config: EvmConfig) type {
 
             // Return result (execution gas left; intrinsic gas handled by caller)
             var result = if (frame.reverted)
-                CallResult.revert_with_data(self.arena.allocator(), gas_left, output) catch unreachable
+                CallResult.revert_with_data(self.arena.allocator(), gas_left, output) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                }
             else
-                CallResult.success_with_logs(self.arena.allocator(), gas_left, output, self.logs.items) catch unreachable;
+                CallResult.success_with_logs(self.arena.allocator(), gas_left, output, self.logs.items) catch {
+                    return makeFailure(self.arena.allocator(), 0);
+                };
 
             // Set created address for CREATE operations
             if (is_create and !frame.reverted) {

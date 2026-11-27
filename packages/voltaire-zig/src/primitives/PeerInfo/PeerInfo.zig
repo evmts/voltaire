@@ -133,6 +133,11 @@ pub fn init(
 
 const test_caps = [_][]const u8{ "eth/67", "snap/1" };
 
+test "PeerInfo: isInbound returns true for inbound peer" {
+    const peer = createTestPeer(true);
+    try std.testing.expect(peer.isInbound());
+}
+
 fn createTestPeer(inbound: bool) PeerInfo {
     const peer_id = PeerId.fromEnode("enode://" ++ @as(*const [(64) * 2]u8, @ptrCast(&@as([64][2]u8, @splat("ab".*)))) ++ "@127.0.0.1:30303") catch unreachable;
     return init(
@@ -148,11 +153,6 @@ fn createTestPeer(inbound: bool) PeerInfo {
         },
         .{ .eth = null },
     );
-}
-
-test "PeerInfo: isInbound returns true for inbound peer" {
-    const peer = createTestPeer(true);
-    try std.testing.expect(peer.isInbound());
 }
 
 test "PeerInfo: isInbound returns false for outbound peer" {
