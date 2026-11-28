@@ -68,6 +68,10 @@ const zigAndCAbi = CiJob.make("zig-and-c-abi", {
       run: `${zig} build && ${zig} build test`
     },
     {
+      name: "hydrate-c-abi-dependencies",
+      run: "bash scripts/ci/hydrate-c-abi.sh"
+    },
+    {
       name: "c-api-smoke",
       run: `${zig} build -Dwith-c-api=true -Doptimize=ReleaseFast && cc -Izig-out/include packages/voltaire-zig/examples/c/basic_usage.c -Lzig-out/lib -Wl,-rpath,\"$PWD/zig-out/lib\" -lprimitives_c -o /tmp/voltaire_c_smoke && /tmp/voltaire_c_smoke`
     }
