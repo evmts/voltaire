@@ -1,0 +1,4 @@
+# Voltaire's build.zig.zon compiler release, for Linux x86_64 and aarch64.
+ziglang==0.17.1 \
+    --hash=sha256:ea6cc5d87b033cf0aedfbc8f9549a908cae6c50ac31f1698188fa48a74524b54 \
+    --hash=sha256:b7c5f02fccd40f89b999ee16a1f5ddced56e6182370f8affe494bcf8a28cf07e

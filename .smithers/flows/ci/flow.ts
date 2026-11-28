@@ -50,19 +50,26 @@ const tsVerify = CiJob.make("ts-verify", {
   ]
 })
 
+// Each sandbox step opens a fresh shell in the job's checkout.
+const zig = ".venv/ci-zig/bin/python-zig"
+
 const zigAndCAbi = CiJob.make("zig-and-c-abi", {
   steps: [
     {
+      name: "install-zig",
+      run: `python3 -m venv --clear .venv/ci-zig && .venv/ci-zig/bin/python -m pip install --no-input --disable-pip-version-check --only-binary=:all: --no-deps --require-hashes -r scripts/ci/zig-requirements.txt && ${zig} version`
+    },
+    {
       name: "zig-fmt-check",
-      run: "zig fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples"
+      run: `${zig} fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples`
     },
     {
       name: "zig-build-and-test",
-      run: "zig build && zig build test"
+      run: `${zig} build && ${zig} build test`
     },
     {
       name: "c-api-smoke",
-      run: "zig build -Dwith-c-api=true -Doptimize=ReleaseFast && cc -Izig-out/include packages/voltaire-zig/examples/c/basic_usage.c -Lzig-out/lib -Wl,-rpath,\"$PWD/zig-out/lib\" -lprimitives_c -o /tmp/voltaire_c_smoke && /tmp/voltaire_c_smoke"
+      run: `${zig} build -Dwith-c-api=true -Doptimize=ReleaseFast && cc -Izig-out/include packages/voltaire-zig/examples/c/basic_usage.c -Lzig-out/lib -Wl,-rpath,\"$PWD/zig-out/lib\" -lprimitives_c -o /tmp/voltaire_c_smoke && /tmp/voltaire_c_smoke`
     }
   ]
 })
