@@ -29,6 +29,13 @@ const factoryAndWiki = CiJob.make("factory-and-wiki", {
   ]
 })
 
+// Each sandbox step opens a fresh shell in the job's checkout.
+const zig = ".venv/ci-zig/bin/python-zig"
+const installZig = {
+  name: "install-zig",
+  run: `python3 -m venv --clear .venv/ci-zig && .venv/ci-zig/bin/python -m pip install --no-input --disable-pip-version-check --only-binary=:all: --no-deps --require-hashes -r scripts/ci/zig-requirements.txt && ${zig} version`
+}
+
 const tsVerify = CiJob.make("ts-verify", {
   steps: [
     {
@@ -38,6 +45,11 @@ const tsVerify = CiJob.make("ts-verify", {
     {
       name: "typecheck-and-lint",
       run: "pnpm --filter @tevm/voltaire run typecheck && pnpm --filter @tevm/voltaire run lint:check && pnpm --filter @tevm/voltaire run format:check"
+    },
+    installZig,
+    {
+      name: "build-wasm",
+      run: 'ln -sf python-zig .venv/ci-zig/bin/zig && PATH="$PWD/.venv/ci-zig/bin:$PATH" pnpm --filter @tevm/zig build:wasm'
     },
     {
       name: "unit-tests",
@@ -50,15 +62,9 @@ const tsVerify = CiJob.make("ts-verify", {
   ]
 })
 
-// Each sandbox step opens a fresh shell in the job's checkout.
-const zig = ".venv/ci-zig/bin/python-zig"
-
 const zigAndCAbi = CiJob.make("zig-and-c-abi", {
   steps: [
-    {
-      name: "install-zig",
-      run: `python3 -m venv --clear .venv/ci-zig && .venv/ci-zig/bin/python -m pip install --no-input --disable-pip-version-check --only-binary=:all: --no-deps --require-hashes -r scripts/ci/zig-requirements.txt && ${zig} version`
-    },
+    installZig,
     {
       name: "zig-fmt-check",
       run: `${zig} fmt --check build.zig packages/voltaire-zig/src packages/voltaire-zig/lib packages/voltaire-zig/examples`
